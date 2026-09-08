@@ -613,7 +613,7 @@ export class WiserZigbeeCard
     if (!layout || !this.config) return;
     try {
       localStorage.setItem(this.layoutKey, JSON.stringify(layout));
-      this.layoutStatus = "layout.saved";
+      this.layoutStatus = "";
     } catch {
       this.layoutStatus = "layout.storage_error";
     }
