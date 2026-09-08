@@ -1,97 +1,63 @@
-export const CARD_VERSION = "2.1.2";
+import type { Options } from "vis-network";
 
-export const OPTIONS = {
+export const CARD_VERSION = "3.0.0";
+
+export const OPTIONS: Options = {
   autoResize: true,
-  height: "500px",
-  configure: {
-    enabled: false,
-  },
-  edges: {
-    arrows: {
-      to: {
-        enabled: true,
-        scaleFactor: 1,
-      },
-      middle: {
-        enabled: false,
-      },
-      from: {
-        enabled: false,
-      },
+  height: "100%",
+  nodes: {
+    shape: "box",
+    color: {
+      background: "#edf2f8",
+      border: "#c9d5e4",
+      highlight: { background: "#dce9f8", border: "#5288bd" },
     },
-    color: "#03a9f4",
-    smooth: true,
-    physics: false,
-    width: 2,
-    labelHighlightBold: false,
-    font: {
-      align: "top",
-      color: "var(--primary-text-color, #fff)",
-      strokeWidth: 0,
-      size: 14,
-    },
+    font: { size: 14, face: "system-ui, sans-serif", color: "#26364a" },
+    margin: { top: 14, bottom: 14, left: 18, right: 18 },
+    widthConstraint: { minimum: 100, maximum: 160 },
+    borderWidth: 1,
+    shapeProperties: { borderRadius: 12 },
   },
   groups: {
-    Controller: {
-      color: { background: "#518C43" },
-      shape: "circle",
-      margin: {
-        top: 15,
-        right: 10,
-        bottom: 15,
-        left: 10,
-      },
+    Controller: { color: { background: "#dceee6", border: "#91bba7" } },
+    RoomStat: { color: { background: "#eee6f2", border: "#c9b3d5" } },
+    iTRV: { color: { background: "#f7eadc", border: "#d9bc98" } },
+    SmartPlug: { color: { background: "#dceef0", border: "#94bec4" } },
+    HeatingActuator: { color: { background: "#e1e9fa", border: "#aabce0" } },
+    UnderFloorHeating: { color: { background: "#e1e9fa", border: "#aabce0" } },
+    Shutter: { color: { background: "#e7ebef", border: "#b4bec9" } },
+    OnOffLight: { color: { background: "#f5efd9", border: "#d6c68e" } },
+    DimmableLight: { color: { background: "#f5efd9", border: "#d6c68e" } },
+  },
+  edges: {
+    arrows: { to: { enabled: true, scaleFactor: 0.45 } },
+    color: {
+      color: "#8a9bac",
+      highlight: "#5288bd",
+      hover: "#5288bd",
+      inherit: false,
     },
-    RoomStat: {
-      color: { background: "#B1345C" },
+    smooth: {
+      enabled: true,
+      type: "cubicBezier",
+      forceDirection: "horizontal",
+      roundness: 0.45,
     },
-    iTRV: {
-      color: { background: "#E48629" },
-    },
-    SmartPlug: {
-      color: { background: "#3B808E" },
-    },
-    HeatingActuator: {
-      color: { background: "#5A87FA" },
-    },
-    UnderFloorHeating: {
-      color: { background: "#0D47A1" },
-    },
-    Shutter: {
-      color: { background: "#4A5963" },
-    },
-    OnOffLight: {
-      color: { background: "#E4B62B" },
-    },
-    DimmableLight: {
-      color: { background: "#E4B62B" },
+    width: 1.5,
+    font: {
+      align: "horizontal",
+      color: "#66788a",
+      size: 11,
+      face: "system-ui, sans-serif",
+      strokeWidth: 0,
     },
   },
   interaction: {
-    selectable: false,
-    selectConnectedEdges: false,
+    hover: true,
+    dragView: true,
+    selectConnectedEdges: true,
+    zoomView: false,
+    keyboard: false,
   },
-  layout: {
-    randomSeed: "1:1",
-  },
-  nodes: {
-    shape: "box",
-    size: 25,
-    font: {
-      size: 14,
-      color: "#fff",
-    },
-    margin: {
-      top: 10,
-      bottom: 10,
-      left: 10,
-      right: 10,
-    },
-    borderWidth: 0,
-    mass: 1.3,
-    chosen: false,
-  },
-  physics: {
-    enabled: false,
-  },
+  physics: { enabled: false },
 };

@@ -1,6 +1,6 @@
 {
   "name": "wiser-zigbee-card",
-  "version": "2.1.2",
+  "version": "3.0.0",
   "description": "Wiser Zigbee Card",
   "keywords": [
     "home-assistant",
@@ -38,6 +38,7 @@
     "@rollup/plugin-typescript": "^11.1.6",
     "@types/color": "^3.0.6",
     "@types/hammerjs": "^2.0.45",
+    "@webcomponents/scoped-custom-element-registry": "^0.0.10",
     "eslint": "^9.6.0",
     "prettier": "^3.3.2",
     "rollup": "^4.18.0",
@@ -48,6 +49,9 @@
     "start": "rollup -c rollup.config.dev.js --watch --bundleConfigAsCjs",
     "build": "npm run lint && npm run rollup",
     "lint": "prettier --write .",
-    "rollup": "rollup -c --bundleConfigAsCjs"
+    "rollup": "rollup -c --bundleConfigAsCjs",
+    "images": "node scripts/build-device-images.cjs",
+    "prerollup": "npm run images",
+    "prestart": "npm run images"
   }
 }

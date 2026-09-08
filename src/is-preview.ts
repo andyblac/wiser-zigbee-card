@@ -1,14 +1,14 @@
-export const is_preview = () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let root: any = document.querySelector("home-assistant");
-  root = root && root.shadowRoot;
-  root = root && root.querySelector("hui-dialog-edit-card");
-  root = root && root.shadowRoot;
-  root = root && root.querySelector("ha-dialog");
-  // root = root && root.querySelector("element-preview");
-  //root = root && root.querySelector("wiser-zigbee-card");
-  if (root) {
-    return true;
+// Follow the card's composed ancestry instead of assuming HA's dialog structure.
+export const is_preview = (element: Element): boolean => {
+  let current: Element | null = element;
+  while (current) {
+    if (
+      ["hui-card-preview", "hui-dialog-edit-card"].includes(current.localName)
+    )
+      return true;
+    const root = current.getRootNode();
+    current =
+      current.parentElement ?? (root instanceof ShadowRoot ? root.host : null);
   }
   return false;
 };

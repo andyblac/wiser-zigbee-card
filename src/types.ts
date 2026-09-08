@@ -11,7 +11,7 @@ declare global {
   }
 }
 
-// TODO Add your configuration elements here for type-checking
+export type NetworkOrientation = "vertical" | "horizontal";
 export interface WiserZigbeeCardConfig extends LovelaceCardConfig {
   type: string;
   name?: string;
@@ -19,7 +19,14 @@ export interface WiserZigbeeCardConfig extends LovelaceCardConfig {
   auto_update: boolean;
   log_seed: boolean;
   layout_seed: string;
-  layout_data?: string;
+  map_only?: boolean;
+  map_height?: number;
+  show_layout_export?: boolean;
+  show_device_list?: boolean;
+  orientation?: NetworkOrientation;
+  layout_orientation?: NetworkOrientation;
+  layout_id?: string;
+  layout_data?: Record<string, { x: number; y: number }> | "";
 }
 
 export interface node {

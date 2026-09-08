@@ -1,204 +1,257 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { LitElement, html, TemplateResult, css, CSSResultGroup } from "lit";
+import { LitElement, html, TemplateResult, css } from "lit";
 import {
   HomeAssistant,
   fireEvent,
   LovelaceCardEditor,
 } from "custom-card-helpers";
-
-import { ScopedRegistryHost } from "@lit-labs/scoped-registry-mixin";
-import { WiserZigbeeCardConfig } from "./types";
+import { WiserZigbeeCardConfig, NetworkOrientation } from "./types";
 import { customElement, property, state } from "lit/decorators.js";
-import { formfieldDefinition } from "../elements/formfield";
-import { selectDefinition } from "../elements/select";
-import { switchDefinition } from "../elements/switch";
-import { textfieldDefinition } from "../elements/textfield";
-
 import { fetchHubs } from "./data/websockets";
-
 import { CARD_VERSION } from "./const";
+import { localize } from "./localize/localize";
+import { watchNativeElements } from "./native-ui";
 
 @customElement("wiser-zigbee-card-editor")
 export class WiserZigbeeCardEditor
-  extends ScopedRegistryHost(LitElement)
+  extends LitElement
   implements LovelaceCardEditor
 {
   @property({ attribute: false }) public hass?: HomeAssistant;
-
   @state() private _config?: WiserZigbeeCardConfig;
-  @state() private _helpers?: any;
-  @state() private _hubs?: string[];
-
-  private _initialized = false;
-
-  static elementDefinitions = {
-    ...textfieldDefinition,
-    ...selectDefinition,
-    ...switchDefinition,
-    ...formfieldDefinition,
-  };
+  @state() private _hubs: string[] = [];
+  @state() private _formReady = !!customElements.get("ha-form");
+  private loadingForm?: Promise<void>;
+  private readonly boundLayoutSaveHandler = this.save_layout.bind(this);
+  private readonly computeLabel = (schema: { name: string }) =>
+    this.t(
+      schema.name === "name"
+        ? "common.title"
+        : schema.name === "hub"
+          ? "card.hub"
+          : `editor.${schema.name}`,
+    );
+  private t(key: string): string {
+    return localize(key, this.hass);
+  }
 
   public setConfig(config: WiserZigbeeCardConfig): void {
-    this._config = config;
-    if (this._config.auto_update == undefined) {
-      this._config = {
-        ...this._config,
-        ["auto_update"]: true,
-      };
-    }
-
-    this.loadCardHelpers();
+    this._config = { ...config, auto_update: config.auto_update ?? true };
+    void this.loadNativeForm();
   }
-
-  connectedCallback() {
+  connectedCallback(): void {
     super.connectedCallback();
-    const boundLayoutSaveHandler = this.save_layout.bind(this);
-    window.addEventListener("wiser-zigbee-save-layout", boundLayoutSaveHandler);
+    watchNativeElements(this);
+    window.addEventListener(
+      "wiser-zigbee-save-layout",
+      this.boundLayoutSaveHandler,
+    );
   }
-  disconnectedCallback() {
-    window.removeEventListener("wiser-zigbee-save-layout", this.save_layout);
+  disconnectedCallback(): void {
+    window.removeEventListener(
+      "wiser-zigbee-save-layout",
+      this.boundLayoutSaveHandler,
+    );
     super.disconnectedCallback();
   }
-
-  protected shouldUpdate(): boolean {
-    if (!this._initialized) {
-      this._initialize();
-    }
-
-    return true;
-  }
-
-  get _name(): string {
-    return this._config?.name || "";
-  }
-
-  get _hub(): string {
-    return this._config?.hub || "";
-  }
-
-  get _auto_update(): boolean {
-    return this._config?.auto_update || false;
-  }
-
-  async loadData(): Promise<void> {
-    if (this.hass) {
-      this._hubs = await fetchHubs(this.hass);
+  protected updated(changed): void {
+    if (changed.has("hass") && this.hass && !changed.get("hass")) {
+      void fetchHubs(this.hass)
+        .then((hubs) => {
+          this._hubs = hubs;
+        })
+        .catch(() => {
+          this._hubs = [];
+        });
     }
   }
-
-  protected render(): TemplateResult | void {
-    if (!this.hass || !this._helpers || !this._config || !this._hubs) {
-      return html``;
-    }
-
-    return html`
-      ${this.hubSelector()}
-      <mwc-textfield
-        label="Title (optional)"
-        .value=${this._name}
-        .configValue=${"name"}
-        @input=${this._valueChanged}
-      ></mwc-textfield>
-      <mwc-formfield .label=${"Auto refresh"}>
-        <mwc-switch
-          .checked=${this._auto_update === true}
-          .configValue=${"auto_update"}
-          @change=${this._valueChanged}
-        ></mwc-switch>
-      </mwc-formfield>
-      <br />
-      <div class="version">Version: ${CARD_VERSION}</div>
-    `;
-  }
-
-  private hubSelector() {
-    const hubs = this._hubs ? this._hubs : [];
-    if (hubs.length > 1) {
-      return html`
-        <mwc-select
-          naturalMenuWidth
-          fixedMenuPosition
-          label="Wiser Hub (Optional)"
-          .configValue=${"hub"}
-          .value=${this._hub ? this._hub : hubs[0]}
-          @selected=${this._valueChanged}
-          @closed=${(ev) => ev.stopPropagation()}
-        >
-          ${this._hubs?.map((hub) => {
-            return html`<mwc-list-item .value=${hub}>${hub}</mwc-list-item>`;
-          })}
-        </mwc-select>
-      `;
-    }
-    return html``;
-  }
-
-  private _initialize(): void {
-    if (this.hass === undefined) return;
-    if (this._config === undefined) return;
-    if (this._helpers === undefined) return;
-    this._initialized = true;
-  }
-
-  private async loadCardHelpers(): Promise<void> {
-    this._helpers = await (window as any).loadCardHelpers();
-    await this.loadData();
-  }
-
-  private save_layout(ev): void {
-    if (!this._config) {
+  private async loadNativeForm(): Promise<void> {
+    if (customElements.get("ha-form")) {
+      this._formReady = true;
       return;
     }
+    if (this.loadingForm) return this.loadingForm;
+    this.loadingForm = (async () => {
+      const helpers = await (window as any).loadCardHelpers();
+      // The native button editor imports ha-form and its native selectors.
+      const card = helpers.createCardElement({ type: "button" });
+      await card.constructor.getConfigElement();
+      await customElements.whenDefined("ha-form");
+      this._formReady = true;
+    })();
+    try {
+      await this.loadingForm;
+    } catch {
+      this.loadingForm = undefined;
+    }
+  }
+
+  protected render(): TemplateResult {
+    if (!this.hass || !this._config) return html``;
+    if (!this._formReady) return html`<p>${this.t("editor.loading")}</p>`;
+    const data = {
+      ...this._config,
+      name: this._config.name ?? this.t("card.title"),
+      map_only: this._config.map_only ?? false,
+      map_height: this._config.map_height ?? 340,
+      show_layout_export: this._config.show_layout_export ?? true,
+      show_device_list: this._config.show_device_list ?? true,
+    };
+    const fields = [
+      ...(this._hubs.length > 1
+        ? [
+            {
+              name: "hub",
+              selector: { select: { options: this._hubs, mode: "dropdown" } },
+            },
+          ]
+        : []),
+      { name: "name", selector: { text: {} } },
+      {
+        name: "map_height",
+        selector: {
+          number: {
+            min: 100,
+            max: 2000,
+            step: 1,
+            mode: "box",
+            unit_of_measurement: "px",
+          },
+        },
+      },
+    ];
+    const switches = [
+      { name: "auto_update", selector: { boolean: {} } },
+      { name: "map_only", selector: { boolean: {} } },
+      {
+        name: "show_layout_export",
+        selector: { boolean: {} },
+        disabled: data.map_only,
+      },
+      {
+        name: "show_device_list",
+        selector: { boolean: {} },
+        disabled: data.map_only,
+      },
+    ];
+    return html` <ha-form
+        .hass=${this.hass}
+        .data=${data}
+        .schema=${fields}
+        .computeLabel=${this.computeLabel}
+        @value-changed=${this.valueChanged}
+      ></ha-form>
+      <div class="orientation-control">
+        <div id="orientation-label">${this.t("editor.orientation")}</div>
+        ${customElements.get("ha-control-select")
+          ? html` <ha-control-select
+              .label=${this.t("editor.orientation")}
+              .value=${this._config.orientation ?? "horizontal"}
+              .options=${["horizontal", "vertical"].map((value) => ({
+                value,
+                label: this.t(`editor.${value}`),
+              }))}
+              @value-changed=${(event: CustomEvent) => {
+                event.stopPropagation();
+                this.setOrientation(event.detail.value);
+              }}
+            ></ha-control-select>`
+          : html` <ha-form
+              .hass=${this.hass}
+              .data=${{ orientation: this._config.orientation ?? "horizontal" }}
+              .schema=${[
+                {
+                  name: "orientation",
+                  selector: {
+                    select: {
+                      options: ["horizontal", "vertical"].map((value) => ({
+                        value,
+                        label: this.t(`editor.${value}`),
+                      })),
+                      mode: "dropdown",
+                    },
+                  },
+                },
+              ]}
+              .computeLabel=${this.computeLabel}
+              @value-changed=${this.valueChanged}
+            ></ha-form>`}
+      </div>
+      <ha-form
+        .hass=${this.hass}
+        .data=${data}
+        .schema=${switches}
+        .computeLabel=${this.computeLabel}
+        @value-changed=${this.valueChanged}
+      ></ha-form>
+      <div class="version">${this.t("common.version")}: ${CARD_VERSION}</div>`;
+  }
+
+  private setOrientation(orientation: NetworkOrientation): void {
+    if (
+      !this._config ||
+      !["horizontal", "vertical"].includes(orientation) ||
+      (this._config.orientation ?? "horizontal") === orientation
+    )
+      return;
+    this._config = { ...this._config, orientation };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+  private valueChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    if (!this._config || !ev.detail.value) return;
+    const next = { ...this._config, ...ev.detail.value };
+    if (next.hub !== this._config.hub) {
+      delete next.layout_data;
+      delete next.layout_orientation;
+    }
+    // Keep the implicit default translated when other form fields change.
+    if (this._config.name == null && next.name === this.t("card.title"))
+      delete next.name;
+    this._config = next;
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+  private save_layout(ev): void {
+    if (
+      !this._config ||
+      (ev.detail.hub ?? "") !== (this._config.hub ?? "") ||
+      (ev.detail.orientation ?? "horizontal") !==
+        (this._config.orientation ?? "horizontal") ||
+      (ev.detail.layout_id ?? "") !== (this._config.layout_id ?? "") ||
+      (ev.detail.name ?? "Wiser Zigbee Network") !==
+        (this._config.name ?? "Wiser Zigbee Network")
+    )
+      return;
     this._config = {
       ...this._config,
-      ["layout_data"]: ev.detail.layout_data,
+      layout_data: ev.detail.layout_data,
+      layout_orientation: ev.detail.orientation ?? "horizontal",
     };
     fireEvent(this, "config-changed", { config: this._config });
   }
-
-  private _valueChanged(ev): void {
-    if (!this._config || !this.hass) {
-      return;
+  static styles = css`
+    :host {
+      color: var(--primary-text-color);
     }
-    const target = ev.target;
-    if (this[`_${target.configValue}`] === target.value) {
-      return;
+    .orientation-control {
+      margin: 24px 0;
     }
-    if (target.configValue) {
-      // If hub changes, delete layout data
-      if (target.configValue == "hub") {
-        this._config = {
-          ...this._config,
-          ["layout_data"]: "",
-        };
-      }
-      if (target.value === "") {
-        const tmpConfig = { ...this._config };
-        delete tmpConfig[target.configValue];
-        this._config = tmpConfig;
-      } else {
-        this._config = {
-          ...this._config,
-          [target.configValue]:
-            target.checked !== undefined ? target.checked : target.value,
-        };
-      }
+    #orientation-label {
+      margin-bottom: 12px;
     }
-    fireEvent(this, "config-changed", { config: this._config });
-  }
-
-  static styles: CSSResultGroup = css`
-    mwc-select,
-    mwc-textfield {
-      margin-bottom: 16px;
-      display: block;
+    ha-control-select {
+      --control-select-border-radius: var(--ha-border-radius-pill, 24px);
+      --control-select-padding: 0px;
+      --control-select-button-border-radius: 0px;
+      --control-select-thickness: 48px;
+      --control-select-background: var(--primary-color);
+      --control-select-background-opacity: 0.18;
+      color: var(--primary-color);
+      overflow: hidden;
     }
-    mwc-formfield {
-      padding-bottom: 20px;
-      display: flex;
-    }
-    mwc-switch {
-      --mdc-theme-secondary: var(--switch-checked-color);
+    .version {
+      margin-top: 24px;
+      color: var(--secondary-text-color);
+      font-size: 12px;
     }
   `;
 }

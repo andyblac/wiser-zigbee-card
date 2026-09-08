@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Wiser card preview</title>
+  <style>
+    :root {
+      font-family: system-ui, sans-serif;
+      color-scheme: dark;
+      --primary-text-color: #e4e9f0;
+      --secondary-text-color: #949eae;
+      --card-background-color: #191d25;
+      --secondary-background-color: #141820;
+      --divider-color: #303641;
+    }
+    body {
+      margin: 0;
+      padding: 32px 16px;
+      background: #0d1016;
+    }
+    main {
+      max-width: 720px;
+      margin: auto;
+    }
+    ha-card {
+      display: block;
+      border: 1px solid var(--divider-color);
+    }
+    .preview-note {
+      font-size: 12px;
+      color: #949eae;
+      margin-bottom: 16px;
+    }
+    button {
+      cursor: pointer;
+    }
+  </style>
+  <main>
+    <div class="preview-note">
+      Wiser card · Sample network
+      <button
+        onclick="document.documentElement.style.cssText='color-scheme:light;--primary-text-color:#273448;--secondary-text-color:#6d7988;--card-background-color:#fff;--secondary-background-color:#f4f6f9;--divider-color:#e1e5eb';document.querySelector('wiser-zigbee-card').hass={...window.mockHass}"
+      >
+        Light theme
+      </button>
+    </div>
+    <wiser-zigbee-card></wiser-zigbee-card>
+  </main>
+  <script>
+    window.loadCardHelpers = async () => ({});
+    const labels = [
+      "Wiser Hub",
+      "Smart Plug\n(Kitchen)",
+      "RoomStat-16\n(Media Room)",
+      "RoomStat-2\n(Office)",
+      "RoomStat-9\n(Lounge)",
+      "RoomStat-8\n(Spare Bedroom)",
+      "RoomStat-6\n(Andys Bedroom)",
+      "Temperature Sensor\n(Kitchen)",
+    ];
+    const data = {
+      nodes: labels.map((label, id) => ({
+        id,
+        label,
+        group:
+          id === 0
+            ? "Controller"
+            : id === 1
+              ? "SmartPlug"
+              : id === 7
+                ? "TemperatureHumiditySensor"
+                : "RoomStat",
+      })),
+      edges: [
+        { id: "0", from: 1, to: 0, label: "Online" },
+        ...[2, 3, 4, 5, 6].map((id) => ({
+          id: String(id),
+          from: id,
+          to: 1,
+          label: "Very Good (92%)",
+        })),
+        { id: "7", from: 7, to: 0, label: "Very Good (100%)" },
+      ],
+    };
+    // Standalone test fixture for HA-owned labels; never bundled with the card.
+    const previewLanguage =
+      new URLSearchParams(location.search).get("lang") || "en-GB";
+    const previewNativeLabels = {
+      "ui.common.refresh": {
+        de: "Aktualisieren",
+        fr: "Actualiser",
+        en: "Refresh",
+      },
+      "ui.common.close": { de: "Schließen", fr: "Fermer", en: "Close" },
+      "state.default.unknown": {
+        de: "Unbekannt",
+        fr: "Inconnu",
+        en: "Unknown",
+      },
+    };
+    window.mockHass = {
+      config: { components: ["wiser"] },
+      connection: { subscribeMessage: async () => () => {} },
+      callWS: async (msg) =>
+        msg.type === "wiser/hubs" ? ["Demo"] : JSON.parse(JSON.stringify(data)),
+      language: previewLanguage,
+      localize: (key) =>
+        previewNativeLabels[key]?.[previewLanguage.split("-")[0]] ||
+        previewNativeLabels[key]?.en,
+      states: {},
+      themes: {},
+    };
+  </script>
+  <script src="../node_modules/@webcomponents/scoped-custom-element-registry/scoped-custom-element-registry.min.js"></script>
+  <script src="../dist/wiser-zigbee-card.js"></script>
+  <script>
+    const card = document.querySelector("wiser-zigbee-card");
+    card.setConfig({
+      type: "custom:wiser-zigbee-card",
+      hub: "Demo",
+      auto_update: true,
+      map_only: new URLSearchParams(location.search).has("map_only"),
+      orientation:
+        new URLSearchParams(location.search).get("orientation") === "vertical"
+          ? "vertical"
+          : "horizontal",
+    });
+    card.hass = window.mockHass;
+    const editorPanel = document.createElement("details");
+    editorPanel.style.cssText =
+      "margin:24px auto;max-width:720px;padding:16px;color:var(--primary-text-color);background:var(--card-background-color);border-radius:16px";
+    document.body.append(editorPanel);
+    const summary = document.createElement("summary");
+    summary.textContent = "Card editor";
+    editorPanel.append(summary);
+    if (!customElements.get("ha-form")) {
+      const note = document.createElement("p");
+      note.textContent =
+        "Native editor controls are available inside Home Assistant. Preview map-only with ?map_only=1 and vertical layout with ?orientation=vertical.";
+      editorPanel.append(note);
+    } else {
+      const editor = document.createElement("wiser-zigbee-card-editor");
+      editorPanel.append(editor);
+      document.body.append(editorPanel);
+      editor.hass = window.mockHass;
+      editor.setConfig({
+        type: "custom:wiser-zigbee-card",
+        hub: "Demo",
+        auto_update: true,
+      });
+      editor.addEventListener("config-changed", (event) =>
+        card.setConfig(event.detail.config),
+      );
+    }
+  </script>
+</html>
