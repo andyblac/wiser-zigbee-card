@@ -4,6 +4,7 @@ import type { zigbeeData, NetworkOrientation } from "./types";
 export function arrangeNetwork(
   data: zigbeeData,
   orientation: NetworkOrientation = "horizontal",
+  positions?: Record<string, { x: number; y: number }>,
 ): zigbeeData {
   const levels = new Map<number, number>();
   const roots = data.nodes.filter((node) => node.group === "Controller");
@@ -30,7 +31,14 @@ export function arrangeNetwork(
   }
   const nodes: typeof data.nodes = [];
   for (const [level, column] of columns) {
-    column.sort((a, b) => a.label.localeCompare(b.label));
+    const axis = orientation === "vertical" ? "x" : "y";
+    column.sort((a, b) => {
+      const first = positions?.[a.id]?.[axis];
+      const second = positions?.[b.id]?.[axis];
+      if (Number.isFinite(first) && Number.isFinite(second) && first !== second)
+        return first! - second!;
+      return a.label.localeCompare(b.label);
+    });
     column.forEach((node, index) =>
       nodes.push({
         ...node,

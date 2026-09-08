@@ -267,6 +267,22 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   assert.equal(card.fitAfterHeightChange, false);
   card.updated(new Map());
   assert.equal(resizeCalls.length, 2, "Ordinary updates must not refit");
+  const beforeTidy = { position: { x: 180, y: -90 }, scale: 2.5 };
+  view = structuredClone(beforeTidy);
+  card.zoomReturnView = overview;
+  const beforeTidyFits = resizeCalls.length;
+  card.tidyLayout();
+  assert.deepEqual(view, beforeTidy, "Tidy preserves zoom and pan");
+  assert.deepEqual(
+    card.zoomReturnView,
+    overview,
+    "Tidy preserves zoom-out destination",
+  );
+  assert.equal(
+    resizeCalls.length,
+    beforeTidyFits,
+    "Tidy must not trigger Fit view",
+  );
   console.log(
     "Refresh preserves latest zoom, pan, dragged positions and double-click return view.",
   );

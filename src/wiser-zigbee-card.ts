@@ -583,9 +583,12 @@ export class WiserZigbeeCard
   }
   private tidyLayout(): void {
     if (!this.zigbeeData) return;
-    this.zigbeeData = arrangeNetwork(this.zigbeeData, this.orientation);
+    this.zigbeeData = arrangeNetwork(
+      this.zigbeeData,
+      this.orientation,
+      this.network?.getPositions(),
+    );
     this.drawNetwork();
-    this.fitNetwork();
   }
   private get layoutKey(): string {
     const key = `wiser-zigbee-layout:${JSON.stringify([location.pathname, this.config?.hub ?? "", this.config?.name ?? "Wiser Zigbee Network", this.config?.layout_id ?? ""])}`;

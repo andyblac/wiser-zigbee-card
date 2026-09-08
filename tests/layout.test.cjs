@@ -83,3 +83,32 @@ assert.deepEqual(
   "Changing views preserves connections",
 );
 console.log("Vertical and horizontal layouts passed.");
+
+for (const orientation of ["horizontal", "vertical"]) {
+  const axis = orientation === "vertical" ? "x" : "y";
+  const dragged = {
+    2: { x: 210, y: 180 },
+    3: { x: -160, y: -150 },
+  };
+  const tidy = arrangeNetwork(input, orientation, dragged);
+  const first = tidy.nodes.find((node) => node.id === 3);
+  const second = tidy.nodes.find((node) => node.id === 2);
+  assert.ok(first[axis] < second[axis], "Tidy retains dragged peer order");
+  assert.equal(
+    second[axis] - first[axis],
+    orientation === "vertical" ? 170 : 110,
+  );
+  const again = arrangeNetwork(
+    tidy,
+    orientation,
+    Object.fromEntries(
+      tidy.nodes.map((node) => [node.id, { x: node.x, y: node.y }]),
+    ),
+  );
+  assert.deepEqual(
+    again,
+    tidy,
+    "Repeated tidy keeps the same order and spacing",
+  );
+}
+console.log("Tidy preserves dragged order in both orientations.");
