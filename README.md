@@ -1,6 +1,6 @@
 # Wiser Zigbee Card
 
-A compact network map for the Wiser Home Assistant integration. Device images and short room names replace coloured text boxes. Long-press a device to see its full name and connection quality; use **Link labels** to show compact percentages, or status when no percentage is available. Full signal descriptions remain in device details. Labels use 12 px text, reserve space and move along their links to avoid other labels and devices. On very dense maps, labels with no free space remain hidden until there is room; their details remain available by long-pressing a device. The expandable device list also exposes names and links without using the canvas.
+A compact network map for the Wiser Home Assistant integration. Device images and short room names replace coloured text boxes. Long-press a device to see its full name and connection quality; use **Link labels** to show compact percentages, or status when no percentage is available. Full signal descriptions remain in device details. Labels use 14 px text with HA tooltip theme colours, reserve space and move along their links to avoid other labels and devices. On very dense maps, labels with no free space remain hidden until there is room; their details remain available by long-pressing a device. The expandable device list also exposes names and links without using the canvas.
 
 ## Install the updated bundle
 

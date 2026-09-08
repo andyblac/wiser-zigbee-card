@@ -76,8 +76,8 @@ export function placeLinkLabels(
         const rect = {
           left: center.x - label.width / 2 - 6,
           right: center.x + label.width / 2 + 6,
-          top: center.y - 11,
-          bottom: center.y + 11,
+          top: center.y - 13,
+          bottom: center.y + 13,
         };
         if (
           rect.left < 4 ||

@@ -514,7 +514,7 @@ export class WiserZigbeeCard
       });
     }
     ctx.save();
-    ctx.font = `${12 / scale}px system-ui, sans-serif`;
+    ctx.font = `${14 / scale}px system-ui, sans-serif`;
     const labels: LinkLabel[] = [];
     for (const edge of this.zigbeeData.edges) {
       if (!positions[edge.from] || !positions[edge.to]) continue;
@@ -534,10 +534,22 @@ export class WiserZigbeeCard
       map.clientHeight,
       this.orientation === "vertical",
     );
+    const theme = getComputedStyle(this);
+    const color = (name: string) => theme.getPropertyValue(name).trim();
+    // Use the same theme tokens as HA's native tooltip for canvas labels.
     const background =
-      getComputedStyle(this)
-        .getPropertyValue("--card-background-color")
-        .trim() || "#fff";
+      color("--ha-tooltip-background-color") ||
+      color("--ha-color-surface-default") ||
+      color("--card-background-color") ||
+      "#fff";
+    const foreground =
+      color("--ha-tooltip-text-color") ||
+      color("--primary-text-color") ||
+      this.textColor;
+    const radius =
+      parseFloat(
+        color("--ha-tooltip-border-radius") || color("--ha-border-radius-md"),
+      ) || 4;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (const label of placed) {
@@ -551,13 +563,16 @@ export class WiserZigbeeCard
       ctx.lineTo(center.x, center.y);
       ctx.stroke();
       ctx.fillStyle = background;
-      ctx.fillRect(
+      ctx.beginPath();
+      ctx.roundRect(
         top.x,
         top.y,
         (label.right - label.left) / scale,
         (label.bottom - label.top) / scale,
+        Math.min(radius, (label.bottom - label.top) / 2) / scale,
       );
-      ctx.fillStyle = this.textColor;
+      ctx.fill();
+      ctx.fillStyle = foreground;
       ctx.fillText(label.text, center.x, center.y);
     }
     ctx.restore();
