@@ -17,10 +17,10 @@
   "card.updating": "Updating network…",
   "card.empty": "No devices found",
   "card.unknown_device": "Unknown device",
-  "card.hint": "Select a device for details. Double-click to zoom in or out. Drag to rearrange. Long-press for More info.",
-  "map.accessible_only": "Interactive Zigbee network map. Double-click a device or empty area to zoom in, and double-click again to zoom out. Drag to rearrange. Long-press for More info.",
-  "map.accessible_list": "Interactive Zigbee network map. Device and connection details are available in the list below. Long-press for More info.",
-  "map.accessible_details": "Interactive Zigbee network map. Select a device to inspect its connections. Long-press for More info.",
+  "card.hint": "Double-click to zoom in or out. Drag to rearrange. Long-press a device for Zigbee details.",
+  "map.accessible_only": "Interactive Zigbee network map. Double-click a device or empty area to zoom in, and double-click again to zoom out. Drag to rearrange. Long-press a device for Zigbee details.",
+  "map.accessible_list": "Interactive Zigbee network map. Device and connection details are available in the list below. Long-press a device for Zigbee details.",
+  "map.accessible_details": "Interactive Zigbee network map. Long-press a device for Zigbee details.",
   "layout.saved": "Layout saved in this browser.",
   "layout.storage_error": "Browser storage unavailable. Copy the layout into your card configuration.",
   "layout.export_title": "Layout for other browsers",
@@ -29,7 +29,6 @@
   "layout.yaml": "Layout YAML",
   "layout.device_list": "All devices & connections",
   "editor.auto_update": "Auto refresh",
-  "editor.map_only": "Map only",
   "editor.show_layout_export": "Show layout for other browsers",
   "editor.show_device_list": "Show all devices & connections",
   "editor.orientation": "Network view",
@@ -52,5 +51,6 @@
   "zigbee.device_lqi": "Device LQI",
   "zigbee.hub_rssi": "Hub RSSI",
   "zigbee.hub_lqi": "Hub LQI",
-  "editor.map_height": "Map height"
+  "editor.map_height": "Map height",
+  "card.show_detailed_view": "Show detailed view"
 }

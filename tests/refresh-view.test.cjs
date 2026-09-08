@@ -38,6 +38,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   "./native-ui": {},
   "./editor": {},
   "./fit": load("src/fit.ts"),
+  "./link-labels": load("src/link-labels.ts"),
   "./device-info": { deviceInfoEntity: async () => "sensor.office_signal" },
 });
 (async () => {
@@ -62,6 +63,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
       view = { position: next.position, scale: next.scale };
     },
     selectNodes: () => {},
+    unselectAll: () => {},
     setOptions: (options) => {
       labelOptions = options;
     },
@@ -123,47 +125,65 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   prevented = false;
   card.panZoomedView(wheel);
   assert.equal(prevented, false, "Overview leaves page scrolling available");
-  card.deviceClick(1);
+  card.deviceClick();
+  await Promise.resolve();
+  assert.equal(card.selected, undefined, "Tap does not open details");
+  assert.equal(card.selectedEntity, undefined);
+  card.deviceHold(undefined);
+  await Promise.resolve();
+  assert.equal(card.selected, undefined);
+  card.deviceHold(1);
+  card.deviceClick();
   await Promise.resolve();
   assert.equal(
-    infoEvents.length,
-    0,
-    "Tap shows inline details without a dialog",
+    card.selectedEntity,
+    undefined,
+    "Dragging cancels pending details",
   );
+  card.deviceHold(1);
+  await Promise.resolve();
+  assert.equal(card.selected, 1);
   assert.equal(
     card.selectedEntity,
     "sensor.office_signal",
-    "Tap resolves live Zigbee attributes",
+    "Long hold resolves inline Zigbee details",
   );
-  card.deviceHold(undefined);
-  await Promise.resolve();
-  assert.equal(infoEvents.length, 0, "Holding empty canvas does not open info");
-  card.deviceHold(1);
-  card.cancelDeviceInfo();
-  await Promise.resolve();
-  assert.equal(infoEvents.length, 0, "Cancelled holds do not open stale info");
+  assert.deepEqual(infoEvents, [], "HA More info is never opened");
+  const beforeInfo = card.infoReturnView;
+  view = { position: { x: 700, y: 900 }, scale: 2 };
   card.deviceHold(1);
   await Promise.resolve();
-  assert.deepEqual(infoEvents, [
-    { type: "hass-more-info", detail: { entityId: "sensor.office_signal" } },
-  ]);
+  assert.equal(
+    card.infoReturnView,
+    beforeInfo,
+    "Switching devices preserves original return view",
+  );
+  card.closeDeviceInfo();
+  assert.deepEqual(view, {
+    position: beforeInfo.position,
+    scale: beforeInfo.scale,
+  });
+  assert.equal(card.selected, undefined);
+  assert.equal(card.infoReturnView, undefined);
+  card.deviceHold(1);
+  view = { position: { x: 800, y: 600 }, scale: 2 };
+  card.closeDeviceInfo(false);
+  assert.deepEqual(
+    view,
+    { position: { x: 800, y: 600 }, scale: 2 },
+    "Dragging dismisses without moving the canvas beneath the pointer",
+  );
   const beforeLabels = { ...view };
   card.toggleLabels();
-  assert.equal(graphData.edges[0].label, "Very good (92%)");
+  assert.equal(card.showLabels, true);
+  assert.equal(
+    graphData.edges[0].label,
+    "",
+    "Native midpoint labels disabled in favour of collision-aware drawing",
+  );
   assert.deepEqual(view, beforeLabels);
-  assert.equal(labelOptions.edges.scaling.label.drawThreshold, 0);
-  assert.ok(labelOptions.edges.font.size * view.scale >= 11);
   card.toggleLabels();
-  assert.equal(graphData.edges[0].label, "");
-  for (const scale of [0.25, 0.5, 1, 2, 4]) {
-    card.updateLinkLabelStyle(scale);
-    assert.equal(
-      labelOptions.edges.font.size * scale,
-      11,
-      "Labels stay 11 screen pixels at every zoom",
-    );
-    assert.equal(labelOptions.edges.font.strokeWidth, 0);
-  }
+  assert.equal(card.showLabels, false);
   let focused;
   card.network.focus = (id, options) => {
     focused = { id, options };
@@ -204,11 +224,16 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     "Mode toggle preserves the existing graph",
   );
   assert.deepEqual(view, originalView);
-  assert.equal(card.mapHeight, 340);
+  assert.equal(card.mapHeight, null);
   card.config.map_height = 500;
   assert.equal(card.mapHeight, 500);
   card.config.map_height = null;
-  assert.equal(card.mapHeight, 340);
+  assert.equal(card.mapHeight, null);
+  assert.ok(card.getGridOptions().rows > 0);
+  card.config.map_height = "";
+  assert.equal(card.mapHeight, null);
+  card.config.map_height = 340;
+  assert.equal(card.getGridOptions().rows, undefined);
   card.config.map_height = -100;
   assert.equal(card.mapHeight, 100);
   const resizeCalls = [];

@@ -28,7 +28,9 @@ export class WiserZigbeeCardEditor
         ? "common.title"
         : schema.name === "hub"
           ? "card.hub"
-          : `editor.${schema.name}`,
+          : schema.name === "show_detailed_view"
+            ? "card.show_detailed_view"
+            : `editor.${schema.name}`,
     );
   private t(key: string): string {
     return localize(key, this.hass);
@@ -91,8 +93,8 @@ export class WiserZigbeeCardEditor
     const data = {
       ...this._config,
       name: this._config.name ?? this.t("card.title"),
-      map_only: this._config.map_only ?? false,
-      map_height: this._config.map_height ?? 340,
+      show_detailed_view: !(this._config.map_only ?? false),
+      map_height: this._config.map_height ?? null,
       show_layout_export: this._config.show_layout_export ?? true,
       show_device_list: this._config.show_device_list ?? true,
     };
@@ -121,16 +123,16 @@ export class WiserZigbeeCardEditor
     ];
     const switches = [
       { name: "auto_update", selector: { boolean: {} } },
-      { name: "map_only", selector: { boolean: {} } },
+      { name: "show_detailed_view", selector: { boolean: {} } },
       {
         name: "show_layout_export",
         selector: { boolean: {} },
-        disabled: data.map_only,
+        disabled: !data.show_detailed_view,
       },
       {
         name: "show_device_list",
         selector: { boolean: {} },
-        disabled: data.map_only,
+        disabled: !data.show_detailed_view,
       },
     ];
     return html` <ha-form
@@ -140,49 +142,38 @@ export class WiserZigbeeCardEditor
         .computeLabel=${this.computeLabel}
         @value-changed=${this.valueChanged}
       ></ha-form>
-      <div class="orientation-control">
-        <div id="orientation-label">${this.t("editor.orientation")}</div>
-        ${customElements.get("ha-control-select")
-          ? html` <ha-control-select
-              .label=${this.t("editor.orientation")}
-              .value=${this._config.orientation ?? "horizontal"}
-              .options=${["horizontal", "vertical"].map((value) => ({
-                value,
-                label: this.t(`editor.${value}`),
-              }))}
-              @value-changed=${(event: CustomEvent) => {
-                event.stopPropagation();
-                this.setOrientation(event.detail.value);
-              }}
-            ></ha-control-select>`
-          : html` <ha-form
-              .hass=${this.hass}
-              .data=${{ orientation: this._config.orientation ?? "horizontal" }}
-              .schema=${[
-                {
-                  name: "orientation",
-                  selector: {
-                    select: {
-                      options: ["horizontal", "vertical"].map((value) => ({
-                        value,
-                        label: this.t(`editor.${value}`),
-                      })),
-                      mode: "dropdown",
-                    },
-                  },
-                },
-              ]}
-              .computeLabel=${this.computeLabel}
-              @value-changed=${this.valueChanged}
-            ></ha-form>`}
-      </div>
       <ha-form
+        class="orientation-control"
         .hass=${this.hass}
-        .data=${data}
-        .schema=${switches}
+        .data=${{ orientation: this._config.orientation ?? "horizontal" }}
+        .schema=${[
+          {
+            name: "orientation",
+            selector: {
+              button_toggle: {
+                options: ["horizontal", "vertical"].map((value) => ({
+                  value,
+                  label: this.t(`editor.${value}`),
+                })),
+              },
+            },
+          },
+        ]}
         .computeLabel=${this.computeLabel}
         @value-changed=${this.valueChanged}
       ></ha-form>
+      <div class="switches">
+        ${switches.map(
+          (field) =>
+            html`<ha-form
+              .hass=${this.hass}
+              .data=${data}
+              .schema=${[field]}
+              .computeLabel=${this.computeLabel}
+              @value-changed=${this.valueChanged}
+            ></ha-form>`,
+        )}
+      </div>
       <div class="version">${this.t("common.version")}: ${CARD_VERSION}</div>`;
   }
 
@@ -199,7 +190,19 @@ export class WiserZigbeeCardEditor
   private valueChanged(ev: CustomEvent): void {
     ev.stopPropagation();
     if (!this._config || !ev.detail.value) return;
-    const next = { ...this._config, ...ev.detail.value };
+    const value = { ...ev.detail.value };
+    // The editor exposes the positive setting; retain existing YAML compatibility.
+    if ("show_detailed_view" in value) {
+      value.map_only = !value.show_detailed_view;
+      delete value.show_detailed_view;
+    }
+    // Persist the native number selector’s empty value as automatic sizing.
+    if (
+      "map_height" in value &&
+      (value.map_height == null || value.map_height === "")
+    )
+      value.map_height = null;
+    const next = { ...this._config, ...value };
     if (next.hub !== this._config.hub) {
       delete next.layout_data;
       delete next.layout_orientation;
@@ -232,21 +235,13 @@ export class WiserZigbeeCardEditor
     :host {
       color: var(--primary-text-color);
     }
+    .switches {
+      display: grid;
+      gap: 0;
+    }
     .orientation-control {
-      margin: 24px 0;
-    }
-    #orientation-label {
-      margin-bottom: 12px;
-    }
-    ha-control-select {
-      --control-select-border-radius: var(--ha-border-radius-pill, 24px);
-      --control-select-padding: 0px;
-      --control-select-button-border-radius: 0px;
-      --control-select-thickness: 48px;
-      --control-select-background: var(--primary-color);
-      --control-select-background-opacity: 0.18;
-      color: var(--primary-color);
-      overflow: hidden;
+      display: block;
+      margin: 16px 0 8px;
     }
     .version {
       margin-top: 24px;

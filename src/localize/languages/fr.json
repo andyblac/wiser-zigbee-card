@@ -17,10 +17,10 @@
   "card.updating": "Actualisation du réseau…",
   "card.empty": "Aucun appareil trouvé",
   "card.unknown_device": "Appareil inconnu",
-  "card.hint": "Sélectionnez un appareil pour afficher ses détails. Double-cliquez pour zoomer ou dézoomer. Faites glisser pour réorganiser. Appuyez longuement pour plus d’informations.",
-  "map.accessible_only": "Carte interactive du réseau Zigbee. Double-cliquez sur un appareil ou une zone vide pour zoomer, puis à nouveau pour dézoomer. Faites glisser pour réorganiser. Appuyez longuement pour plus d’informations.",
-  "map.accessible_list": "Carte interactive du réseau Zigbee. Les détails des appareils et des connexions figurent dans la liste ci-dessous. Appuyez longuement pour plus d’informations.",
-  "map.accessible_details": "Carte interactive du réseau Zigbee. Sélectionnez un appareil pour afficher ses connexions. Appuyez longuement pour plus d’informations.",
+  "card.hint": "Double-cliquez pour zoomer ou dézoomer. Faites glisser pour réorganiser. Appuyez longuement sur un appareil pour afficher ses détails Zigbee.",
+  "map.accessible_only": "Carte interactive du réseau Zigbee. Double-cliquez sur un appareil ou une zone vide pour zoomer, puis à nouveau pour dézoomer. Faites glisser pour réorganiser. Appuyez longuement sur un appareil pour afficher ses détails Zigbee.",
+  "map.accessible_list": "Carte interactive du réseau Zigbee. Les détails des appareils et des connexions figurent dans la liste ci-dessous. Appuyez longuement sur un appareil pour afficher ses détails Zigbee.",
+  "map.accessible_details": "Carte interactive du réseau Zigbee. Appuyez longuement sur un appareil pour afficher ses détails Zigbee.",
   "layout.saved": "Disposition enregistrée dans ce navigateur.",
   "layout.storage_error": "Stockage du navigateur indisponible. Copiez la disposition dans la configuration de votre carte.",
   "layout.export_title": "Disposition pour les autres navigateurs",
@@ -29,7 +29,6 @@
   "layout.yaml": "YAML de la disposition",
   "layout.device_list": "Tous les appareils et connexions",
   "editor.auto_update": "Actualisation automatique",
-  "editor.map_only": "Carte uniquement",
   "editor.show_layout_export": "Afficher la disposition pour les autres navigateurs",
   "editor.show_device_list": "Afficher tous les appareils et connexions",
   "editor.orientation": "Vue du réseau",
@@ -52,5 +51,6 @@
   "zigbee.device_lqi": "LQI de l’appareil",
   "zigbee.hub_rssi": "RSSI du hub",
   "zigbee.hub_lqi": "LQI du hub",
-  "editor.map_height": "Hauteur de la carte"
+  "editor.map_height": "Hauteur de la carte",
+  "card.show_detailed_view": "Afficher la vue détaillée"
 }

@@ -17,10 +17,10 @@
   "card.updating": "Netzwerk wird aktualisiert…",
   "card.empty": "Keine Geräte gefunden",
   "card.unknown_device": "Unbekanntes Gerät",
-  "card.hint": "Gerät für Details auswählen. Zum Vergrößern oder Verkleinern doppelklicken. Zum Anordnen ziehen. Für weitere Informationen gedrückt halten.",
-  "map.accessible_only": "Interaktive Zigbee-Netzwerkkarte. Zum Vergrößern auf ein Gerät oder eine freie Stelle doppelklicken, zum Verkleinern erneut doppelklicken. Zum Anordnen ziehen. Für weitere Informationen gedrückt halten.",
-  "map.accessible_list": "Interaktive Zigbee-Netzwerkkarte. Geräte- und Verbindungsdetails stehen in der Liste darunter. Für weitere Informationen gedrückt halten.",
-  "map.accessible_details": "Interaktive Zigbee-Netzwerkkarte. Gerät auswählen, um seine Verbindungen anzuzeigen. Für weitere Informationen gedrückt halten.",
+  "card.hint": "Zum Vergrößern oder Verkleinern doppelklicken. Zum Anordnen ziehen. Gerät für Zigbee-Details gedrückt halten.",
+  "map.accessible_only": "Interaktive Zigbee-Netzwerkkarte. Zum Vergrößern auf ein Gerät oder eine freie Stelle doppelklicken, zum Verkleinern erneut doppelklicken. Zum Anordnen ziehen. Gerät für Zigbee-Details gedrückt halten.",
+  "map.accessible_list": "Interaktive Zigbee-Netzwerkkarte. Geräte- und Verbindungsdetails stehen in der Liste darunter. Gerät für Zigbee-Details gedrückt halten.",
+  "map.accessible_details": "Interaktive Zigbee-Netzwerkkarte. Gerät für Zigbee-Details gedrückt halten.",
   "layout.saved": "Layout in diesem Browser gespeichert.",
   "layout.storage_error": "Browserspeicher nicht verfügbar. Kopieren Sie das Layout in Ihre Kartenkonfiguration.",
   "layout.export_title": "Layout für andere Browser",
@@ -29,7 +29,6 @@
   "layout.yaml": "Layout-YAML",
   "layout.device_list": "Alle Geräte und Verbindungen",
   "editor.auto_update": "Automatisch aktualisieren",
-  "editor.map_only": "Nur Karte",
   "editor.show_layout_export": "Layout für andere Browser anzeigen",
   "editor.show_device_list": "Alle Geräte und Verbindungen anzeigen",
   "editor.orientation": "Netzwerkansicht",
@@ -52,5 +51,6 @@
   "zigbee.device_lqi": "Geräte-LQI",
   "zigbee.hub_rssi": "Hub-RSSI",
   "zigbee.hub_lqi": "Hub-LQI",
-  "editor.map_height": "Kartenhöhe"
+  "editor.map_height": "Kartenhöhe",
+  "card.show_detailed_view": "Detailansicht anzeigen"
 }

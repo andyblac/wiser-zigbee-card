@@ -107,3 +107,18 @@ export function localizeSignal(
   )[match[1].replace(/[\s_-]/g, "").toLowerCase()];
   return key ? localize(`signal.${key}`, hass) + (match[2] || "") : label;
 }
+
+export function compactSignal(
+  label: string,
+  hass?: TranslationContext,
+): string {
+  const percent = label.match(/\(([\d.,]+)%\)\s*$/);
+  if (!percent) return localizeSignal(label, hass);
+  const value = Number(percent[1].replace(",", "."));
+  if (!Number.isFinite(value) || value < 0 || value > 100)
+    return localizeSignal(label, hass);
+  return new Intl.NumberFormat(languageFor(hass), {
+    style: "percent",
+    maximumFractionDigits: 1,
+  }).format(value / 100);
+}

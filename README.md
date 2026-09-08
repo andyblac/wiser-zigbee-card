@@ -1,6 +1,6 @@
 # Wiser Zigbee Card
 
-A compact network map for the Wiser Home Assistant integration. Device images and short room names replace coloured text boxes. Select a device to see its full name and connection quality; use **Link labels** to show quality on the map. The expandable device list also exposes names and links without using the canvas.
+A compact network map for the Wiser Home Assistant integration. Device images and short room names replace coloured text boxes. Long-press a device to see its full name and connection quality; use **Link labels** to show compact percentages, or status when no percentage is available. Full signal descriptions remain in device details. Labels use 12 px text, reserve space and move along their links to avoid other labels and devices. On very dense maps, labels with no free space remain hidden until there is room; their details remain available by long-pressing a device. The expandable device list also exposes names and links without using the canvas.
 
 ## Install the updated bundle
 
@@ -8,13 +8,15 @@ Replace your existing card JavaScript with `dist/wiser-zigbee-card.js` and reloa
 
 ## Device information
 
-Long-press a device (touch and hold, or hold the mouse button) to open the native Home Assistant More info dialog for its Wiser signal sensor, including the available model, firmware, serial number and Zigbee attributes. Matching uses the hub and device registry, so duplicate node IDs across hubs are kept separate. Disabled or missing signal sensors show the available name, device type, node ID and connections in the card instead. In Map only mode, selected-device Zigbee details appear in a scrollable overlay inside the card, so fixed-height dashboard layouts do not hide them. The selected device is centered in the visible map area above the panel without changing zoom. Close the panel or tap empty map space to dismiss it. Single-click shows Zigbee details in the card: device type, node and parent IDs, connections, plus channel, signal quality and device/hub RSSI and LQI when the signal sensor provides them. Single-click and double-click do not open the More info dialog.
+Long-press a device (touch and hold, or hold the mouse button) to show its Zigbee details in the card: device type, node and parent IDs, connections, plus channel, signal quality and device/hub RSSI and LQI when available. Matching uses the hub and device registry so duplicate node IDs across hubs remain separate. Missing or disabled signal sensors still show the available map details.
+
+In Map only mode, details appear in a scrollable overlay. The selected device is centered above the panel without changing zoom. Close the panel or tap the map to dismiss it and restore the zoom and position from before the long-press. Drag devices to rearrange them; dragging dismisses the panel and cancels pending details. Double-click zooms. These gestures do not open HA’s More info dialog.
 
 Paired RSSI/LQI zeros are omitted because aioWiserHeatAPI uses them as defaults for absent reception data. A zero LQI with a nonzero RSSI is retained.
 
 ## Map height
 
-Set **Map height** in the editor, pre-populated with **340 px**. It controls just the map area in both orientations and view modes. YAML: `map_height: 340`. Changing the height or card width automatically fits and centres the map while keeping device positions. Fit uses the smaller width/height scale ratio and includes device labels with an 8 px margin. The supported range is 100–2000 px; an omitted or cleared setting uses 340 px.
+**Map height** defaults to Auto (empty). In Sections, the map fills the available card height; use HA’s Layout settings to choose the card’s rows. Leaving out `map_height` or setting it to `null` enables Auto. Enter 100–2000 px for a fixed map area, for example `map_height: 340`. Both orientations and view modes support this. Height and width changes automatically fit and centre the map while keeping device positions. Fit uses the smaller width/height scale ratio and includes device labels with an 8 px margin. Outside a constrained layout, Auto uses a 340 px map as its natural size.
 
 ## Layouts
 
@@ -36,13 +38,13 @@ Transparent product images are embedded in the JavaScript, with a transparent ge
 
 The Title field starts with the translated “Zigbee network”. Clear it to hide the title while keeping the brand label and device counts. In YAML, omit `name` for the translated default, set `name: ""` to hide it, or supply your own title.
 
-Refresh, Fit view, Tidy layout, Link labels, Map only and Save layout sit together as icons at the top right beside WISER · ZIGBEE in both normal and Map only modes. They use the same muted theme colour, with translated tooltips and accessible labels. Link labels highlights its active state. Map only exposes its state to screen readers without a persistent selected background. The Map only icon switches between normal and map-only views without rebuilding the graph. This is a temporary view switch; the editor/YAML still sets the default for reloads. Save confirmation is visible in both modes.
+Refresh, Fit view, Tidy layout, Link labels, Show detailed view and Save layout sit together as icons at the top right beside WISER · ZIGBEE in both normal and Map only modes. They use the same muted theme colour, with translated tooltips and accessible labels. Link labels highlights while enabled. Show detailed view highlights in detailed mode and is unhighlighted in map-only mode. Refresh highlights while loading; Fit view, Tidy layout and Save layout briefly highlight when used. The Show detailed view icon switches between normal and map-only views without rebuilding the graph. This is a temporary view switch; the editor/YAML still sets the default for reloads. Save confirmation is visible in both modes.
 
 ## Optional sections
 
-The editor uses Home Assistant’s native form selectors for themed switches and fields. The Horizontal / Vertical selector uses Home Assistant’s native segmented control when loaded, with a native form dropdown as its fallback. Buttons, expandable sections, alerts and the YAML field also use native components when available; standalone previews and older frontends use themed HTML fallbacks.
+The editor uses Home Assistant’s native form selectors for themed switches and fields. The Horizontal / Vertical field uses HA’s native button-toggle selector, which loads its segmented control automatically. Toolbar icons, action buttons, expandable sections, alerts and the YAML field use HA-owned components directly. Their focus, hover and selection styling comes from Home Assistant. The card requires Home Assistant to provide these controls; standalone previews do not recreate them.
 
-Enable **Map only** in the editor (or `map_only: true` in YAML) to keep the WISER · ZIGBEE label, icon controls and map while hiding the title, device counts and expandable sections. Tapping a device still shows its Zigbee information. The map keeps its chosen orientation, device labels, dragging and double-click zoom. Loading and error messages still appear when needed. Turn Map only off in the editor to restore the controls and your previous section visibility settings.
+Turn off **Show detailed view** in the editor (or `map_only: true` in YAML) to keep the WISER · ZIGBEE label, icon controls and map while hiding the title, device counts and expandable sections. Long-pressing a device still shows its Zigbee information. The map keeps its chosen orientation, device labels, dragging and double-click zoom. Loading and error messages still appear when needed. Show detailed view is on by default. Turn it back on to restore the title, counts and your previous section visibility settings.
 
 The editor has independent switches for **Show layout for other browsers** and **Show all devices & connections**. Both are shown by default. In YAML, set `show_layout_export: false` or `show_device_list: false` to hide either section.
 

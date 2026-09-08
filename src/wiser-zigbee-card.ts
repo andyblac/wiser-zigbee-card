@@ -24,6 +24,7 @@ import {
   localize,
   localizeCount,
   localizeSignal,
+  compactSignal,
   languageFor,
 } from "./localize/localize";
 import {
@@ -34,6 +35,7 @@ import {
 } from "./native-ui";
 import "./editor";
 import { containedView } from "./fit";
+import { placeLinkLabels, LinkLabel } from "./link-labels";
 import { deviceInfoEntity, receptionMetrics } from "./device-info";
 
 (window as any).customCards = (window as any).customCards || [];
@@ -65,6 +67,8 @@ export class WiserZigbeeCard
   @state() private loading = false;
   @state() private error = "";
   @state() private showLabels = false;
+  @state() private activeIcon?: string;
+  private activeIconTimer?: ReturnType<typeof setTimeout>;
   @state() private selected?: number;
   @state() private selectedEntity?: string;
   @state() private layoutStatus = "";
@@ -80,6 +84,11 @@ export class WiserZigbeeCard
       ? this.t("card.hub")
       : node.label.replace(/\n/g, " ");
   }
+  private infoReturnView?: {
+    position: { x: number; y: number };
+    scale: number;
+    zoomReturnView?: { position: { x: number; y: number }; scale: number };
+  };
   private zoomReturnView?: {
     position: { x: number; y: number };
     scale: number;
@@ -118,6 +127,7 @@ export class WiserZigbeeCard
     this.fitAfterHeightChange = false;
     this.network?.destroy();
     this.network = undefined;
+    this.infoReturnView = undefined;
     this.zoomReturnView = undefined;
     this.layoutYaml = "";
     this.layoutStatus = "";
@@ -127,11 +137,17 @@ export class WiserZigbeeCard
   private get orientation(): "horizontal" | "vertical" {
     return this.config?.orientation === "vertical" ? "vertical" : "horizontal";
   }
-  private get mapHeight(): number {
+  private get mapHeight(): number | null {
     const height = this.config?.map_height;
+    if (height == null || height === "") return null;
     return typeof height === "number" && Number.isFinite(height)
       ? Math.min(2000, Math.max(100, Math.round(height)))
-      : 340;
+      : null;
+  }
+  public getGridOptions() {
+    return this.mapHeight === null
+      ? { columns: 12, rows: this.config?.map_only ? 6 : 9, min_rows: 3 }
+      : { columns: 12 };
   }
   public getCardSize(): number {
     if (this.config?.map_only) return this.orientation === "vertical" ? 6 : 8;
@@ -159,11 +175,14 @@ export class WiserZigbeeCard
     this.requestUpdate();
   }
   public disconnectedCallback(): void {
+    clearTimeout(this.activeIconTimer);
+    this.activeIcon = undefined;
     this.cancelDeviceInfo();
     super.disconnectedCallback();
     this.requestId++;
     this.network?.destroy();
     this.network = undefined;
+    this.infoReturnView = undefined;
     this.zoomReturnView = undefined;
   }
   protected updated(changed: PropertyValues): void {
@@ -262,7 +281,7 @@ export class WiserZigbeeCard
       })),
       edges: this.zigbeeData.edges.map((edge) => ({
         ...edge,
-        label: this.showLabels ? localizeSignal(edge.label, this.hass) : "",
+        label: "",
       })),
     };
     if (this.network) {
@@ -297,42 +316,61 @@ export class WiserZigbeeCard
           },
         },
       );
-      this.network.on("click", (event) => this.deviceClick(event.nodes[0]));
+      this.network.on("click", () => this.deviceClick());
       this.network.on("hold", (event) => this.deviceHold(event.nodes[0]));
       this.network.on("doubleClick", (event) => {
         this.cancelDeviceInfo();
         this.toggleDeviceZoom(event.nodes[0], event.pointer?.canvas);
       });
-      this.network.on("dragStart", () => this.cancelDeviceInfo());
+      this.network.on("afterDrawing", (ctx) => this.drawLinkLabels(ctx));
+      this.network.on("dragStart", () => this.closeDeviceInfo(false));
       this.network.on("resize", () => this.fitNetwork());
-      this.network.on("zoom", () => this.updateLinkLabelStyle());
-      this.network.on("animationFinished", () => this.updateLinkLabelStyle());
       this.fitNetwork();
       this.requestUpdate();
     }
-    this.updateLinkLabelStyle();
   }
   private cancelDeviceInfo(): void {
     this.infoRequest++;
     this.selectedEntity = undefined;
   }
-  private deviceClick(nodeId?: number): void {
+  private closeDeviceInfo(restore = true): void {
     this.cancelDeviceInfo();
-    this.selected = nodeId;
-    if (nodeId !== undefined)
-      void this.openDeviceInfo(nodeId, this.infoRequest, false);
+    this.selected = undefined;
+    const view = this.infoReturnView;
+    this.infoReturnView = undefined;
+    if (restore) {
+      this.network?.unselectAll();
+      if (view && this.network) {
+        this.zoomReturnView = view.zoomReturnView;
+        this.network.moveTo({
+          position: view.position,
+          scale: view.scale,
+          animation: false,
+        });
+      }
+    }
+  }
+  private deviceClick(): void {
+    this.closeDeviceInfo();
   }
   private deviceHold(nodeId?: number): void {
+    if (nodeId === undefined) {
+      this.closeDeviceInfo();
+      return;
+    }
+    if (!this.infoReturnView && this.network) {
+      this.infoReturnView = {
+        position: this.network.getViewPosition(),
+        scale: this.network.getScale(),
+        zoomReturnView: this.zoomReturnView,
+      };
+    }
     this.cancelDeviceInfo();
     this.selected = nodeId;
     if (nodeId !== undefined)
       void this.openDeviceInfo(nodeId, this.infoRequest);
   }
-  private async openDeviceInfo(
-    nodeId: number,
-    request: number,
-    showMoreInfo = true,
-  ): Promise<void> {
+  private async openDeviceInfo(nodeId: number, request: number): Promise<void> {
     const node = this.zigbeeData?.nodes.find((item) => item.id === nodeId);
     if (!node || !this.hass) return;
     try {
@@ -348,7 +386,6 @@ export class WiserZigbeeCard
         this.selected === nodeId
       ) {
         this.selectedEntity = entityId;
-        if (showMoreInfo) fireEvent(this, "hass-more-info", { entityId });
       }
     } catch {
       // Disabled sensors or unavailable registries leave map details accessible.
@@ -364,7 +401,6 @@ export class WiserZigbeeCard
       ? false
       : { duration: 250, easingFunction: "easeInOutQuad" as const };
     if (this.zoomReturnView) {
-      this.updateLinkLabelStyle(this.zoomReturnView.scale);
       this.network.moveTo({ ...this.zoomReturnView, animation });
       this.zoomReturnView = undefined;
       return;
@@ -381,7 +417,6 @@ export class WiserZigbeeCard
       scale: this.network.getScale(),
     };
     const scale = Math.max(this.zoomReturnView.scale * 2, 1.25);
-    this.updateLinkLabelStyle(scale);
     if (nodeId !== undefined)
       this.network.focus(nodeId, { scale, locked: false, animation });
     else this.network.moveTo({ position, scale, animation });
@@ -451,20 +486,81 @@ export class WiserZigbeeCard
       map.clientHeight,
     );
     if (view) this.network.moveTo({ ...view, animation: false });
-    this.updateLinkLabelStyle();
   }
-  private updateLinkLabelStyle(targetScale?: number): void {
-    if (!this.network) return;
-    this.network.setOptions({
-      edges: {
-        scaling: { label: { drawThreshold: 0 } },
-        font: {
-          size: 11 / Math.max(targetScale ?? this.network.getScale(), 0.01),
-          color: this.textColor,
-          strokeWidth: 0,
-        },
-      },
+  private drawLinkLabels(ctx: CanvasRenderingContext2D): void {
+    if (!this.showLabels || !this.network || !this.zigbeeData) return;
+    const network = this.network;
+    const map = this.shadowRoot?.getElementById("zigbee-network");
+    if (!map) return;
+    const scale = network.getScale();
+    const positions = network.getPositions();
+    const obstacles = this.zigbeeData.nodes.map((node) => {
+      const box = network.getBoundingBox(node.id);
+      const top = network.canvasToDOM({ x: box.left, y: box.top });
+      const bottom = network.canvasToDOM({ x: box.right, y: box.bottom });
+      return { left: top.x, top: top.y, right: bottom.x, bottom: bottom.y };
     });
+    const panel = this.config?.map_only
+      ? this.shadowRoot?.querySelector<HTMLElement>("footer.map-info")
+      : undefined;
+    if (panel && !panel.hidden) {
+      const mapBounds = map.getBoundingClientRect(),
+        panelBounds = panel.getBoundingClientRect();
+      obstacles.push({
+        left: panelBounds.left - mapBounds.left,
+        right: panelBounds.right - mapBounds.left,
+        top: panelBounds.top - mapBounds.top,
+        bottom: panelBounds.bottom - mapBounds.top,
+      });
+    }
+    ctx.save();
+    ctx.font = `${12 / scale}px system-ui, sans-serif`;
+    const labels: LinkLabel[] = [];
+    for (const edge of this.zigbeeData.edges) {
+      if (!positions[edge.from] || !positions[edge.to]) continue;
+      const text = compactSignal(edge.label, this.hass);
+      labels.push({
+        id: edge.id,
+        text,
+        width: ctx.measureText(text).width * scale,
+        from: network.canvasToDOM(positions[edge.from]),
+        to: network.canvasToDOM(positions[edge.to]),
+      });
+    }
+    const placed = placeLinkLabels(
+      labels,
+      obstacles,
+      map.clientWidth,
+      map.clientHeight,
+      this.orientation === "vertical",
+    );
+    const background =
+      getComputedStyle(this)
+        .getPropertyValue("--card-background-color")
+        .trim() || "#fff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (const label of placed) {
+      const center = network.DOMtoCanvas(label.center),
+        anchor = network.DOMtoCanvas(label.anchor);
+      const top = network.DOMtoCanvas({ x: label.left, y: label.top });
+      ctx.strokeStyle = this.textColor;
+      ctx.lineWidth = 0.5 / scale;
+      ctx.beginPath();
+      ctx.moveTo(anchor.x, anchor.y);
+      ctx.lineTo(center.x, center.y);
+      ctx.stroke();
+      ctx.fillStyle = background;
+      ctx.fillRect(
+        top.x,
+        top.y,
+        (label.right - label.left) / scale,
+        (label.bottom - label.top) / scale,
+      );
+      ctx.fillStyle = this.textColor;
+      ctx.fillText(label.text, center.x, center.y);
+    }
+    ctx.restore();
   }
   private toggleLabels(): void {
     this.showLabels = !this.showLabels;
@@ -574,37 +670,32 @@ export class WiserZigbeeCard
     disabled = !this.network,
   ): TemplateResult {
     const label = this.t(key);
-    return customElements.get("ha-icon-button")
-      ? html`<ha-icon-button
-          class=${key === "editor.map_only"
-            ? "layout-icon mode-icon"
-            : "layout-icon"}
-          .label=${label}
-          title=${label}
-          .path=${path}
-          .disabled=${disabled}
-          .selected=${key !== "editor.map_only" && (pressed ?? false)}
-          aria-pressed=${ifDefined(
-            pressed === undefined ? undefined : String(pressed),
-          )}
-          @click=${click}
-        ></ha-icon-button>`
-      : html`<button
-          class=${key === "editor.map_only"
-            ? "layout-icon mode-icon"
-            : "layout-icon"}
-          aria-label=${label}
-          title=${label}
-          ?disabled=${disabled}
-          aria-pressed=${ifDefined(
-            pressed === undefined ? undefined : String(pressed),
-          )}
-          @click=${click}
-        >
-          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-            <path fill="currentColor" d=${path}></path>
-          </svg>
-        </button>`;
+    const active =
+      pressed ??
+      (key === "common.refresh" ? this.loading : this.activeIcon === key);
+    const activate = () => {
+      if (disabled) return;
+      if (pressed === undefined && key !== "common.refresh") {
+        clearTimeout(this.activeIconTimer);
+        this.activeIcon = key;
+        this.activeIconTimer = setTimeout(() => {
+          this.activeIcon = undefined;
+        }, 500);
+      }
+      click();
+    };
+    return html`<ha-icon-button
+      class="layout-icon"
+      .label=${label}
+      title=${label}
+      .path=${path}
+      .disabled=${disabled}
+      .selected=${active}
+      aria-pressed=${ifDefined(
+        pressed === undefined ? undefined : String(pressed),
+      )}
+      @click=${activate}
+    ></ha-icon-button>`;
   }
   protected render(): TemplateResult {
     const nodes = this.zigbeeData?.nodes ?? [];
@@ -612,7 +703,12 @@ export class WiserZigbeeCard
     const selected = nodes.find((node) => node.id === this.selected);
     const savePath =
       "M17,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M15,9H5V5H15V9Z";
-    return html`<ha-card class=${this.config?.map_only ? "map-only" : ""}>
+    return html`<ha-card
+      class=${[
+        this.config?.map_only ? "map-only" : "",
+        this.mapHeight === null ? "auto-height" : "",
+      ].join(" ")}
+    >
       <div class="brand-row">
         <div class="eyebrow">WISER · ZIGBEE</div>
         <div
@@ -646,10 +742,10 @@ export class WiserZigbeeCard
             this.showLabels,
           )}
           ${this.layoutIcon(
-            "editor.map_only",
+            "card.show_detailed_view",
             "M3 3H21V21H3V3M5 5V7H19V5H5M5 9V19H19V9H5Z",
             () => this.toggleViewMode(),
-            this.config?.map_only ?? false,
+            !(this.config?.map_only ?? false),
             !this.config,
           )}
           ${this.layoutIcon("card.save_layout", savePath, () =>
@@ -680,7 +776,7 @@ export class WiserZigbeeCard
       <div class="map ${this.orientation}">
         <div
           id="zigbee-network"
-          style=${`height: ${this.mapHeight}px`}
+          style=${this.mapHeight === null ? "" : `height: ${this.mapHeight}px`}
           @wheel=${this.panZoomedView}
           role="img"
           aria-label=${this.t(
@@ -693,11 +789,7 @@ export class WiserZigbeeCard
         ></div>
         ${this.error
           ? html`<div class="message" role="alert">
-              ${customElements.get("ha-alert")
-                ? html`<ha-alert alert-type="error"
-                    >${this.t(this.error)}</ha-alert
-                  >`
-                : this.t(this.error)}
+              <ha-alert alert-type="error">${this.t(this.error)}</ha-alert>
             </div>`
           : this.loading
             ? html`<div class="message" role="status">
@@ -719,9 +811,7 @@ export class WiserZigbeeCard
                 <strong>${this.deviceName(selected)}</strong> ${actionButton(
                   this.t("common.close"),
                   () => {
-                    this.cancelDeviceInfo();
-                    this.selected = undefined;
-                    this.network?.unselectAll();
+                    this.closeDeviceInfo();
                   },
                 )}
               </div>
@@ -800,6 +890,36 @@ export class WiserZigbeeCard
       color: var(--primary-text-color, #273448);
       background: var(--ha-card-background, var(--card-background-color, #fff));
     }
+    :host(:has(ha-card.auto-height)) {
+      height: 100%;
+      min-height: 0;
+    }
+    ha-card.auto-height {
+      height: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+    .auto-height > .brand-row,
+    .auto-height > header,
+    .auto-height > .save-status {
+      flex-shrink: 0;
+    }
+    .auto-height .map {
+      flex: 1 1 340px;
+      min-height: 100px;
+    }
+    .auto-height #zigbee-network {
+      position: absolute;
+      inset: 0;
+      height: 100%;
+    }
+    .auto-height > footer:not(.map-info) {
+      flex: 0 1 auto;
+      min-height: 0;
+      max-height: 45%;
+      overflow-y: auto;
+    }
     [hidden] {
       display: none !important;
     }
@@ -822,28 +942,12 @@ export class WiserZigbeeCard
       --ha-icon-size: 20px;
       border-radius: 50%;
     }
-    .layout-icon[aria-pressed="true"]:not(.mode-icon) {
-      background: var(--secondary-background-color);
-    }
     .brand-row .eyebrow {
       margin: 0;
     }
     .brand-row .layout-icon {
       color: var(--wiser-muted);
       --mdc-icon-button-icon-color: var(--wiser-muted);
-    }
-    button.layout-icon {
-      display: grid;
-      place-items: center;
-      width: 36px;
-      height: 36px;
-      padding: 8px;
-      border: 0;
-      border-radius: 50%;
-    }
-    .layout-icon svg {
-      width: 20px;
-      height: 20px;
     }
     .save-status {
       padding: 0 24px;
@@ -880,44 +984,6 @@ export class WiserZigbeeCard
     }
     p span {
       margin: 0 6px;
-    }
-    button {
-      font: inherit;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--primary-text-color, #273448);
-      background: transparent;
-      border: 1px solid var(--divider-color);
-      border-radius: 8px;
-      padding: 9px 12px;
-      cursor: pointer;
-      min-height: 36px;
-    }
-    button:hover,
-    button[aria-pressed="true"]:not(.mode-icon) {
-      background: var(--secondary-background-color);
-    }
-    button:focus-visible,
-    summary:focus-visible {
-      outline: 2px solid var(--primary-color);
-      outline-offset: 3px;
-    }
-    button:disabled {
-      opacity: 0.45;
-      cursor: wait;
-    }
-    .icon-button {
-      padding: 8px;
-      display: flex;
-    }
-    ha-icon {
-      --mdc-icon-size: 20px;
-    }
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding: 0 24px 16px;
     }
     .map {
       position: relative;
@@ -1006,29 +1072,6 @@ export class WiserZigbeeCard
     .panel-content ha-button {
       margin-top: 12px;
     }
-    details {
-      margin-top: 14px;
-      font-size: 12px;
-    }
-    summary {
-      color: var(--wiser-muted);
-      cursor: pointer;
-      padding: 4px 0;
-    }
-    textarea {
-      box-sizing: border-box;
-      width: 100%;
-      min-height: 160px;
-      margin-top: 12px;
-      padding: 12px;
-      color: inherit;
-      background: var(--secondary-background-color, #f6f8fb);
-      border: 1px solid var(--divider-color);
-      border-radius: 8px;
-    }
-    details button {
-      margin-top: 12px;
-    }
     .device {
       border-top: 1px solid var(--divider-color);
       padding: 12px 0;
@@ -1045,9 +1088,6 @@ export class WiserZigbeeCard
       }
       header {
         padding: 20px 16px 16px;
-      }
-      .toolbar {
-        padding: 0 16px 14px;
       }
       footer {
         padding: 16px;

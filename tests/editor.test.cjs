@@ -47,9 +47,16 @@ editor.setConfig({
 });
 editor.hass = {};
 let template = editor.render();
-const switches = template.values.find(
-  (value) => Array.isArray(value) && value[0]?.name === "auto_update",
-);
+function switchFields(template) {
+  return template.values
+    .filter(Array.isArray)
+    .flat()
+    .flatMap((row) => row?.values ?? [])
+    .filter(Array.isArray)
+    .flat()
+    .filter((field) => field?.selector?.boolean);
+}
+const switches = switchFields(template);
 assert.equal(switches.length, 4);
 assert.ok(
   switches.every((field) => field.selector && "boolean" in field.selector),
@@ -59,14 +66,21 @@ function change(value) {
   editor.valueChanged({ stopPropagation() {}, detail: { value } });
   return events.at(-1).detail.config;
 }
-assert.equal(change({ map_only: true }).map_only, true);
-template = editor.render();
-const disabled = template.values.find(
-  (value) => Array.isArray(value) && value[0]?.name === "auto_update",
+assert.ok(template.values.some((value) => value?.show_detailed_view === true));
+assert.equal(
+  editor.computeLabel({ name: "show_detailed_view" }),
+  "Show detailed view",
 );
+const mapOnly = change({ show_detailed_view: false });
+assert.equal(mapOnly.map_only, true);
+assert.equal("show_detailed_view" in mapOnly, false);
+template = editor.render();
+const disabled = switchFields(template);
 assert.ok(
   disabled
-    .filter((field) => field.name.startsWith("show_"))
+    .filter((field) =>
+      ["show_layout_export", "show_device_list"].includes(field.name),
+    )
     .every((field) => field.disabled),
 );
 assert.equal(change({ show_device_list: false }).show_device_list, false);
@@ -95,5 +109,38 @@ assert.equal(change({ name: "" }).name, "");
 console.log("Native selector schema and configuration events passed.");
 
 editor.setConfig({ type: "custom:wiser-zigbee-card" });
-assert.ok(editor.render().values.some((value) => value?.map_height === 340));
+assert.ok(editor.render().values.some((value) => value?.map_height === null));
 assert.equal(change({ map_height: 500 }).map_height, 500);
+
+assert.equal(change({ show_detailed_view: true }).map_only, false);
+assert.ok(
+  editor.render().values.some((value) => value?.show_detailed_view === true),
+);
+editor.setConfig({ type: "custom:wiser-zigbee-card", map_only: true });
+assert.ok(
+  editor.render().values.some((value) => value?.show_detailed_view === false),
+);
+assert.equal(change({ map_height: 400 }).map_only, true);
+assert.equal("show_detailed_view" in events.at(-1).detail.config, false);
+
+const orientationSchema = editor
+  .render()
+  .values.filter(Array.isArray)
+  .flat()
+  .find((field) => field?.name === "orientation");
+assert.deepEqual(
+  orientationSchema.selector.button_toggle.options.map(
+    (option) => option.value,
+  ),
+  ["horizontal", "vertical"],
+  "Use HA's lazy-loaded button_toggle selector, never a dropdown",
+);
+assert.equal(change({ orientation: "vertical" }).orientation, "vertical");
+assert.equal(change({ orientation: "horizontal" }).orientation, "horizontal");
+
+// Clearing the native number selector must survive config serialization/reopening.
+assert.equal(change({ map_height: undefined }).map_height, null);
+editor.setConfig(JSON.parse(JSON.stringify(events.at(-1).detail.config)));
+assert.ok(editor.render().values.some((value) => value?.map_height === null));
+assert.equal(change({ show_detailed_view: false }).map_height, null);
+assert.equal(change({ map_height: 340 }).map_height, 340);

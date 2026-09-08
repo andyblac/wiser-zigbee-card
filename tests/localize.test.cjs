@@ -63,9 +63,12 @@ assert.equal(
   "Custom device text",
 );
 const hass = { language: "en-GB" };
-assert.equal(localize("editor.map_only", hass), "Map only");
+assert.equal(localize("card.show_detailed_view", hass), "Show detailed view");
 hass.language = "fr";
-assert.equal(localize("editor.map_only", hass), "Carte uniquement");
+assert.equal(
+  localize("card.show_detailed_view", hass),
+  "Afficher la vue détaillée",
+);
 console.log(
   "All four dictionaries, plural forms, language changes and signal labels passed.",
 );
