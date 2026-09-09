@@ -1,9 +1,8 @@
 import type { zigbeeData } from "./types";
 
-// Area branches are a display hierarchy; source Zigbee links remain separate.
+// Area markers label visual groups; every edge remains a real Zigbee link.
 export function areaGraph(data: zigbeeData, unassigned: string): zigbeeData {
   const nodes = data.nodes.map((node) => ({ ...node }));
-  const hub = nodes.find((node) => node.group === "Controller");
   const used = new Set(nodes.map((node) => node.id));
   const keys = [
     ...new Set(
@@ -12,7 +11,7 @@ export function areaGraph(data: zigbeeData, unassigned: string): zigbeeData {
         .map((node) => node.area_id ?? ""),
     ),
   ].sort();
-  const edges: zigbeeData["edges"] = [];
+  const edges = data.edges.map((edge) => ({ ...edge }));
   for (const key of keys) {
     const members = data.nodes.filter(
       (node) => node.group !== "Controller" && (node.area_id ?? "") === key,
@@ -32,14 +31,6 @@ export function areaGraph(data: zigbeeData, unassigned: string): zigbeeData {
       x: 0,
       y: 0,
     });
-    if (hub) edges.push({ id: `area:${id}`, from: id, to: hub.id, label: "" });
-    for (const node of members)
-      edges.push({
-        id: `area-device:${node.id}`,
-        from: node.id,
-        to: id,
-        label: data.edges.find((edge) => edge.from === node.id)?.label ?? "",
-      });
   }
   return { nodes, edges };
 }

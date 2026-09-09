@@ -46,8 +46,16 @@ assert.equal(
   "mdi:floor-plan",
 );
 assert.equal(full.nodes.filter((n) => n.group === "Area").length, 3);
-assert.equal(full.edges.find((e) => e.from === 2).to, kitchen.id);
-assert.equal(full.edges.find((e) => e.from === kitchen.id).to, 0);
+assert.equal(full.edges.find((e) => e.from === 2).to, 1);
+assert.equal(
+  full.edges.some((e) => e.from === kitchen.id || e.to === kitchen.id),
+  false,
+);
+assert.deepEqual(
+  full.edges,
+  source.edges,
+  "All real links, including cross-area routing, remain unchanged",
+);
 const collapsed = visibleAreaGraph(full, new Set(["k"]));
 assert.equal(
   collapsed.nodes.some((n) => n.id === 1 || n.id === 2),

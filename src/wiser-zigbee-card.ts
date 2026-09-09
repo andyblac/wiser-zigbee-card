@@ -360,6 +360,7 @@ export class WiserZigbeeCard
         this.cancelDeviceInfo();
         this.toggleDeviceZoom(event.nodes[0], event.pointer?.canvas);
       });
+      this.network.on("beforeDrawing", (ctx) => this.drawAreaGroups(ctx));
       this.network.on("afterDrawing", (ctx) => {
         this.positionAreaIcons();
         this.drawLinkLabels(ctx);
@@ -369,6 +370,59 @@ export class WiserZigbeeCard
       this.fitNetwork();
       this.requestUpdate();
     }
+  }
+  private areaBounds(): Array<{
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+  }> {
+    if (!this.network || this.config?.group_by !== "area") return [];
+    const nodes = this.visibleData?.nodes ?? [];
+    const keys = new Set(
+      nodes
+        .filter((node) => node.group === "Area")
+        .map((node) => node.area_id ?? ""),
+    );
+    return [...keys].map((key) => {
+      const boxes = nodes
+        .filter(
+          (node) => node.group !== "Controller" && (node.area_id ?? "") === key,
+        )
+        .map((node) => this.network!.getBoundingBox(node.id));
+      return {
+        left: Math.min(...boxes.map((box) => box.left)) - 18,
+        right: Math.max(...boxes.map((box) => box.right)) + 18,
+        top: Math.min(...boxes.map((box) => box.top)) - 18,
+        bottom: Math.max(...boxes.map((box) => box.bottom)) + 18,
+      };
+    });
+  }
+  private drawAreaGroups(ctx: CanvasRenderingContext2D): void {
+    const bounds = this.areaBounds();
+    if (!bounds.length || !this.network) return;
+    const theme = getComputedStyle(this);
+    const color =
+      theme.getPropertyValue("--primary-text-color").trim() || this.textColor;
+    ctx.save();
+    for (const box of bounds) {
+      ctx.beginPath();
+      ctx.roundRect(
+        box.left,
+        box.top,
+        box.right - box.left,
+        box.bottom - box.top,
+        14,
+      );
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.04;
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1 / this.network.getScale();
+      ctx.globalAlpha = 0.22;
+      ctx.stroke();
+    }
+    ctx.restore();
   }
   private positionAreaIcons(): void {
     if (!this.network || this.config?.group_by !== "area") return;
@@ -605,9 +659,12 @@ export class WiserZigbeeCard
     if (!map || !map.clientWidth || !map.clientHeight) return;
     this.network.redraw();
     const view = containedView(
-      (this.visibleData?.nodes ?? []).map((node) =>
-        this.network!.getBoundingBox(node.id),
-      ),
+      [
+        ...(this.visibleData?.nodes ?? []).map((node) =>
+          this.network!.getBoundingBox(node.id),
+        ),
+        ...this.areaBounds(),
+      ],
       map.clientWidth,
       map.clientHeight,
     );
@@ -724,7 +781,9 @@ export class WiserZigbeeCard
     const key = `wiser-zigbee-layout:${JSON.stringify([location.pathname, this.config?.hub ?? "", this.config?.name ?? "Wiser Zigbee Network", this.config?.layout_id ?? ""])}`;
     const oriented =
       this.orientation === "vertical" ? `${key}:horizontal` : key;
-    return this.config?.group_by === "area" ? `${oriented}:area` : oriented;
+    return this.config?.group_by === "area"
+      ? `${oriented}:area-topology`
+      : oriented;
   }
   private validPosition(value: any): { x: number; y: number } | undefined {
     return value && Number.isFinite(value.x) && Number.isFinite(value.y)

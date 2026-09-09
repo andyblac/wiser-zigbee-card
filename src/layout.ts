@@ -27,6 +27,7 @@ export function arrangeNetwork(
   const columns = new Map<number, typeof data.nodes>();
   const lastLevel = Math.max(0, ...levels.values()) + 1;
   for (const node of data.nodes) {
+    if (node.group === "Area") continue;
     const level = levels.get(node.id) ?? lastLevel;
     columns.set(level, [...(columns.get(level) ?? []), node]);
   }
@@ -56,7 +57,7 @@ export function arrangeNetwork(
       ),
     );
     areaOffsets.set(area, areaSpan);
-    areaSpan += count + 1;
+    areaSpan += count + 2;
   }
   const nodes: typeof data.nodes = [];
   for (const [level, column] of columns) {
@@ -78,6 +79,7 @@ export function arrangeNetwork(
           node.group === "Controller"
             ? 0
             : (areaOffsets.get(area) ?? 0) +
+              1 +
               indexInArea -
               Math.max(0, areaSpan - 2) / 2;
         if (node.group !== "Controller") areaIndices.set(area, indexInArea + 1);
@@ -87,6 +89,18 @@ export function arrangeNetwork(
         x: orientation === "vertical" ? slot * 170 : level * 270,
         y: orientation === "vertical" ? level * 150 : slot * 110,
       });
+    });
+  }
+  for (const header of data.nodes.filter((node) => node.group === "Area")) {
+    const members = nodes.filter(
+      (node) =>
+        node.group !== "Controller" &&
+        (node.area_id ?? "") === (header.area_id ?? ""),
+    );
+    nodes.push({
+      ...header,
+      x: members.length ? Math.min(...members.map((node) => node.x)) : 0,
+      y: members.length ? Math.min(...members.map((node) => node.y)) - 110 : 0,
     });
   }
   return { nodes, edges: data.edges.map((edge) => ({ ...edge })) };

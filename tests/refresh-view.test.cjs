@@ -442,6 +442,41 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   assert.deepEqual(graphData.nodes.find((n) => n.id === 1).x, 123);
   assert.deepEqual(graphData.nodes.find((n) => n.id === 1).y, 456);
   assert.equal(card.zigbeeData.edges[0].to, 0, "Device info keeps real parent");
+  const beforeRouteRefresh = structuredClone(view);
+  const updatedRoute = {
+    nodes: [
+      ...card.zigbeeData.nodes,
+      {
+        id: 2,
+        group: "SmartPlug",
+        label: "Kitchen",
+        area_id: "kitchen",
+        area_name: "Kitchen",
+        x: 450,
+        y: 10,
+      },
+    ],
+    edges: [
+      { id: "1-2", from: 1, to: 2, label: "80%" },
+      { id: "2-0", from: 2, to: 0, label: "Online" },
+    ],
+  };
+  const routingRefresh = card.loadData();
+  resolveFetch(updatedRoute);
+  await routingRefresh;
+  assert.equal(
+    graphData.edges.find((edge) => edge.from === 1).to,
+    2,
+    "Refresh draws the new real router link across areas",
+  );
+  assert.equal(
+    graphData.edges.some((edge) => edge.from < 0 || edge.to < 0),
+    false,
+    "Area markers never become routing hops",
+  );
+  assert.equal(graphData.nodes.find((node) => node.id === 1).x, 123);
+  assert.equal(graphData.nodes.find((node) => node.id === 1).y, 456);
+  assert.deepEqual(view, beforeRouteRefresh);
   console.log(
     "Refresh preserves latest zoom, pan, dragged positions and double-click return view.",
   );
