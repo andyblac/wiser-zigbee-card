@@ -17,10 +17,10 @@
   "card.updating": "Actualisation du réseau…",
   "card.empty": "Aucun appareil trouvé",
   "card.unknown_device": "Appareil inconnu",
-  "card.hint": "Double-cliquez pour zoomer ou dézoomer. Faites glisser pour réorganiser. Appuyez longuement sur un appareil pour afficher ses détails Zigbee.",
-  "map.accessible_only": "Carte interactive du réseau Zigbee. Double-cliquez sur un appareil ou une zone vide pour zoomer, puis à nouveau pour dézoomer. Faites glisser pour réorganiser. Appuyez longuement sur un appareil pour afficher ses détails Zigbee.",
-  "map.accessible_list": "Carte interactive du réseau Zigbee. Les détails des appareils et des connexions figurent dans la liste ci-dessous. Appuyez longuement sur un appareil pour afficher ses détails Zigbee.",
-  "map.accessible_details": "Carte interactive du réseau Zigbee. Appuyez longuement sur un appareil pour afficher ses détails Zigbee.",
+  "card.hint": "Double-cliquez pour zoomer ou dézoomer. Faites glisser pour réorganiser. Appuyez sur un appareil pour afficher ses détails Zigbee. Maintenez-le enfoncé pour afficher Plus d’informations.",
+  "map.accessible_only": "Carte interactive du réseau Zigbee. Double-cliquez sur un appareil ou une zone vide pour zoomer, puis à nouveau pour dézoomer. Faites glisser pour réorganiser. Appuyez sur un appareil pour afficher ses détails Zigbee. Maintenez-le enfoncé pour afficher Plus d’informations.",
+  "map.accessible_list": "Carte interactive du réseau Zigbee. Les détails des appareils et des connexions figurent dans la liste ci-dessous. Appuyez sur un appareil pour afficher ses détails Zigbee. Maintenez-le enfoncé pour afficher Plus d’informations.",
+  "map.accessible_details": "Carte interactive du réseau Zigbee. Appuyez sur un appareil pour afficher ses détails Zigbee. Maintenez-le enfoncé pour afficher Plus d’informations.",
   "layout.storage_error": "Stockage du navigateur indisponible. Copiez la disposition dans la configuration de votre carte.",
   "layout.export_title": "Disposition pour les autres navigateurs",
   "layout.export_help": "Générez ce contenu et copiez-le dans la configuration YAML de votre carte pour utiliser les mêmes positions sur d’autres appareils.",
@@ -51,5 +51,7 @@
   "zigbee.hub_rssi": "RSSI du hub",
   "zigbee.hub_lqi": "LQI du hub",
   "editor.map_height": "Hauteur de la carte",
-  "card.show_detailed_view": "Afficher la vue détaillée"
+  "card.show_detailed_view": "Afficher la vue détaillée",
+  "card.zoom_in": "Zoom avant",
+  "card.zoom_out": "Zoom arrière"
 }

@@ -18,7 +18,11 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     css: () => {},
   },
   "lit/directives/if-defined.js": { ifDefined: (value) => value },
-  "lit/decorators.js": { customElement: decorator, state: decorator },
+  "lit/decorators.js": {
+    customElement: decorator,
+    state: decorator,
+    eventOptions: decorator,
+  },
   "custom-card-helpers": {
     fireEvent: (_, type, detail) => infoEvents.push({ type, detail }),
   },
@@ -98,6 +102,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     deltaX: 25,
     deltaY: 50,
     deltaMode: 0,
+    stopPropagation() {},
     preventDefault: () => {
       prevented = true;
     },
@@ -127,12 +132,38 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   assert.equal(prevented, false, "Overview leaves page scrolling available");
   card.deviceClick();
   await Promise.resolve();
-  assert.equal(card.selected, undefined, "Tap does not open details");
+  assert.equal(card.selected, undefined, "Empty-area tap closes details");
   assert.equal(card.selectedEntity, undefined);
-  card.deviceHold(undefined);
+  card.deviceClick(1);
+  assert.equal(
+    card.selected,
+    undefined,
+    "Tap waits for double-click recognition",
+  );
+  await new Promise((resolve) => setTimeout(resolve, 320));
+  assert.equal(card.selected, 1, "Tap opens Zigbee details");
+  assert.equal(card.selectedEntity, "sensor.office_signal");
+  card.closeDeviceInfo();
+  card.deviceClick(1);
+  card.cancelDeviceInfo();
+  await new Promise((resolve) => setTimeout(resolve, 320));
+  assert.equal(
+    card.selected,
+    undefined,
+    "Double-click cancels pending tap details",
+  );
+  card.deviceClick(1);
+  card.closeDeviceInfo(false);
+  await new Promise((resolve) => setTimeout(resolve, 320));
+  assert.equal(
+    card.selected,
+    undefined,
+    "Dragging cancels pending tap details",
+  );
+  card.showDeviceDetails(undefined);
   await Promise.resolve();
   assert.equal(card.selected, undefined);
-  card.deviceHold(1);
+  card.showDeviceDetails(1);
   card.deviceClick();
   await Promise.resolve();
   assert.equal(
@@ -140,18 +171,18 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     undefined,
     "Dragging cancels pending details",
   );
-  card.deviceHold(1);
+  card.showDeviceDetails(1);
   await Promise.resolve();
   assert.equal(card.selected, 1);
   assert.equal(
     card.selectedEntity,
     "sensor.office_signal",
-    "Long hold resolves inline Zigbee details",
+    "Tap resolves inline Zigbee details",
   );
-  assert.deepEqual(infoEvents, [], "HA More info is never opened");
+  assert.deepEqual(infoEvents, [], "Normal taps do not open HA More info");
   const beforeInfo = card.infoReturnView;
   view = { position: { x: 700, y: 900 }, scale: 2 };
-  card.deviceHold(1);
+  card.showDeviceDetails(1);
   await Promise.resolve();
   assert.equal(
     card.infoReturnView,
@@ -165,7 +196,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   });
   assert.equal(card.selected, undefined);
   assert.equal(card.infoReturnView, undefined);
-  card.deviceHold(1);
+  card.showDeviceDetails(1);
   view = { position: { x: 800, y: 600 }, scale: 2 };
   card.closeDeviceInfo(false);
   assert.deepEqual(
@@ -267,6 +298,87 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   assert.equal(card.fitAfterHeightChange, false);
   card.updated(new Map());
   assert.equal(resizeCalls.length, 2, "Ordinary updates must not refit");
+  card.zoomReturnView = undefined;
+  card.touchZoomStart({ touches: [{}] });
+  assert.equal(
+    card.zoomReturnView,
+    undefined,
+    "One finger does not start pinch",
+  );
+  const beforePinch = structuredClone(view);
+  card.touchZoomStart({ touches: [{}, {}] });
+  assert.deepEqual(card.zoomReturnView, beforePinch);
+  view = { position: { x: 33, y: 22 }, scale: 3 };
+  card.touchZoomStart({ touches: [{}, {}] });
+  assert.deepEqual(
+    card.zoomReturnView,
+    beforePinch,
+    "Repeated pinch retains return view",
+  );
+  card.toggleDeviceZoom();
+  assert.deepEqual(
+    view,
+    beforePinch,
+    "Double-click restores the pre-pinch view",
+  );
+  let wheelStopped = false;
+  card.panZoomedView({
+    ...wheel,
+    ctrlKey: true,
+    stopPropagation() {
+      wheelStopped = true;
+    },
+  });
+  assert.equal(
+    wheelStopped,
+    false,
+    "Trackpad pinch reaches native zoom handler",
+  );
+  assert.deepEqual(card.zoomReturnView, beforePinch);
+  card.zoomReturnView = undefined;
+  const beforeButtons = structuredClone(view);
+  card.zoomStep(1.25);
+  assert.equal(view.scale, beforeButtons.scale * 1.25);
+  assert.deepEqual(view.position, beforeButtons.position);
+  card.zoomStep(0.8);
+  assert.ok(Math.abs(view.scale - beforeButtons.scale) < 1e-9);
+  assert.deepEqual(card.zoomReturnView, beforeButtons);
+  view.scale = 10;
+  card.zoomStep(1.25);
+  assert.equal(view.scale, 10, "Zoom in is bounded");
+  view.scale = 0.01;
+  card.zoomStep(0.8);
+  assert.equal(view.scale, 0.01, "Zoom out is bounded");
+  card.closeDeviceInfo();
+  await card.deviceHold(1);
+  assert.deepEqual(
+    infoEvents.at(-1),
+    {
+      type: "hass-more-info",
+      detail: { entityId: "sensor.office_signal" },
+    },
+    "Long-press opens native HA More info",
+  );
+  assert.equal(
+    card.selected,
+    undefined,
+    "Long-press does not open inline details",
+  );
+  const eventCount = infoEvents.length;
+  const pendingHold = card.deviceHold(1);
+  card.closeDeviceInfo(false);
+  await pendingHold;
+  assert.equal(
+    infoEvents.length,
+    eventCount,
+    "Dragging cancels pending More info",
+  );
+  await card.deviceHold(undefined);
+  assert.equal(
+    infoEvents.length,
+    eventCount,
+    "Empty-space hold never opens More info",
+  );
   const beforeTidy = { position: { x: 180, y: -90 }, scale: 2.5 };
   view = structuredClone(beforeTidy);
   card.zoomReturnView = overview;

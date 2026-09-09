@@ -1,6 +1,6 @@
 import type { Options } from "vis-network";
 
-export const CARD_VERSION = "3.0.0-dev.15";
+export const CARD_VERSION = "3.0.0-dev.19";
 
 export const OPTIONS: Options = {
   autoResize: true,
@@ -57,7 +57,7 @@ export const OPTIONS: Options = {
     dragView: true,
     dragNodes: true,
     selectConnectedEdges: true,
-    zoomView: false,
+    zoomView: true,
     keyboard: false,
   },
   physics: { enabled: false },

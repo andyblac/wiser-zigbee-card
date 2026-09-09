@@ -17,10 +17,10 @@
   "card.updating": "Netzwerk wird aktualisiert…",
   "card.empty": "Keine Geräte gefunden",
   "card.unknown_device": "Unbekanntes Gerät",
-  "card.hint": "Zum Vergrößern oder Verkleinern doppelklicken. Zum Anordnen ziehen. Gerät für Zigbee-Details gedrückt halten.",
-  "map.accessible_only": "Interaktive Zigbee-Netzwerkkarte. Zum Vergrößern auf ein Gerät oder eine freie Stelle doppelklicken, zum Verkleinern erneut doppelklicken. Zum Anordnen ziehen. Gerät für Zigbee-Details gedrückt halten.",
-  "map.accessible_list": "Interaktive Zigbee-Netzwerkkarte. Geräte- und Verbindungsdetails stehen in der Liste darunter. Gerät für Zigbee-Details gedrückt halten.",
-  "map.accessible_details": "Interaktive Zigbee-Netzwerkkarte. Gerät für Zigbee-Details gedrückt halten.",
+  "card.hint": "Zum Vergrößern oder Verkleinern doppelklicken. Zum Anordnen ziehen. Für Zigbee-Details auf ein Gerät tippen. Für weitere Informationen gedrückt halten.",
+  "map.accessible_only": "Interaktive Zigbee-Netzwerkkarte. Zum Vergrößern auf ein Gerät oder eine freie Stelle doppelklicken, zum Verkleinern erneut doppelklicken. Zum Anordnen ziehen. Für Zigbee-Details auf ein Gerät tippen. Für weitere Informationen gedrückt halten.",
+  "map.accessible_list": "Interaktive Zigbee-Netzwerkkarte. Geräte- und Verbindungsdetails stehen in der Liste darunter. Für Zigbee-Details auf ein Gerät tippen. Für weitere Informationen gedrückt halten.",
+  "map.accessible_details": "Interaktive Zigbee-Netzwerkkarte. Für Zigbee-Details auf ein Gerät tippen. Für weitere Informationen gedrückt halten.",
   "layout.storage_error": "Browserspeicher nicht verfügbar. Kopieren Sie das Layout in Ihre Kartenkonfiguration.",
   "layout.export_title": "Layout für andere Browser",
   "layout.export_help": "Erzeugen Sie die YAML-Konfiguration und kopieren Sie sie in Ihre Kartenkonfiguration, um auf anderen Geräten dieselben Positionen zu verwenden.",
@@ -51,5 +51,7 @@
   "zigbee.hub_rssi": "Hub-RSSI",
   "zigbee.hub_lqi": "Hub-LQI",
   "editor.map_height": "Kartenhöhe",
-  "card.show_detailed_view": "Detailansicht anzeigen"
+  "card.show_detailed_view": "Detailansicht anzeigen",
+  "card.zoom_in": "Vergrößern",
+  "card.zoom_out": "Verkleinern"
 }

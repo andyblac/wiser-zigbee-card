@@ -17,10 +17,10 @@
   "card.updating": "Updating network…",
   "card.empty": "No devices found",
   "card.unknown_device": "Unknown device",
-  "card.hint": "Double-click to zoom in or out. Drag to rearrange. Long-press a device for Zigbee details.",
-  "map.accessible_only": "Interactive Zigbee network map. Double-click a device or empty area to zoom in, and double-click again to zoom out. Drag to rearrange. Long-press a device for Zigbee details.",
-  "map.accessible_list": "Interactive Zigbee network map. Device and connection details are available in the list below. Long-press a device for Zigbee details.",
-  "map.accessible_details": "Interactive Zigbee network map. Long-press a device for Zigbee details.",
+  "card.hint": "Double-click to zoom in or out. Drag to rearrange. Tap a device for Zigbee details. Long-press for More info.",
+  "map.accessible_only": "Interactive Zigbee network map. Double-click a device or empty area to zoom in, and double-click again to zoom out. Drag to rearrange. Tap a device for Zigbee details. Long-press for More info.",
+  "map.accessible_list": "Interactive Zigbee network map. Device and connection details are available in the list below. Tap a device for Zigbee details. Long-press for More info.",
+  "map.accessible_details": "Interactive Zigbee network map. Tap a device for Zigbee details. Long-press for More info.",
   "layout.storage_error": "Browser storage unavailable. Copy the layout into your card configuration.",
   "layout.export_title": "Layout for other browsers",
   "layout.export_help": "Generate and copy this into your card’s YAML configuration to use the same positions on other devices.",
@@ -51,5 +51,7 @@
   "zigbee.hub_rssi": "Hub RSSI",
   "zigbee.hub_lqi": "Hub LQI",
   "editor.map_height": "Map height",
-  "card.show_detailed_view": "Show detailed view"
+  "card.show_detailed_view": "Show detailed view",
+  "card.zoom_in": "Zoom in",
+  "card.zoom_out": "Zoom out"
 }

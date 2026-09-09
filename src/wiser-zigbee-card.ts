@@ -1,6 +1,6 @@
 import { LitElement, html, TemplateResult, PropertyValues, css } from "lit";
 import { ifDefined } from "lit/directives/if-defined.js";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, state, eventOptions } from "lit/decorators.js";
 import {
   LovelaceCardEditor,
   LovelaceCard,
@@ -95,6 +95,7 @@ export class WiserZigbeeCard
   };
   network?: Network;
   private infoRequest = 0;
+  private deviceTapTimer?: ReturnType<typeof setTimeout>;
   private fitAfterHeightChange = false;
   private requestId = 0;
   private pendingLoad = true;
@@ -316,7 +317,7 @@ export class WiserZigbeeCard
           },
         },
       );
-      this.network.on("click", () => this.deviceClick());
+      this.network.on("click", (event) => this.deviceClick(event.nodes[0]));
       this.network.on("hold", (event) => this.deviceHold(event.nodes[0]));
       this.network.on("doubleClick", (event) => {
         this.cancelDeviceInfo();
@@ -330,6 +331,8 @@ export class WiserZigbeeCard
     }
   }
   private cancelDeviceInfo(): void {
+    clearTimeout(this.deviceTapTimer);
+    this.deviceTapTimer = undefined;
     this.infoRequest++;
     this.selectedEntity = undefined;
   }
@@ -350,10 +353,33 @@ export class WiserZigbeeCard
       }
     }
   }
-  private deviceClick(): void {
-    this.closeDeviceInfo();
+  private deviceClick(nodeId?: number): void {
+    clearTimeout(this.deviceTapTimer);
+    if (nodeId === undefined) {
+      this.closeDeviceInfo();
+      return;
+    }
+    // Wait for the double-click gesture before opening and centring details.
+    this.deviceTapTimer = setTimeout(() => this.showDeviceDetails(nodeId), 300);
   }
-  private deviceHold(nodeId?: number): void {
+  private async deviceHold(nodeId?: number): Promise<void> {
+    this.closeDeviceInfo();
+    const node = this.zigbeeData?.nodes.find((item) => item.id === nodeId);
+    if (!node || !this.hass) return;
+    const request = this.infoRequest;
+    try {
+      const entityId = await deviceInfoEntity(
+        this.hass,
+        node,
+        this.config?.hub,
+      );
+      if (entityId && request === this.infoRequest && this.isConnected)
+        fireEvent(this, "hass-more-info", { entityId });
+    } catch {
+      // A normal tap still provides map details if the entity is unavailable.
+    }
+  }
+  private showDeviceDetails(nodeId?: number): void {
     if (nodeId === undefined) {
       this.closeDeviceInfo();
       return;
@@ -442,9 +468,37 @@ export class WiserZigbeeCard
       animation: false,
     });
   }
+  private zoomStep(factor: number): void {
+    if (!this.network) return;
+    this.prepareGestureZoom();
+    this.network.moveTo({
+      position: this.network.getViewPosition(),
+      scale: Math.min(10, Math.max(0.01, this.network.getScale() * factor)),
+      animation: false,
+    });
+  }
+  private prepareGestureZoom(): void {
+    if (!this.network) return;
+    this.closeDeviceInfo(false);
+    this.zoomReturnView ??= {
+      position: this.network.getViewPosition(),
+      scale: this.network.getScale(),
+    };
+  }
+  @eventOptions({ capture: true, passive: true })
+  private touchZoomStart(event: TouchEvent): void {
+    if (event.touches.length >= 2) this.prepareGestureZoom();
+  }
+  @eventOptions({ capture: true, passive: false })
   private panZoomedView(event: WheelEvent): void {
-    if (!this.network || !this.zoomReturnView || event.ctrlKey || event.metaKey)
+    if (event.ctrlKey || event.metaKey) {
+      // Trackpad pinch arrives as a modified wheel; let vis zoom at its centre.
+      this.prepareGestureZoom();
       return;
+    }
+    // Keep ordinary scrolling out of vis's wheel-zoom handler.
+    event.stopPropagation();
+    if (!this.network || !this.zoomReturnView) return;
     event.preventDefault();
     const container = event.currentTarget as HTMLElement;
     const scale = this.network.getScale();
@@ -749,6 +803,14 @@ export class WiserZigbeeCard
             () => this.fitNetwork(),
           )}
           ${this.layoutIcon(
+            "card.zoom_in",
+            "M19 13H13V19H11V13H5V11H11V5H13V11H19V13Z",
+            () => this.zoomStep(1.1),
+          )}
+          ${this.layoutIcon("card.zoom_out", "M19 13H5V11H19V13Z", () =>
+            this.zoomStep(0.8),
+          )}
+          ${this.layoutIcon(
             "card.tidy",
             "M3 3H10V10H3V3M14 3H21V10H14V3M3 14H10V21H3V14M14 14H21V21H14V14Z",
             () => this.tidyLayout(),
@@ -796,6 +858,7 @@ export class WiserZigbeeCard
           id="zigbee-network"
           style=${this.mapHeight === null ? "" : `height: ${this.mapHeight}px`}
           @wheel=${this.panZoomedView}
+          @touchstart=${this.touchZoomStart}
           role="img"
           aria-label=${this.t(
             this.config?.map_only
@@ -951,6 +1014,7 @@ export class WiserZigbeeCard
     }
     .layout-actions {
       display: flex;
+      flex-wrap: wrap;
       margin-left: auto;
     }
     .layout-icon {
