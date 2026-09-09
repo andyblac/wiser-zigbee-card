@@ -8,7 +8,7 @@ const compiled = ts.transpileModule(readFileSync("src/layout.ts", "utf8"), {
   },
 }).outputText;
 const result = { exports: {} };
-new Function("module", "exports", "require", compiled)(result, result.exports, () => require("./load-ts.cjs")("src/pie-layout.ts", { "./area-spacing": require("./load-ts.cjs")("src/area-spacing.ts") }));
+new Function("module", "exports", "require", compiled)(result, result.exports, () => require("./load-ts.cjs")("src/pie-layout.ts", { "./device-appearance": require("./load-ts.cjs")("src/device-appearance.ts"), "./area-spacing": require("./load-ts.cjs")("src/area-spacing.ts") }));
 const { arrangeNetwork } = result.exports;
 const nodes = [0, 1, 2, 3, 4].map((id) => ({
   id,

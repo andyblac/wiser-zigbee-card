@@ -24,3 +24,13 @@ export function ghostImage(source: string): string {
   }
   return image;
 }
+
+// The integration sends "device name\n(room name)"; "No Room" is a
+// protocol placeholder, not a user-visible room or an HA area assignment.
+export function deviceMapLabel(label: string): string {
+  const match = label.match(/^([\s\S]*?)\n\s*\(([\s\S]*)\)\s*$/);
+  if (!match) return label.replace(/\n/g, " ").trim();
+  const name = match[1].trim();
+  const room = match[2].trim();
+  return !room || /^no room$/i.test(room) ? name : room;
+}

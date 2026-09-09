@@ -1,3 +1,4 @@
+import { deviceMapLabel } from "./device-appearance";
 import { separateAreas } from "./area-spacing";
 import type { zigbeeData } from "./types";
 
@@ -25,7 +26,7 @@ export function arrangePie(data: zigbeeData, grouped: boolean,
     if (cached) return cached;
     const descendants = children.get(id) ?? [];
     const own = Math.max(grouped ? 115 : 65,
-      (byId.get(id)!.label.match(/\(([^)]+)\)/)?.[1] ?? byId.get(id)!.label).length * 4 + 30);
+      deviceMapLabel(byId.get(id)!.label).length * 4 + 30);
     const childRadius = Math.max(0, ...descendants.map((child) => measure(child).radius));
     const orbit = descendants.length ? Math.max(own + childRadius + gap,
       descendants.length > 1 ? (childRadius + gap / 2) / Math.sin(Math.PI / descendants.length) : 0) : 0;
@@ -72,7 +73,7 @@ export function arrangePie(data: zigbeeData, grouped: boolean,
     for (const [parentId, siblings] of children) {
       const parent = nodes.find((node) => node.id === parentId)!;
       const bounds = (node: typeof nodes[number], x = node.x, y = node.y) => {
-        const label = node.label.match(/\(([^)]+)\)/)?.[1] ?? node.label;
+        const label = deviceMapLabel(node.label);
         const half = Math.max(40, label.length * 4.5 + 12);
         return { left: x - half, right: x + half, top: y - 42, bottom: y + 72 };
       };

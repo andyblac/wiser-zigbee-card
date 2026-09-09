@@ -1,4 +1,4 @@
-import { disconnectedDevice, ghostImage } from "./device-appearance";
+import { disconnectedDevice, ghostImage, deviceMapLabel } from "./device-appearance";
 import { separateAreas } from "./area-spacing";
 import { signalColor } from "./signal-color";
 import { LitElement, html, TemplateResult, PropertyValues, css } from "lit";
@@ -338,7 +338,7 @@ export class WiserZigbeeCard
             ? `${node.label} ${this.collapsedAreas.has(node.area_id ?? "") ? "▸" : "▾"}`
             : node.group === "Controller"
               ? this.deviceName(node)
-              : (node.label.match(/\(([^)]+)\)/)?.[1] ?? this.deviceName(node)),
+              : deviceMapLabel(node.label),
         font: { color: textColor },
       };
       }),
@@ -484,7 +484,7 @@ export class WiserZigbeeCard
           if (!measure) return box;
           const label = node.group === "Area"
             ? `${node.label} ${this.collapsedAreas.has(node.area_id ?? "") ? "▸" : "▾"}`
-            : (node.label.match(/\(([^)]+)\)/)?.[1] ?? this.deviceName(node));
+            : deviceMapLabel(node.label);
           // Image bounds can omit labels before vis has drawn them. Measure
           // explicitly so the first frame, dragging and fit include the text.
           measure.save();

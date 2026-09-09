@@ -19,3 +19,10 @@ const original = "data:image/png;base64,abc";
 assert.ok(decodeURIComponent(ghostImage(original)).includes('opacity="0.3"'));
 assert.equal(ghostImage(original), ghostImage(original));
 console.log("Offline artwork detection distinguishes no connection from weak/unknown signals.");
+
+const { deviceMapLabel } = require("./load-ts.cjs")("src/device-appearance.ts");
+assert.equal(deviceMapLabel("RoomStat-16\n(No Room)"), "RoomStat-16");
+assert.equal(deviceMapLabel("Smart Plug\n( Kitchen )"), "Kitchen");
+assert.equal(deviceMapLabel("Sensor\n()"), "Sensor");
+assert.equal(deviceMapLabel("Temperature sensor (outside)"), "Temperature sensor (outside)");
+assert.equal(deviceMapLabel("Thermostat (v2)\n(No Room)"), "Thermostat (v2)");
