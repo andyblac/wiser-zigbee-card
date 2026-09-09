@@ -1,3 +1,4 @@
+import { separateAreas } from "./area-spacing";
 import { signalColor } from "./signal-color";
 import { LitElement, html, TemplateResult, PropertyValues, css } from "lit";
 import { ifDefined } from "lit/directives/if-defined.js";
@@ -778,9 +779,6 @@ export class WiserZigbeeCard
     const map = this.shadowRoot?.getElementById("zigbee-network");
     if (!map || !map.clientWidth || !map.clientHeight) return;
     this.network.redraw();
-    const hub = this.visibleData?.nodes.find((node) => node.group === "Controller");
-    const center = this.orientation === "pie" && hub
-      ? this.network.getPositions([hub.id])[hub.id] : undefined;
     const view = containedView(
       [
         ...(this.visibleData?.nodes ?? []).map((node) =>
@@ -790,8 +788,6 @@ export class WiserZigbeeCard
       ],
       map.clientWidth,
       map.clientHeight,
-      8,
-      center,
     );
     if (view) this.network.moveTo({ ...view, animation: false });
   }
@@ -904,7 +900,36 @@ export class WiserZigbeeCard
     this.closeDeviceInfo(false);
     this.areaDrag = undefined;
     this.drawNetwork();
+    this.spaceRenderedAreas();
     this.fitNetwork();
+  }
+  private spaceRenderedAreas(): void {
+    if (!this.network || this.config?.group_by !== "area" || this.orientation !== "pie") return;
+    this.network.redraw();
+    const source = this.visibleData!;
+    const positions = this.network.getPositions();
+    const nodes = source.nodes.map((node) => ({ ...node, ...positions[node.id] }));
+    const keys = [...new Set(source.nodes.filter((node) => node.group === "Area").map((node) => node.area_id ?? ""))];
+    const outlines = this.areaBounds();
+    const byArea = new Map(keys.map((key, index) => [key, outlines[index]]));
+    const repeaters = new Set(source.edges.map((edge) => edge.to));
+    separateAreas(nodes, repeaters, (members) => {
+      const first = members[0];
+      const initial = positions[first.id];
+      const dx = first.x - initial.x, dy = first.y - initial.y;
+      const box = first.group === "Controller" ? this.network!.getBoundingBox(first.id)
+        : byArea.get(first.area_id ?? "")!;
+      return { left: box.left + dx, right: box.right + dx,
+        top: box.top + dy, bottom: box.bottom + dy };
+    });
+    for (const node of nodes) {
+      if (node.x === positions[node.id].x && node.y === positions[node.id].y) continue;
+      this.network.moveNode(node.id, node.x, node.y);
+      this.areaPositions[node.id] = { x: node.x, y: node.y };
+      const stored = this.mapData?.nodes.find((item) => item.id === node.id);
+      if (stored) { stored.x = node.x; stored.y = node.y; }
+    }
+    this.network.redraw();
   }
   private get layoutKey(): string {
     const key = `wiser-zigbee-layout:${JSON.stringify([location.pathname, this.config?.hub ?? "", this.config?.name ?? "Wiser Zigbee Network", this.config?.layout_id ?? ""])}`;

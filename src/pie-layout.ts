@@ -1,3 +1,4 @@
+import { separateAreas } from "./area-spacing";
 import type { zigbeeData } from "./types";
 
 // Recursively pack each repeater's children around that repeater. Areas are
@@ -65,11 +66,72 @@ export function arrangePie(data: zigbeeData, grouped: boolean,
     place(root.id, x, 0, 0);
     right = x + radius;
   });
+  if (grouped) {
+    // A same-area leaf directly linked to the hub belongs visually beside its
+    // repeater sibling, not on the opposite side of their shared parent.
+    for (const [parentId, siblings] of children) {
+      const parent = nodes.find((node) => node.id === parentId)!;
+      const bounds = (node: typeof nodes[number], x = node.x, y = node.y) => {
+        const label = node.label.match(/\(([^)]+)\)/)?.[1] ?? node.label;
+        const half = Math.max(40, label.length * 4.5 + 12);
+        return { left: x - half, right: x + half, top: y - 42, bottom: y + 72 };
+      };
+      const overlaps = (a: ReturnType<typeof bounds>, b: ReturnType<typeof bounds>) =>
+        a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+      for (const leafId of siblings.filter((id) => !children.has(id))) {
+        const leaf = nodes.find((node) => node.id === leafId)!;
+        // Unassigned devices are not assumed to share a physical room.
+        if (!leaf.area_id) continue;
+        const anchors = siblings.filter((id) => children.has(id) &&
+          byId.get(id)!.area_id === leaf.area_id)
+          .map((id) => nodes.find((node) => node.id === id)!)
+          .sort((a, b) => Math.hypot(a.x - leaf.x, a.y - leaf.y) -
+            Math.hypot(b.x - leaf.x, b.y - leaf.y));
+        let placed = false;
+        for (const anchor of anchors) {
+          const angle = Math.atan2(anchor.y - parent.y, anchor.x - parent.x);
+          const inwardStep = Math.max(150,
+            (bounds(anchor).right - bounds(anchor).left + bounds(leaf).right - bounds(leaf).left) / 2 + 20);
+          // Prefer close beside the repeater; outer area groups can be spaced
+          // afterward rather than forcing this sensor far down the map.
+          const offsets = [0, 1, 2, 3].map((column) => ({ inward: inwardStep + column * 90, side: 65 }));
+          for (let row = 1; row < 5; row++)
+            for (const column of [1, 0, 2]) offsets.push({ inward: inwardStep + column * 90, side: 65 + row * 130 });
+          for (const offset of offsets) {
+            if (placed) break;
+            for (const side of [1, -1]) {
+              const inward = offset.inward;
+              const sideways = side * offset.side;
+              const x = anchor.x - Math.cos(angle) * inward - Math.sin(angle) * sideways;
+              const y = anchor.y - Math.sin(angle) * inward + Math.cos(angle) * sideways;
+              const candidate = bounds(leaf, x, y);
+              if (nodes.some((node) => node.id !== leaf.id &&
+                (node.group === "Controller" || children.has(node.id) || node.area_id === leaf.area_id) &&
+                overlaps(candidate, bounds(node)))) continue;
+              // Do not stretch the shared area back across the parent/hub.
+              const anchorBox = bounds(anchor);
+              const area = { left: Math.min(candidate.left, anchorBox.left) - 18,
+                right: Math.max(candidate.right, anchorBox.right) + 18,
+                top: Math.min(candidate.top, anchorBox.top) - 110,
+                bottom: Math.max(candidate.bottom, anchorBox.bottom) + 18 };
+              if (overlaps(area, bounds(parent))) continue;
+              leaf.x = x;
+              leaf.y = y;
+              placed = true;
+              break;
+            }
+          }
+          if (placed) break;
+        }
+      }
+    }
+  }
   for (const header of data.nodes.filter((node) => node.group === "Area")) {
     const members = nodes.filter((node) => node.group !== "Controller" && (node.area_id ?? "") === (header.area_id ?? ""));
     nodes.push({ ...header,
       x: members.length ? (Math.min(...members.map((node) => node.x)) + Math.max(...members.map((node) => node.x))) / 2 : 0,
       y: members.length ? Math.min(...members.map((node) => node.y)) - 110 : 0 });
   }
+  if (grouped) separateAreas(nodes, new Set(children.keys()));
   return { nodes, edges: data.edges.map((edge) => ({ ...edge })) };
 }

@@ -29,8 +29,8 @@ console.log(
 );
 
 const offCentre = { left: -700, right: 350, top: -900, bottom: 450 };
-const hub = { x: 40, y: -25 };
-const radial = containedView([offCentre], 600, 900, 8, hub);
-assert.deepEqual(radial.position, hub, "Pie centres the hub rather than asymmetric bounds");
-for (const x of [offCentre.left, offCentre.right]) assert.ok(Math.abs(x - hub.x) * radial.scale <= 292);
-for (const y of [offCentre.top, offCentre.bottom]) assert.ok(Math.abs(y - hub.y) * radial.scale <= 442);
+const radial = containedView([offCentre], 600, 900);
+assert.deepEqual(radial.position, { x: -175, y: -225 },
+  "Asymmetric Pie map is centred by all its bounds, not the hub");
+for (const x of [offCentre.left, offCentre.right]) assert.ok(Math.abs(x - radial.position.x) * radial.scale <= 292);
+for (const y of [offCentre.top, offCentre.bottom]) assert.ok(Math.abs(y - radial.position.y) * radial.scale <= 442);

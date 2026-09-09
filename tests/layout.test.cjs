@@ -8,7 +8,7 @@ const compiled = ts.transpileModule(readFileSync("src/layout.ts", "utf8"), {
   },
 }).outputText;
 const result = { exports: {} };
-new Function("module", "exports", "require", compiled)(result, result.exports, () => require("./load-ts.cjs")("src/pie-layout.ts"));
+new Function("module", "exports", "require", compiled)(result, result.exports, () => require("./load-ts.cjs")("src/pie-layout.ts", { "./area-spacing": require("./load-ts.cjs")("src/area-spacing.ts") }));
 const { arrangeNetwork } = result.exports;
 const nodes = [0, 1, 2, 3, 4].map((id) => ({
   id,
@@ -216,3 +216,60 @@ const rightStart = arrangeNetwork({ ...repeaterFan,
 const firstRepeater = rightStart.nodes.find((node) => node.id === 1);
 assert.ok(firstRepeater.x > 0);
 assert.equal(firstRepeater.y, 0, "First repeater starts directly right of the hub");
+
+const kitchen = { nodes: [
+  { id: 0, group: "Controller", label: "Hub" },
+  { id: 1, group: "SmartPlug", label: "Kitchen plug", area_id: "k" },
+  { id: 2, group: "RoomStat", label: "Kitchen sensor", area_id: "k" },
+  { id: 3, group: "RoomStat", label: "Bedroom", area_id: "b" },
+  { id: -1, group: "Area", label: "Kitchen", area_id: "k" },
+], edges: [{ from: 1, to: 0 }, { from: 2, to: 0 }, { from: 3, to: 1 }] };
+const kitchenPie = arrangeNetwork(kitchen, "pie", undefined, "area");
+const kitchenNodes = kitchenPie.nodes.filter((node) => node.area_id === "k");
+assert.ok(Math.min(...kitchenNodes.map((node) => node.x)) > 50,
+  "Kitchen sensor joins the plug to the right, leaving the central hub outside their box");
+assert.deepEqual(kitchenPie.edges, kitchen.edges, "Sensor still connects directly to hub");
+
+const plugPosition = kitchenPie.nodes.find((node) => node.id === 1);
+const sensorPosition = kitchenPie.nodes.find((node) => node.id === 2);
+assert.ok(Math.hypot(plugPosition.x - sensorPosition.x, plugPosition.y - sensorPosition.y) < 180,
+  "Same-area direct sensor stays close beside the repeater sibling");
+assert.ok(sensorPosition.y > plugPosition.y, "First companion sits slightly below the repeater");
+
+// Several repeaters, multiple direct sensors per area, a nested repeater,
+// unassigned devices, and long room names: no household-specific identifiers.
+const varied = { nodes: [{ id: 0, group: "Controller", label: "Hub" }], edges: [] };
+let nextId = 1;
+for (const area of ["east", "west", "upper"]) {
+  const router = nextId++;
+  varied.nodes.push({ id: router, group: "SmartPlug", label: `Router ${area}`, area_id: area });
+  varied.edges.push({ from: router, to: 0 });
+  for (let i = 0; i < 6; i++) {
+    const id = nextId++;
+    varied.nodes.push({ id, group: "RoomStat", label: i === 5 ? "Long name for a temperature sensor" : `Sensor ${area} ${i}`, area_id: area });
+    varied.edges.push({ from: id, to: i < 3 ? 0 : router });
+  }
+}
+varied.nodes.push({ id: nextId, group: "SmartPlug", label: "Nested repeater", area_id: "other" });
+varied.edges.push({ from: nextId, to: 1 });
+varied.nodes.push({ id: nextId + 1, group: "RoomStat", label: "Nested child", area_id: "other" });
+varied.edges.push({ from: nextId + 1, to: nextId });
+varied.nodes.push({ id: nextId + 2, group: "RoomStat", label: "Unassigned" });
+varied.edges.push({ from: nextId + 2, to: 0 });
+const variedOriginal = structuredClone(varied);
+const variedPie = arrangeNetwork(varied, "pie", undefined, "area");
+assert.deepEqual(varied, variedOriginal);
+assert.deepEqual(variedPie.edges, varied.edges);
+assert.ok(variedPie.nodes.every((node) => Number.isFinite(node.x) && Number.isFinite(node.y)));
+for (let i = 0; i < variedPie.nodes.length; i++) {
+  for (const other of variedPie.nodes.slice(i + 1)) {
+    const node = variedPie.nodes[i];
+    const halfWidth = (label) => Math.max(40, label.length * 4.5 + 12);
+    assert.ok(Math.abs(node.x - other.x) >= halfWidth(node.label) + halfWidth(other.label) ||
+      Math.abs(node.y - other.y) >= 114, `Devices ${node.id} and ${other.id} retain room for labels`);
+  }
+}
+console.log("Varied multi-repeater network keeps labels separated and real links unchanged.");
+
+assert.ok(Math.abs(sensorPosition.y - plugPosition.y) <= 65,
+  "Companion sensor stays beside the repeater instead of stretching the area downward");
