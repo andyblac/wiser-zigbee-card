@@ -5,13 +5,12 @@ import {
   LovelaceCardEditor,
 } from "custom-card-helpers";
 import { WiserZigbeeCardConfig, NetworkOrientation } from "./types";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import { fetchHubs } from "./data/websockets";
 import { CARD_VERSION } from "./const";
 import { localize } from "./localize/localize";
 import { watchNativeElements } from "./native-ui";
 
-@customElement("wiser-zigbee-card-editor")
 export class WiserZigbeeCardEditor
   extends LitElement
   implements LovelaceCardEditor
@@ -150,13 +149,13 @@ export class WiserZigbeeCardEditor
       <ha-form
         class="orientation-control"
         .hass=${this.hass}
-        .data=${{ orientation: this._config.orientation ?? "horizontal" }}
+        .data=${{ orientation: this._config.orientation ?? "vertical" }}
         .schema=${[
           {
             name: "orientation",
             selector: {
               button_toggle: {
-                options: ["horizontal", "vertical"].map((value) => ({
+                options: ["horizontal", "vertical", "pie"].map((value) => ({
                   value,
                   label: this.t(`editor.${value}`),
                 })),
@@ -205,8 +204,8 @@ export class WiserZigbeeCardEditor
   private setOrientation(orientation: NetworkOrientation): void {
     if (
       !this._config ||
-      !["horizontal", "vertical"].includes(orientation) ||
-      (this._config.orientation ?? "horizontal") === orientation
+      !["horizontal", "vertical", "pie"].includes(orientation) ||
+      (this._config.orientation ?? "vertical") === orientation
     )
       return;
     this._config = { ...this._config, orientation };
@@ -247,7 +246,7 @@ export class WiserZigbeeCardEditor
       !this._config ||
       (ev.detail.hub ?? "") !== (this._config.hub ?? "") ||
       (ev.detail.orientation ?? "horizontal") !==
-        (this._config.orientation ?? "horizontal") ||
+        (this._config.orientation ?? "vertical") ||
       (ev.detail.group_by ?? "none") !== (this._config.group_by ?? "none") ||
       (ev.detail.layout_id ?? "") !== (this._config.layout_id ?? "") ||
       (ev.detail.name ?? "Wiser Zigbee Network") !==
@@ -280,4 +279,8 @@ export class WiserZigbeeCardEditor
       font-size: 12px;
     }
   `;
+}
+
+if (!customElements.get("wiser-zigbee-card-editor")) {
+  customElements.define("wiser-zigbee-card-editor", WiserZigbeeCardEditor);
 }

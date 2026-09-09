@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const load = require("./load-ts.cjs");
+global.customElements = { get: () => class {} };
 global.window = { matchMedia: () => ({ matches: true }) };
 global.location = { pathname: "/test" };
 global.localStorage = { getItem: () => null };
@@ -387,17 +388,9 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   card.zoomReturnView = overview;
   const beforeTidyFits = resizeCalls.length;
   card.tidyLayout();
-  assert.deepEqual(view, beforeTidy, "Tidy preserves zoom and pan");
-  assert.deepEqual(
-    card.zoomReturnView,
-    overview,
-    "Tidy preserves zoom-out destination",
-  );
-  assert.equal(
-    resizeCalls.length,
-    beforeTidyFits,
-    "Tidy must not trigger Fit view",
-  );
+  assert.notDeepEqual(view, beforeTidy, "Tidy fits the arranged map");
+  assert.equal(card.zoomReturnView, undefined, "Tidy resets the old zoom destination");
+  assert.ok(resizeCalls.length > beforeTidyFits, "Tidy triggers Fit view");
   card.config.group_by = "area";
   card.zigbeeData = {
     nodes: [
@@ -544,6 +537,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     const p = allPositions[id];
     return { left: p.x - 32, right: p.x + 32, top: p.y - 32, bottom: p.y + 32 };
   };
+  card.config.orientation = "vertical";
   const deviceBeforeCenter = { ...allPositions[2] };
   card.areaBounds(measure);
   assert.equal(allPositions[kitchenArea.id].x, 420,

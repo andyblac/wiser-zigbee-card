@@ -1,3 +1,4 @@
+import { arrangePie } from "./pie-layout";
 import type { zigbeeData, NetworkOrientation } from "./types";
 
 // Place each hop in its own column; disconnected devices remain visible.
@@ -16,14 +17,15 @@ export function arrangeNetwork(
   for (let index = 0; index < queue.length; index++) {
     const id = queue[index];
     for (const edge of data.edges) {
-      const neighbour =
-        edge.from === id ? edge.to : edge.to === id ? edge.from : undefined;
+      // Wiser edges point from the child device to its parent/repeater.
+      const neighbour = edge.to === id ? edge.from : undefined;
       if (neighbour !== undefined && !levels.has(neighbour)) {
         levels.set(neighbour, levels.get(id)! + 1);
         queue.push(neighbour);
       }
     }
   }
+  if (orientation === "pie") return arrangePie(data, groupBy === "area", levels, positions);
   const columns = new Map<number, typeof data.nodes>();
   const lastLevel = Math.max(0, ...levels.values()) + 1;
   for (const node of data.nodes) {
@@ -31,63 +33,28 @@ export function arrangeNetwork(
     const level = levels.get(node.id) ?? lastLevel;
     columns.set(level, [...(columns.get(level) ?? []), node]);
   }
-  const areaKeys = [
-    ...new Set(
-      data.nodes
-        .filter((n) => n.group !== "Controller")
-        .map((n) => n.area_id ?? ""),
-    ),
-  ].sort((a, b) => {
-    if (!a) return 1;
-    if (!b) return -1;
-    return (
-      data.nodes.find((n) => n.area_id === a)?.area_name ?? a
-    ).localeCompare(data.nodes.find((n) => n.area_id === b)?.area_name ?? b);
-  });
-  const areaOffsets = new Map<string, number>();
-  let areaSpan = 0;
-  for (const area of areaKeys) {
-    const count = Math.max(
-      1,
-      ...[...columns.values()].map(
-        (column) =>
-          column.filter(
-            (n) => n.group !== "Controller" && (n.area_id ?? "") === area,
-          ).length,
-      ),
-    );
-    areaOffsets.set(area, areaSpan);
-    areaSpan += count + 2;
-  }
   const nodes: typeof data.nodes = [];
-  for (const [level, column] of columns) {
+  for (const [level, column] of [...columns].sort(([a], [b]) => a - b)) {
     const axis = orientation === "vertical" ? "x" : "y";
     column.sort((a, b) => {
+      const parentPosition = (id: number) => {
+        const parent = data.edges.find((edge) => edge.from === id)?.to;
+        return nodes.find((node) => node.id === parent)?.[axis] ?? 0;
+      };
+      const branch = parentPosition(a.id) - parentPosition(b.id);
+      if (branch) return branch;
       const first = positions?.[a.id]?.[axis];
       const second = positions?.[b.id]?.[axis];
       if (Number.isFinite(first) && Number.isFinite(second) && first !== second)
         return first! - second!;
       return a.label.localeCompare(b.label);
     });
-    const areaIndices = new Map<string, number>();
     column.forEach((node, index) => {
       let slot = index - (column.length - 1) / 2;
-      if (groupBy === "area") {
-        const area = node.area_id ?? "";
-        const indexInArea = areaIndices.get(area) ?? 0;
-        slot =
-          node.group === "Controller"
-            ? 0
-            : (areaOffsets.get(area) ?? 0) +
-              1 +
-              indexInArea -
-              Math.max(0, areaSpan - 2) / 2;
-        if (node.group !== "Controller") areaIndices.set(area, indexInArea + 1);
-      }
       nodes.push({
         ...node,
-        x: orientation === "vertical" ? slot * 170 : level * 270,
-        y: orientation === "vertical" ? level * 150 : slot * 110,
+        x: orientation === "vertical" ? slot * (groupBy === "area" ? 230 : 170) : level * (groupBy === "area" ? 300 : 270),
+        y: orientation === "vertical" ? level * (groupBy === "area" ? 300 : 150) : slot * (groupBy === "area" ? 260 : 110),
       });
     });
   }
@@ -99,7 +66,7 @@ export function arrangeNetwork(
     );
     nodes.push({
       ...header,
-      x: members.length ? Math.min(...members.map((node) => node.x)) : 0,
+      x: members.length ? (Math.min(...members.map((node) => node.x)) + Math.max(...members.map((node) => node.x))) / 2 : 0,
       y: members.length ? Math.min(...members.map((node) => node.y)) - 110 : 0,
     });
   }

@@ -11,7 +11,7 @@ declare global {
   }
 }
 
-export type NetworkOrientation = "vertical" | "horizontal";
+export type NetworkOrientation = "vertical" | "horizontal" | "pie";
 export interface WiserZigbeeCardConfig extends LovelaceCardConfig {
   type: string;
   name?: string;

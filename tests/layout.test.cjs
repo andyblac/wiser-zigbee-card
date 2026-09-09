@@ -8,7 +8,7 @@ const compiled = ts.transpileModule(readFileSync("src/layout.ts", "utf8"), {
   },
 }).outputText;
 const result = { exports: {} };
-new Function("module", "exports", compiled)(result, result.exports);
+new Function("module", "exports", "require", compiled)(result, result.exports, () => require("./load-ts.cjs")("src/pie-layout.ts"));
 const { arrangeNetwork } = result.exports;
 const nodes = [0, 1, 2, 3, 4].map((id) => ({
   id,
@@ -146,18 +146,73 @@ for (const orientation of ["horizontal", "vertical"]) {
   const grouped = arrangeNetwork(groupedInput, orientation, undefined, "area");
   const axis = orientation === "vertical" ? "x" : "y";
   const pos = (id) => grouped.nodes.find((n) => n.id === id)[axis];
-  assert.ok(
-    Math.max(pos(2), pos(4)) < pos(3),
-    "Area peers stay adjacent despite names",
-  );
-  assert.ok(pos(5) > pos(3), "Unassigned nodes have their own band");
-  assert.ok(
-    pos(1) <= Math.max(pos(2), pos(4)),
-    "Same area spans multiple hops",
-  );
+  const depth = orientation === "vertical" ? "y" : "x";
+  const along = (id) => grouped.nodes.find((n) => n.id === id)[depth];
+  assert.ok(along(0) < along(1) && along(1) < along(2), "Parent chain determines depth even within one area");
+  assert.equal(along(2), along(3), "Same-hop devices share a level regardless of area");
   assert.deepEqual(
     grouped.edges,
     groupedInput.edges,
     "Grouping preserves real connections",
   );
 }
+
+for (const grouped of ["none", "area"]) {
+  const pie = arrangeNetwork(groupedInput, "pie", undefined, grouped);
+  assert.equal(pie.nodes.find((node) => node.id === 0).x, 0);
+  assert.equal(pie.nodes.find((node) => node.id === 0).y, 0);
+  assert.deepEqual(pie.edges, groupedInput.edges);
+  assert.equal(new Set(pie.nodes.map((node) => `${node.x},${node.y}`)).size, pie.nodes.length);
+  assert.deepEqual(arrangeNetwork(pie, "pie", Object.fromEntries(pie.nodes.map((node) => [node.id, node])), grouped), pie);
+}
+console.log("Pie layout keeps hub central, routes intact and repeated tidy stable.");
+
+const withHeaders = { ...groupedInput, nodes: [...groupedInput.nodes,
+  { id: -1, group: "Area", area_id: "a", label: "Kitchen" },
+  { id: -2, group: "Area", area_id: "b", label: "Office" },
+] };
+
+const chain = { nodes: [
+  { id: 0, group: "Controller", label: "Hub" },
+  { id: 1, group: "SmartPlug", label: "Repeater 1", area_id: "a" },
+  { id: 2, group: "SmartPlug", label: "Repeater 2", area_id: "a" },
+  { id: 3, group: "RoomStat", label: "End device", area_id: "b" },
+  { id: -1, group: "Area", label: "Area A", area_id: "a" },
+  { id: -2, group: "Area", label: "Area B", area_id: "b" },
+], edges: [{ from: 1, to: 0 }, { from: 2, to: 1 }, { from: 3, to: 2 }] };
+for (const orientation of ["vertical", "horizontal", "pie"]) {
+  for (const grouping of ["none", "area"]) {
+    const result = arrangeNetwork(chain, orientation, undefined, grouping);
+    const depth = (id) => {
+      const node = result.nodes.find((node) => node.id === id);
+      return orientation === "pie" ? Math.hypot(node.x, node.y) : node[orientation === "vertical" ? "y" : "x"];
+    };
+    assert.ok(depth(0) < depth(1) && depth(1) < depth(2) && depth(2) < depth(3),
+      "Every repeater hop advances, including devices sharing an area");
+    assert.deepEqual(result.edges, chain.edges, "Area grouping adds no artificial links");
+  }
+}
+console.log("Multi-repeater chains preserved across every layout and grouping mode.");
+
+const repeaterFan = {
+  nodes: [0, 1, 2, 3, 4, 5].map((id) => ({ id, label: `Device ${id}`,
+    group: id === 0 ? "Controller" : id === 1 ? "SmartPlug" : "RoomStat" })),
+  edges: [1, 2, 3, 4, 5].map((id) => ({ from: id, to: id === 1 ? 0 : 1 })),
+};
+const fan = arrangeNetwork(repeaterFan, "pie");
+const repeater = fan.nodes.find((node) => node.id === 1);
+const fanChildren = fan.nodes.filter((node) => node.id > 1);
+const radii = fanChildren.map((node) => Math.hypot(node.x - repeater.x, node.y - repeater.y));
+assert.ok(radii.every((radius) => Math.abs(radius - radii[0]) < 1e-6));
+assert.ok(Math.abs(fanChildren.reduce((sum, node) => sum + node.x, 0) / 4 - repeater.x) < 1e-6);
+assert.ok(Math.abs(fanChildren.reduce((sum, node) => sum + node.y, 0) / 4 - repeater.y) < 1e-6);
+assert.deepEqual(fan.edges, repeaterFan.edges);
+console.log("Repeater is the centre of its own child circle.");
+
+const rightStart = arrangeNetwork({ ...repeaterFan,
+  nodes: [...repeaterFan.nodes, { id: 6, group: "RoomStat", label: "A direct sensor" }],
+  edges: [...repeaterFan.edges, { from: 6, to: 0 }],
+}, "pie");
+const firstRepeater = rightStart.nodes.find((node) => node.id === 1);
+assert.ok(firstRepeater.x > 0);
+assert.equal(firstRepeater.y, 0, "First repeater starts directly right of the hub");

@@ -2,7 +2,14 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const ts = require("typescript");
 const events = [];
-global.customElements = { get: () => class {} };
+const registered = new Map();
+global.customElements = {
+  get: (name) => name === "ha-form" ? class {} : registered.get(name),
+  define: (name, constructor) => {
+    assert.ok(!registered.has(name), "Duplicate registration must be skipped");
+    registered.set(name, constructor);
+  },
+};
 const source = ts.transpileModule(fs.readFileSync("src/editor.ts", "utf8"), {
   compilerOptions: {
     target: ts.ScriptTarget.ES2017,
@@ -85,6 +92,7 @@ assert.ok(
 );
 assert.equal(change({ show_device_list: false }).show_device_list, false);
 assert.deepEqual(events.at(-1).detail.config.layout_data, layout);
+editor.setOrientation("horizontal");
 editor.setOrientation("vertical");
 assert.equal(events.at(-1).detail.config.orientation, "vertical");
 assert.deepEqual(events.at(-1).detail.config.layout_data, layout);
@@ -95,6 +103,7 @@ assert.equal(
   "",
 );
 editor.setConfig({ type: "custom:wiser-zigbee-card" });
+assert.ok(editor.render().values.some((value) => value?.orientation === "vertical"), "Default is vertical rows");
 editor.hass = { language: "de" };
 assert.ok(
   editor.render().values.some((value) => value?.name === "Zigbee-Netzwerk"),
@@ -132,11 +141,12 @@ assert.deepEqual(
   orientationSchema.selector.button_toggle.options.map(
     (option) => option.value,
   ),
-  ["horizontal", "vertical"],
+  ["horizontal", "vertical", "pie"],
   "Use HA's lazy-loaded button_toggle selector, never a dropdown",
 );
 assert.equal(change({ orientation: "vertical" }).orientation, "vertical");
 assert.equal(change({ orientation: "horizontal" }).orientation, "horizontal");
+assert.equal(change({ orientation: "pie" }).orientation, "pie");
 
 // Clearing the native number selector must survive config serialization/reopening.
 assert.equal(change({ map_height: undefined }).map_height, null);
@@ -195,3 +205,9 @@ assert.deepEqual(
 );
 assert.equal(change({ group_by: "area" }).layout_data, undefined);
 assert.equal(change({ group_by: "none" }).group_by, "none");
+
+const initialEditor = registered.get("wiser-zigbee-card-editor");
+const reloaded = { exports: {} };
+new Function("require", "exports", "module", source)(requireMock, reloaded.exports, reloaded);
+assert.equal(registered.get("wiser-zigbee-card-editor"), initialEditor);
+console.log("Loading the editor twice preserves its existing registration.");

@@ -55,5 +55,6 @@
   "card.zoom_in": "Vergrößern",
   "card.zoom_out": "Verkleinern",
   "editor.group_by": "Gruppieren",
-  "card.unassigned_area": "Nicht zugewiesen"
+  "card.unassigned_area": "Nicht zugewiesen",
+  "editor.pie": "Kreis"
 }

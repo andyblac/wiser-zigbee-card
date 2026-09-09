@@ -9,6 +9,7 @@ export function containedView(
   width: number,
   height: number,
   padding = 8,
+  center?: { x: number; y: number },
 ) {
   const valid = bounds.filter((box) =>
     Object.values(box).every(Number.isFinite),
@@ -19,11 +20,14 @@ export function containedView(
   const right = Math.max(...valid.map((box) => box.right));
   const top = Math.min(...valid.map((box) => box.top));
   const bottom = Math.max(...valid.map((box) => box.bottom));
+  const position = center ?? { x: (left + right) / 2, y: (top + bottom) / 2 };
+  const spanX = 2 * Math.max(Math.abs(left - position.x), Math.abs(right - position.x));
+  const spanY = 2 * Math.max(Math.abs(top - position.y), Math.abs(bottom - position.y));
   return {
-    position: { x: (left + right) / 2, y: (top + bottom) / 2 },
+    position,
     scale: Math.min(
-      (width - padding * 2) / Math.max(right - left, 1),
-      (height - padding * 2) / Math.max(bottom - top, 1),
+      (width - padding * 2) / Math.max(spanX, 1),
+      (height - padding * 2) / Math.max(spanY, 1),
     ),
   };
 }

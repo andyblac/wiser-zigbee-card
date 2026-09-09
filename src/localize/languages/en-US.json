@@ -55,5 +55,6 @@
   "card.zoom_in": "Zoom in",
   "card.zoom_out": "Zoom out",
   "editor.group_by": "Group",
-  "card.unassigned_area": "Unassigned"
+  "card.unassigned_area": "Unassigned",
+  "editor.pie": "Pie"
 }

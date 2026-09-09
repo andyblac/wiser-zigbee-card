@@ -30,7 +30,7 @@ Set **Group → Area** in the editor to place devices in labelled area groups wh
 
 Double-click a device or empty map area to zoom into that spot. Double-click again anywhere on the map to restore the previous zoom and position. **Fit view** also exits device zoom. While zoomed in, scroll with the mouse wheel or two fingers on a trackpad to pan; Shift + wheel pans horizontally. Dragging empty map space also pans. In the overview, scrolling moves the dashboard normally. The animation respects reduced-motion preferences. Automatic and manual refreshes preserve your zoom and pan position, including device zoom.
 
-In the visual editor, use **Network view → Horizontal / Vertical**. Horizontal is the original default, flowing left to right. Vertical places the hub above rows of devices. The setting also works in YAML as `orientation: vertical`.
+In the visual editor, use **Network view → Horizontal / Vertical / Pie**. Vertical is the default, placing the hub above successive rows of devices following their actual parent/repeater links. Horizontal flows left to right. Pie places the hub in the centre with each repeater’s child devices arranged around that repeater. Area boxes enclose devices without changing their connection level. The setting also works in YAML as `orientation: vertical` or `orientation: pie`.
 
 Each orientation has separate browser-saved positions. Existing saved positions continue to work in the original Horizontal view. Layout YAML export includes `orientation` and `layout_orientation`, so coordinates are only applied to their matching view.
 

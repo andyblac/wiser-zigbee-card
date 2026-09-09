@@ -55,5 +55,6 @@
   "card.zoom_in": "Zoom avant",
   "card.zoom_out": "Zoom arrière",
   "editor.group_by": "Grouper",
-  "card.unassigned_area": "Non attribué"
+  "card.unassigned_area": "Non attribué",
+  "editor.pie": "Circulaire"
 }

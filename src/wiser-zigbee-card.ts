@@ -1,7 +1,7 @@
 import { signalColor } from "./signal-color";
 import { LitElement, html, TemplateResult, PropertyValues, css } from "lit";
 import { ifDefined } from "lit/directives/if-defined.js";
-import { customElement, state, eventOptions } from "lit/decorators.js";
+import { state, eventOptions } from "lit/decorators.js";
 import {
   LovelaceCardEditor,
   LovelaceCard,
@@ -42,7 +42,7 @@ import { placeLinkLabels, LinkLabel } from "./link-labels";
 import { deviceInfoEntity, receptionMetrics } from "./device-info";
 
 (window as any).customCards = (window as any).customCards || [];
-(window as any).customCards.push({
+if (!(window as any).customCards.some((card: { type: string }) => card.type === "wiser-zigbee-card")) (window as any).customCards.push({
   type: "wiser-zigbee-card",
   name: "Wiser Zigbee Card",
   description: localize("card.description"),
@@ -54,14 +54,13 @@ declare global {
       layout_data: any;
       hub?: string;
       name?: string;
-      orientation?: "horizontal" | "vertical";
+      orientation?: "horizontal" | "vertical" | "pie";
       layout_id?: string;
       group_by?: "none" | "area";
     };
   }
 }
 
-@customElement("wiser-zigbee-card")
 export class WiserZigbeeCard
   extends SubscribeMixin(LitElement)
   implements LovelaceCard
@@ -159,8 +158,8 @@ export class WiserZigbeeCard
     this.pendingLoad = true;
     this.requestId++;
   }
-  private get orientation(): "horizontal" | "vertical" {
-    return this.config?.orientation === "vertical" ? "vertical" : "horizontal";
+  private get orientation(): "horizontal" | "vertical" | "pie" {
+    return this.config?.orientation === "pie" ? "pie" : this.config?.orientation === "horizontal" ? "horizontal" : "vertical";
   }
   private get mapHeight(): number | null {
     const height = this.config?.map_height;
@@ -362,7 +361,7 @@ export class WiserZigbeeCard
             smooth: {
               enabled: true,
               type: "cubicBezier",
-              forceDirection: this.orientation,
+              forceDirection: this.orientation === "pie" ? "none" : this.orientation,
               roundness: 0.45,
             },
           },
@@ -460,9 +459,13 @@ export class WiserZigbeeCard
         (node) => node.group !== "Controller" && (node.area_id ?? "") === key,
       );
       const boxes = members.map((node) => {
-          const box = { ...this.network!.getBoundingBox(node.id) };
           const position = positions[node.id];
-          if (!measure || !position) return box;
+          if (!position) return this.network!.getBoundingBox(node.id);
+          // vis caches label bounds from the previous draw, which can span
+          // old and new positions after a layout change. Use current positions.
+          const box = { left: position.x - 32, right: position.x + 32,
+            top: position.y - 32, bottom: position.y + 60 };
+          if (!measure) return box;
           const label = node.group === "Area"
             ? `${node.label} ${this.collapsedAreas.has(node.area_id ?? "") ? "▸" : "▾"}`
             : (node.label.match(/\(([^)]+)\)/)?.[1] ?? this.deviceName(node));
@@ -482,7 +485,7 @@ export class WiserZigbeeCard
       const header = members[headerIndex];
       const position = header && positions[header.id];
       const deviceBoxes = boxes.filter((_, index) => index !== headerIndex);
-      if (position && deviceBoxes.length && !this.areaDrag) {
+      if (position && deviceBoxes.length && !this.areaDrag && this.orientation === "vertical") {
         const center = (Math.min(...deviceBoxes.map((box) => box.left)) +
           Math.max(...deviceBoxes.map((box) => box.right))) / 2;
         const dx = center - position.x;
@@ -762,6 +765,9 @@ export class WiserZigbeeCard
     const map = this.shadowRoot?.getElementById("zigbee-network");
     if (!map || !map.clientWidth || !map.clientHeight) return;
     this.network.redraw();
+    const hub = this.visibleData?.nodes.find((node) => node.group === "Controller");
+    const center = this.orientation === "pie" && hub
+      ? this.network.getPositions([hub.id])[hub.id] : undefined;
     const view = containedView(
       [
         ...(this.visibleData?.nodes ?? []).map((node) =>
@@ -771,6 +777,8 @@ export class WiserZigbeeCard
       ],
       map.clientWidth,
       map.clientHeight,
+      8,
+      center,
     );
     if (view) this.network.moveTo({ ...view, animation: false });
   }
@@ -879,12 +887,15 @@ export class WiserZigbeeCard
     );
     this.areaPositions = {};
     if (this.config?.group_by !== "area") this.zigbeeData = this.mapData;
+    this.closeDeviceInfo(false);
+    this.areaDrag = undefined;
     this.drawNetwork();
+    this.fitNetwork();
   }
   private get layoutKey(): string {
     const key = `wiser-zigbee-layout:${JSON.stringify([location.pathname, this.config?.hub ?? "", this.config?.name ?? "Wiser Zigbee Network", this.config?.layout_id ?? ""])}`;
     const oriented =
-      this.orientation === "vertical" ? `${key}:horizontal` : key;
+      this.orientation === "pie" ? `${key}:pie` : this.orientation === "vertical" ? `${key}:horizontal` : key;
     return this.config?.group_by === "area"
       ? `${oriented}:area-topology`
       : oriented;
@@ -1462,4 +1473,8 @@ export class WiserZigbeeCard
       }
     }
   `;
+}
+
+if (!customElements.get("wiser-zigbee-card")) {
+  customElements.define("wiser-zigbee-card", WiserZigbeeCard);
 }
