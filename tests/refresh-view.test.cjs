@@ -41,6 +41,8 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   "./localize/localize": load("src/localize/localize.ts"),
   "./native-ui": {},
   "./editor": {},
+  "./area-graph": load("src/area-graph.ts"),
+  "./areas": { withDeviceAreas: async (_, data) => data },
   "./fit": load("src/fit.ts"),
   "./link-labels": load("src/link-labels.ts"),
   "./device-info": { deviceInfoEntity: async () => "sensor.office_signal" },
@@ -395,6 +397,51 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     beforeTidyFits,
     "Tidy must not trigger Fit view",
   );
+  card.config.group_by = "area";
+  card.zigbeeData = {
+    nodes: [
+      { id: 0, group: "Controller", label: "Hub", x: 0, y: 0 },
+      {
+        id: 1,
+        group: "RoomStat",
+        label: "Office",
+        area_id: "office",
+        area_name: "Office",
+        x: 123,
+        y: 456,
+      },
+    ],
+    edges: [{ id: "1-0", from: 1, to: 0, label: "90%" }],
+  };
+  card.mapData = load("src/area-graph.ts").areaGraph(
+    card.zigbeeData,
+    "Unassigned",
+  );
+  card.areaPositions = {};
+  card.collapsedAreas.clear();
+  card.drawNetwork();
+  card.network.getPositions = () =>
+    Object.fromEntries(graphData.nodes.map((n) => [n.id, { x: n.x, y: n.y }]));
+  const areaNode = graphData.nodes.find((n) => n.group === "Area");
+  const areaView = structuredClone(view);
+  card.deviceClick(areaNode.id);
+  await new Promise((resolve) => setTimeout(resolve, 320));
+  assert.equal(
+    graphData.nodes.some((n) => n.id === 1),
+    false,
+    "Tap collapses area's devices",
+  );
+  assert.deepEqual(
+    card.currentPositions()[1],
+    { x: 123, y: 456 },
+    "Save includes hidden positions",
+  );
+  assert.deepEqual(view, areaView, "Area collapse preserves zoom and pan");
+  card.deviceClick(areaNode.id);
+  await new Promise((resolve) => setTimeout(resolve, 320));
+  assert.deepEqual(graphData.nodes.find((n) => n.id === 1).x, 123);
+  assert.deepEqual(graphData.nodes.find((n) => n.id === 1).y, 456);
+  assert.equal(card.zigbeeData.edges[0].to, 0, "Device info keeps real parent");
   console.log(
     "Refresh preserves latest zoom, pan, dragged positions and double-click return view.",
   );

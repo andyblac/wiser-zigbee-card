@@ -5,6 +5,7 @@ export function arrangeNetwork(
   data: zigbeeData,
   orientation: NetworkOrientation = "horizontal",
   positions?: Record<string, { x: number; y: number }>,
+  groupBy: "none" | "area" = "none",
 ): zigbeeData {
   const levels = new Map<number, number>();
   const roots = data.nodes.filter((node) => node.group === "Controller");
@@ -29,6 +30,34 @@ export function arrangeNetwork(
     const level = levels.get(node.id) ?? lastLevel;
     columns.set(level, [...(columns.get(level) ?? []), node]);
   }
+  const areaKeys = [
+    ...new Set(
+      data.nodes
+        .filter((n) => n.group !== "Controller")
+        .map((n) => n.area_id ?? ""),
+    ),
+  ].sort((a, b) => {
+    if (!a) return 1;
+    if (!b) return -1;
+    return (
+      data.nodes.find((n) => n.area_id === a)?.area_name ?? a
+    ).localeCompare(data.nodes.find((n) => n.area_id === b)?.area_name ?? b);
+  });
+  const areaOffsets = new Map<string, number>();
+  let areaSpan = 0;
+  for (const area of areaKeys) {
+    const count = Math.max(
+      1,
+      ...[...columns.values()].map(
+        (column) =>
+          column.filter(
+            (n) => n.group !== "Controller" && (n.area_id ?? "") === area,
+          ).length,
+      ),
+    );
+    areaOffsets.set(area, areaSpan);
+    areaSpan += count + 1;
+  }
   const nodes: typeof data.nodes = [];
   for (const [level, column] of columns) {
     const axis = orientation === "vertical" ? "x" : "y";
@@ -39,19 +68,26 @@ export function arrangeNetwork(
         return first! - second!;
       return a.label.localeCompare(b.label);
     });
-    column.forEach((node, index) =>
+    const areaIndices = new Map<string, number>();
+    column.forEach((node, index) => {
+      let slot = index - (column.length - 1) / 2;
+      if (groupBy === "area") {
+        const area = node.area_id ?? "";
+        const indexInArea = areaIndices.get(area) ?? 0;
+        slot =
+          node.group === "Controller"
+            ? 0
+            : (areaOffsets.get(area) ?? 0) +
+              indexInArea -
+              Math.max(0, areaSpan - 2) / 2;
+        if (node.group !== "Controller") areaIndices.set(area, indexInArea + 1);
+      }
       nodes.push({
         ...node,
-        x:
-          orientation === "vertical"
-            ? (index - (column.length - 1) / 2) * 170
-            : level * 270,
-        y:
-          orientation === "vertical"
-            ? level * 150
-            : (index - (column.length - 1) / 2) * 110,
-      }),
-    );
+        x: orientation === "vertical" ? slot * 170 : level * 270,
+        y: orientation === "vertical" ? level * 150 : slot * 110,
+      });
+    });
   }
   return { nodes, edges: data.edges.map((edge) => ({ ...edge })) };
 }

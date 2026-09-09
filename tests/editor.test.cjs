@@ -182,3 +182,16 @@ assert.equal(hubField().disabled, true);
 console.log(
   "Native hub picker covers single/multiple hubs and preserves layout isolation.",
 );
+
+editor.setConfig({ type: "custom:wiser-zigbee-card", layout_data: layout });
+const groupField = editor
+  .render()
+  .values.filter(Array.isArray)
+  .flat()
+  .find((field) => field?.name === "group_by");
+assert.deepEqual(
+  groupField.selector.button_toggle.options.map((option) => option.value),
+  ["none", "area"],
+);
+assert.equal(change({ group_by: "area" }).layout_data, undefined);
+assert.equal(change({ group_by: "none" }).group_by, "none");

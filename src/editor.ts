@@ -167,6 +167,26 @@ export class WiserZigbeeCardEditor
         .computeLabel=${this.computeLabel}
         @value-changed=${this.valueChanged}
       ></ha-form>
+      <ha-form
+        class="orientation-control"
+        .hass=${this.hass}
+        .data=${{ group_by: this._config.group_by ?? "none" }}
+        .schema=${[
+          {
+            name: "group_by",
+            selector: {
+              button_toggle: {
+                options: ["none", "area"].map((value) => ({
+                  value,
+                  label: this.t(`editor.${value}`),
+                })),
+              },
+            },
+          },
+        ]}
+        .computeLabel=${this.computeLabel}
+        @value-changed=${this.valueChanged}
+      ></ha-form>
       <div class="switches">
         ${switches.map(
           (field) =>
@@ -208,9 +228,13 @@ export class WiserZigbeeCardEditor
     )
       value.map_height = null;
     const next = { ...this._config, ...value };
-    if ((next.hub || this._hubs[0]) !== (this._config.hub || this._hubs[0])) {
+    if (
+      (next.hub || this._hubs[0]) !== (this._config.hub || this._hubs[0]) ||
+      (next.group_by ?? "none") !== (this._config.group_by ?? "none")
+    ) {
       delete next.layout_data;
       delete next.layout_orientation;
+      delete next.layout_group_by;
     }
     // Keep the implicit default translated when other form fields change.
     if (this._config.name == null && next.name === this.t("card.title"))
@@ -224,6 +248,7 @@ export class WiserZigbeeCardEditor
       (ev.detail.hub ?? "") !== (this._config.hub ?? "") ||
       (ev.detail.orientation ?? "horizontal") !==
         (this._config.orientation ?? "horizontal") ||
+      (ev.detail.group_by ?? "none") !== (this._config.group_by ?? "none") ||
       (ev.detail.layout_id ?? "") !== (this._config.layout_id ?? "") ||
       (ev.detail.name ?? "Wiser Zigbee Network") !==
         (this._config.name ?? "Wiser Zigbee Network")
@@ -233,6 +258,7 @@ export class WiserZigbeeCardEditor
       ...this._config,
       layout_data: ev.detail.layout_data,
       layout_orientation: ev.detail.orientation ?? "horizontal",
+      layout_group_by: ev.detail.group_by ?? "none",
     };
     fireEvent(this, "config-changed", { config: this._config });
   }

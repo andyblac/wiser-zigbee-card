@@ -112,3 +112,52 @@ for (const orientation of ["horizontal", "vertical"]) {
   );
 }
 console.log("Tidy preserves dragged order in both orientations.");
+
+const groupedInput = {
+  nodes: [
+    { id: 0, group: "Controller", label: "Hub" },
+    {
+      id: 1,
+      group: "SmartPlug",
+      label: "Plug",
+      area_id: "a",
+      area_name: "Kitchen",
+    },
+    {
+      id: 2,
+      group: "RoomStat",
+      label: "Z",
+      area_id: "a",
+      area_name: "Kitchen",
+    },
+    { id: 3, group: "RoomStat", label: "A", area_id: "b", area_name: "Office" },
+    {
+      id: 4,
+      group: "RoomStat",
+      label: "B",
+      area_id: "a",
+      area_name: "Kitchen",
+    },
+    { id: 5, group: "RoomStat", label: "Unassigned" },
+  ],
+  edges: [1, 2, 3, 4, 5].map((id) => ({ from: id, to: id === 1 ? 0 : 1 })),
+};
+for (const orientation of ["horizontal", "vertical"]) {
+  const grouped = arrangeNetwork(groupedInput, orientation, undefined, "area");
+  const axis = orientation === "vertical" ? "x" : "y";
+  const pos = (id) => grouped.nodes.find((n) => n.id === id)[axis];
+  assert.ok(
+    Math.max(pos(2), pos(4)) < pos(3),
+    "Area peers stay adjacent despite names",
+  );
+  assert.ok(pos(5) > pos(3), "Unassigned nodes have their own band");
+  assert.ok(
+    pos(1) <= Math.max(pos(2), pos(4)),
+    "Same area spans multiple hops",
+  );
+  assert.deepEqual(
+    grouped.edges,
+    groupedInput.edges,
+    "Grouping preserves real connections",
+  );
+}

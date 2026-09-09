@@ -39,6 +39,7 @@ export function watchNativeElements(
   host: HTMLElement & { requestUpdate(): void },
 ): void {
   for (const name of [
+    "ha-icon",
     "ha-button",
     "ha-icon-button",
     "ha-expansion-panel",

@@ -53,5 +53,7 @@
   "editor.map_height": "Kartenhöhe",
   "card.show_detailed_view": "Detailansicht anzeigen",
   "card.zoom_in": "Vergrößern",
-  "card.zoom_out": "Verkleinern"
+  "card.zoom_out": "Verkleinern",
+  "editor.group_by": "Gruppieren",
+  "card.unassigned_area": "Nicht zugewiesen"
 }

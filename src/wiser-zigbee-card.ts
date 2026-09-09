@@ -17,6 +17,8 @@ import type {
 } from "./types";
 import { DEVICE_IMAGES, FALLBACK_DEVICE_IMAGE } from "./device-images";
 import { OPTIONS } from "./const";
+import { areaGraph, visibleAreaGraph, AREA_NODE_IMAGE } from "./area-graph";
+import { withDeviceAreas } from "./areas";
 import { arrangeNetwork } from "./layout";
 import { fetchZigbeeData } from "./data/websockets";
 import { SubscribeMixin } from "./components/subscribe-mixin";
@@ -53,6 +55,7 @@ declare global {
       name?: string;
       orientation?: "horizontal" | "vertical";
       layout_id?: string;
+      group_by?: "none" | "area";
     };
   }
 }
@@ -94,6 +97,15 @@ export class WiserZigbeeCard
     scale: number;
   };
   network?: Network;
+  private mapData?: zigbeeData;
+  private collapsedAreas = new Set<string>();
+  private areaPositions: Record<string, { x: number; y: number }> = {};
+  private get visibleData(): zigbeeData | undefined {
+    const data = this.mapData ?? this.zigbeeData;
+    return data && this.config?.group_by === "area"
+      ? visibleAreaGraph(data, this.collapsedAreas)
+      : data;
+  }
   private infoRequest = 0;
   private deviceTapTimer?: ReturnType<typeof setTimeout>;
   private fitAfterHeightChange = false;
@@ -125,6 +137,9 @@ export class WiserZigbeeCard
       return;
     }
     this.cancelDeviceInfo();
+    this.mapData = undefined;
+    this.collapsedAreas.clear();
+    this.areaPositions = {};
     this.fitAfterHeightChange = false;
     this.network?.destroy();
     this.network = undefined;
@@ -188,6 +203,7 @@ export class WiserZigbeeCard
   }
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
+    this.positionAreaIcons();
     if (changed.has("hass") && this.network) {
       const color =
         getComputedStyle(this)
@@ -222,13 +238,22 @@ export class WiserZigbeeCard
     this.loading = true;
     this.error = "";
     try {
+      let source = await fetchZigbeeData(this.hass, this.config.hub);
+      if (this.config.group_by === "area")
+        source = await withDeviceAreas(this.hass, source, this.config.hub);
       const data = arrangeNetwork(
-        await fetchZigbeeData(this.hass, this.config.hub),
+        this.config.group_by === "area"
+          ? areaGraph(source, this.t("card.unassigned_area"))
+          : source,
         this.orientation,
+        undefined,
+        this.config.group_by,
       );
       if (request !== this.requestId || !this.isConnected) return;
       let saved =
-        (this.config.layout_orientation ?? "horizontal") === this.orientation
+        (this.config.layout_orientation ?? "horizontal") === this.orientation &&
+        (this.config.layout_group_by ?? "none") ===
+          (this.config.group_by ?? "none")
           ? this.config.layout_data
           : undefined;
       try {
@@ -239,7 +264,10 @@ export class WiserZigbeeCard
       } catch {
         /* Saved YAML and the automatic layout remain available. */
       }
-      const positions = this.network?.getPositions();
+      const positions = {
+        ...this.areaPositions,
+        ...this.network?.getPositions(),
+      };
       data.nodes = data.nodes.map((node) => ({
         ...node,
         ...(positions?.[node.id] ??
@@ -247,7 +275,8 @@ export class WiserZigbeeCard
             saved && typeof saved === "object" ? saved[node.id] : undefined,
           )),
       }));
-      this.zigbeeData = data;
+      this.zigbeeData = this.config.group_by === "area" ? source : data;
+      this.mapData = data;
       await this.updateComplete;
       this.drawNetwork();
     } catch (error) {
@@ -259,28 +288,36 @@ export class WiserZigbeeCard
   private drawNetwork(preservePositions = false): void {
     if (!this.zigbeeData) return;
     const positions = preservePositions
-      ? this.network?.getPositions()
+      ? { ...this.areaPositions, ...this.network?.getPositions() }
       : undefined;
+    const visible = this.visibleData!;
+    if (preservePositions && this.config?.group_by === "area")
+      this.areaPositions = positions ?? {};
     const textColor =
       getComputedStyle(this).getPropertyValue("--primary-text-color").trim() ||
       "#273448";
     this.textColor = textColor;
     this.displayLanguage = languageFor(this.hass);
     const data = {
-      nodes: this.zigbeeData.nodes.map((node) => ({
+      nodes: visible.nodes.map((node) => ({
         ...node,
         ...(positions?.[node.id] ?? {}),
         shape: "image",
-        image: DEVICE_IMAGES[node.group] ?? FALLBACK_DEVICE_IMAGE,
+        image:
+          node.group === "Area"
+            ? AREA_NODE_IMAGE
+            : (DEVICE_IMAGES[node.group] ?? FALLBACK_DEVICE_IMAGE),
         brokenImage: FALLBACK_DEVICE_IMAGE,
         size: 32,
         label:
-          node.group === "Controller"
-            ? this.deviceName(node)
-            : (node.label.match(/\(([^)]+)\)/)?.[1] ?? this.deviceName(node)),
+          node.group === "Area"
+            ? `${node.label} ${this.collapsedAreas.has(node.area_id ?? "") ? "▸" : "▾"}`
+            : node.group === "Controller"
+              ? this.deviceName(node)
+              : (node.label.match(/\(([^)]+)\)/)?.[1] ?? this.deviceName(node)),
         font: { color: textColor },
       })),
-      edges: this.zigbeeData.edges.map((edge) => ({
+      edges: visible.edges.map((edge) => ({
         ...edge,
         label: "",
       })),
@@ -323,12 +360,33 @@ export class WiserZigbeeCard
         this.cancelDeviceInfo();
         this.toggleDeviceZoom(event.nodes[0], event.pointer?.canvas);
       });
-      this.network.on("afterDrawing", (ctx) => this.drawLinkLabels(ctx));
+      this.network.on("afterDrawing", (ctx) => {
+        this.positionAreaIcons();
+        this.drawLinkLabels(ctx);
+      });
       this.network.on("dragStart", () => this.closeDeviceInfo(false));
       this.network.on("resize", () => this.fitNetwork());
       this.fitNetwork();
       this.requestUpdate();
     }
+  }
+  private positionAreaIcons(): void {
+    if (!this.network || this.config?.group_by !== "area") return;
+    const positions = this.network.getPositions();
+    const size = 64 * this.network.getScale();
+    this.shadowRoot
+      ?.querySelectorAll<HTMLElement>(".area-icons ha-icon")
+      .forEach((icon) => {
+        const position = positions[Number(icon.dataset.node)];
+        if (!position) return;
+        const point = this.network!.canvasToDOM(position);
+        icon.style.left = `${point.x}px`;
+        icon.style.top = `${point.y}px`;
+        icon.style.width = `${size}px`;
+        icon.style.height = `${size}px`;
+        icon.style.setProperty("--mdc-icon-size", `${size}px`);
+        icon.style.setProperty("--ha-icon-size", `${size}px`);
+      });
   }
   private cancelDeviceInfo(): void {
     clearTimeout(this.deviceTapTimer);
@@ -360,7 +418,21 @@ export class WiserZigbeeCard
       return;
     }
     // Wait for the double-click gesture before opening and centring details.
-    this.deviceTapTimer = setTimeout(() => this.showDeviceDetails(nodeId), 300);
+    this.deviceTapTimer = setTimeout(() => {
+      const node = this.mapData?.nodes.find((item) => item.id === nodeId);
+      if (node?.group === "Area") this.toggleArea(node.area_id ?? "");
+      else this.showDeviceDetails(nodeId);
+    }, 300);
+  }
+  private toggleArea(area: string): void {
+    this.closeDeviceInfo(false);
+    this.areaPositions = {
+      ...this.areaPositions,
+      ...this.network?.getPositions(),
+    };
+    if (this.collapsedAreas.has(area)) this.collapsedAreas.delete(area);
+    else this.collapsedAreas.add(area);
+    this.drawNetwork(true);
   }
   private async deviceHold(nodeId?: number): Promise<void> {
     this.closeDeviceInfo();
@@ -533,7 +605,7 @@ export class WiserZigbeeCard
     if (!map || !map.clientWidth || !map.clientHeight) return;
     this.network.redraw();
     const view = containedView(
-      (this.zigbeeData?.nodes ?? []).map((node) =>
+      (this.visibleData?.nodes ?? []).map((node) =>
         this.network!.getBoundingBox(node.id),
       ),
       map.clientWidth,
@@ -548,7 +620,7 @@ export class WiserZigbeeCard
     if (!map) return;
     const scale = network.getScale();
     const positions = network.getPositions();
-    const obstacles = this.zigbeeData.nodes.map((node) => {
+    const obstacles = this.visibleData!.nodes.map((node) => {
       const box = network.getBoundingBox(node.id);
       const top = network.canvasToDOM({ x: box.left, y: box.top });
       const bottom = network.canvasToDOM({ x: box.right, y: box.bottom });
@@ -570,7 +642,8 @@ export class WiserZigbeeCard
     ctx.save();
     ctx.font = `${14 / scale}px system-ui, sans-serif`;
     const labels: LinkLabel[] = [];
-    for (const edge of this.zigbeeData.edges) {
+    for (const edge of this.visibleData!.edges) {
+      if (!edge.label) continue;
       if (!positions[edge.from] || !positions[edge.to]) continue;
       const text = compactSignal(edge.label, this.hass);
       labels.push({
@@ -637,27 +710,45 @@ export class WiserZigbeeCard
   }
   private tidyLayout(): void {
     if (!this.zigbeeData) return;
-    this.zigbeeData = arrangeNetwork(
-      this.zigbeeData,
+    this.mapData = arrangeNetwork(
+      this.mapData ?? this.zigbeeData,
       this.orientation,
       this.network?.getPositions(),
+      this.config?.group_by,
     );
+    this.areaPositions = {};
+    if (this.config?.group_by !== "area") this.zigbeeData = this.mapData;
     this.drawNetwork();
   }
   private get layoutKey(): string {
     const key = `wiser-zigbee-layout:${JSON.stringify([location.pathname, this.config?.hub ?? "", this.config?.name ?? "Wiser Zigbee Network", this.config?.layout_id ?? ""])}`;
-    return this.orientation === "vertical" ? `${key}:horizontal` : key;
+    const oriented =
+      this.orientation === "vertical" ? `${key}:horizontal` : key;
+    return this.config?.group_by === "area" ? `${oriented}:area` : oriented;
   }
   private validPosition(value: any): { x: number; y: number } | undefined {
     return value && Number.isFinite(value.x) && Number.isFinite(value.y)
       ? { x: value.x, y: value.y }
       : undefined;
   }
+  private currentPositions():
+    | Record<string, { x: number; y: number }>
+    | undefined {
+    if (!this.network) return undefined;
+    const positions: Record<string, { x: number; y: number }> = {};
+    for (const node of this.mapData?.nodes ?? [])
+      positions[node.id] = { x: node.x, y: node.y };
+    return {
+      ...positions,
+      ...this.areaPositions,
+      ...this.network.getPositions(),
+    };
+  }
   private exportLayout(): void {
-    const layout = this.network?.getPositions();
+    const layout = this.currentPositions();
     if (!layout) return;
     this.layoutYaml =
-      `orientation: ${this.orientation}\nlayout_orientation: ${this.orientation}\nlayout_data:\n` +
+      `orientation: ${this.orientation}\nlayout_orientation: ${this.orientation}\ngroup_by: ${this.config?.group_by ?? "none"}\nlayout_group_by: ${this.config?.group_by ?? "none"}\nlayout_data:\n` +
       Object.entries(layout)
         .map(
           ([id, position]) =>
@@ -666,7 +757,7 @@ export class WiserZigbeeCard
         .join("\n");
   }
   private saveLayoutClick(): void {
-    const layout = this.network?.getPositions();
+    const layout = this.currentPositions();
     if (!layout || !this.config) return;
     try {
       localStorage.setItem(this.layoutKey, JSON.stringify(layout));
@@ -680,6 +771,7 @@ export class WiserZigbeeCard
       name: this.config.name,
       orientation: this.orientation,
       layout_id: this.config.layout_id,
+      group_by: this.config.group_by ?? "none",
     });
   }
   private renderZigbeeDetails(node: ZigbeeNode): TemplateResult {
@@ -868,6 +960,22 @@ export class WiserZigbeeCard
                 : "map.accessible_details",
           )}
         ></div>
+        ${this.config?.group_by === "area"
+          ? html`
+              <div class="area-icons" aria-hidden="true">
+                ${(this.visibleData?.nodes ?? [])
+                  .filter((node) => node.group === "Area")
+                  .map(
+                    (node) => html`
+                      <ha-icon
+                        data-node=${node.id}
+                        .icon=${node.area_icon || "mdi:floor-plan"}
+                      ></ha-icon>
+                    `,
+                  )}
+              </div>
+            `
+          : ""}
         ${this.error
           ? html`<div class="message" role="alert">
               <ha-alert alert-type="error">${this.t(this.error)}</ha-alert>
@@ -1075,6 +1183,18 @@ export class WiserZigbeeCard
     #zigbee-network {
       width: 100%;
       height: 340px;
+    }
+    .area-icons {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      color: var(--primary-text-color);
+    }
+    .area-icons ha-icon {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
     }
     .message {
       position: absolute;

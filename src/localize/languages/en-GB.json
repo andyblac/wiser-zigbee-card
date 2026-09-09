@@ -53,5 +53,7 @@
   "editor.map_height": "Map height",
   "card.show_detailed_view": "Show detailed view",
   "card.zoom_in": "Zoom in",
-  "card.zoom_out": "Zoom out"
+  "card.zoom_out": "Zoom out",
+  "editor.group_by": "Group",
+  "card.unassigned_area": "Unassigned"
 }

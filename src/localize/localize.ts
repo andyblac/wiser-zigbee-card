@@ -17,6 +17,8 @@ const languages: Record<SupportedLanguage, Record<string, string>> = {
 };
 // Core and Lovelace labels are owned by HA; no local copies.
 const nativeKeys: Record<string, string> = {
+  "editor.none": "ui.common.none",
+  "editor.area": "ui.panel.lovelace.editor.card.area.name",
   "common.refresh": "ui.common.refresh",
   "common.close": "ui.common.close",
   "common.save": "ui.common.save",
