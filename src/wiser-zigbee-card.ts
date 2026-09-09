@@ -1,3 +1,4 @@
+import { signalColor } from "./signal-color";
 import { LitElement, html, TemplateResult, PropertyValues, css } from "lit";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { customElement, state, eventOptions } from "lit/decorators.js";
@@ -326,10 +327,14 @@ export class WiserZigbeeCard
               : (node.label.match(/\(([^)]+)\)/)?.[1] ?? this.deviceName(node)),
         font: { color: textColor },
       })),
-      edges: visible.edges.map((edge) => ({
-        ...edge,
-        label: "",
-      })),
+      edges: visible.edges.map((edge) => {
+        const color = signalColor(edge.label, this.showLabels, getComputedStyle(this));
+        return {
+          ...edge,
+          label: "",
+          color: { color, highlight: color, hover: color, inherit: false },
+        };
+      }),
     };
     if (this.network) {
       // setData triggers vis-network's initial fit even with physics disabled.
