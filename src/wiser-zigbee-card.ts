@@ -1,3 +1,4 @@
+import { disconnectedDevice, ghostImage } from "./device-appearance";
 import { separateAreas } from "./area-spacing";
 import { signalColor } from "./signal-color";
 import { LitElement, html, TemplateResult, PropertyValues, css } from "lit";
@@ -322,15 +323,15 @@ export class WiserZigbeeCard
     this.textColor = textColor;
     this.displayLanguage = languageFor(this.hass);
     const data = {
-      nodes: visible.nodes.map((node) => ({
+      nodes: visible.nodes.map((node) => {
+        const offline = disconnectedDevice(node, this.zigbeeData!);
+        const artwork = node.group === "Area" ? AREA_NODE_IMAGE : (DEVICE_IMAGES[node.group] ?? FALLBACK_DEVICE_IMAGE);
+        return {
         ...node,
         ...(positions?.[node.id] ?? {}),
         shape: "image",
-        image:
-          node.group === "Area"
-            ? AREA_NODE_IMAGE
-            : (DEVICE_IMAGES[node.group] ?? FALLBACK_DEVICE_IMAGE),
-        brokenImage: FALLBACK_DEVICE_IMAGE,
+        image: offline ? ghostImage(artwork) : artwork,
+        brokenImage: offline ? ghostImage(FALLBACK_DEVICE_IMAGE) : FALLBACK_DEVICE_IMAGE,
         size: 32,
         label:
           node.group === "Area"
@@ -339,7 +340,8 @@ export class WiserZigbeeCard
               ? this.deviceName(node)
               : (node.label.match(/\(([^)]+)\)/)?.[1] ?? this.deviceName(node)),
         font: { color: textColor },
-      })),
+      };
+      }),
       edges: visible.edges.map((edge) => {
         const color = signalColor(edge.label, this.showLabels, getComputedStyle(this));
         return {

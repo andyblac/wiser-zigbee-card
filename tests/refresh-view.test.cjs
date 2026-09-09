@@ -32,6 +32,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   "./device-images": { DEVICE_IMAGES: {}, FALLBACK_DEVICE_IMAGE: "" },
   "./const": { OPTIONS: {} },
   "./area-spacing": load("src/area-spacing.ts"),
+  "./device-appearance": load("src/device-appearance.ts"),
   "./signal-color": load("src/signal-color.ts"),
   "./layout": { arrangeNetwork: (data) => data },
   "./data/websockets": {
