@@ -9,8 +9,4 @@ export const FALLBACK_DEVICE_IMAGE =
 
 export const DEVICE_IMAGES: Record<string, string> = {
   ...images,
-  CFMT: FALLBACK_DEVICE_IMAGE,
-  PowerTagE: FALLBACK_DEVICE_IMAGE,
-  ButtonPanel: FALLBACK_DEVICE_IMAGE,
-  BoilerInterface: FALLBACK_DEVICE_IMAGE,
 };

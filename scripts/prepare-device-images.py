@@ -16,6 +16,8 @@ SOURCE_FILES = {
     "heating-actuator": "actuator-edit.png", "dimmer": "dimmer.png",
     "power": "power.png", "shutter": "shutter.png", "smoke": "smoke.png",
     "leak": "leak.png", "motion": "motion.png", "window": "window.png",
+    "cfmt": "cfmt.jpg", "powertag": "powertag.jpg",
+    "button": "button.jpg", "boiler": "boiler.jpg",
 }
 
 def cutout(image):

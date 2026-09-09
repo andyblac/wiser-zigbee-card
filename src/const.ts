@@ -1,6 +1,6 @@
 import type { Options } from "vis-network";
 
-export const CARD_VERSION = "3.0.0-dev.24";
+export const CARD_VERSION = "3.0.0-dev.25";
 
 export const OPTIONS: Options = {
   autoResize: true,

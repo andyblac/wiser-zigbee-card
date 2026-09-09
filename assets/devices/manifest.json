@@ -58,5 +58,21 @@
   "WindowDoorSensor": {
     "file": "window.png",
     "source": "https://cdn.shopify.com/s/files/1/0653/8366/1754/files/Window_Door_Sensor_Website_1500x1500_1.png?v=1786630601"
+  },
+  "CFMT": {
+    "file": "cfmt.png",
+    "source": "https://download.schneider-electric.com/files?p_Doc_Ref=CFMT02ZB_IOP-Default&p_File_Type=rendition_369_jpg"
+  },
+  "PowerTagE": {
+    "file": "powertag.png",
+    "source": "https://download.schneider-electric.com/files?p_Doc_Ref=R9M60_Image&p_File_Type=rendition_369_jpg"
+  },
+  "ButtonPanel": {
+    "file": "button.png",
+    "source": "https://download.schneider-electric.com/files?p_Doc_Ref=S520531_IOP-def_CL_SE&p_File_Type=rendition_369_jpg"
+  },
+  "BoilerInterface": {
+    "file": "boiler.png",
+    "source": "https://download.schneider-electric.com/files?p_Doc_Ref=CCTFR6001_IOP-def_CL&p_File_Type=rendition_369_jpg"
   }
 }
