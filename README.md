@@ -14,6 +14,10 @@ In Map only mode, details appear in a scrollable overlay. The selected device is
 
 Paired RSSI/LQI zeros are omitted because aioWiserHeatAPI uses them as defaults for absent reception data. A zero LQI with a nonzero RSSI is retained.
 
+## Hub selection
+
+Use **Wiser Hub** in the visual editor to select the network. The native picker is shown even with one hub; when no hub is configured it displays the first discovered hub. Each card displays one hub, so add another card for another hub. YAML: `hub: your_hub_name`. Switching hubs clears the previous hub’s embedded layout; browser-saved layouts remain separate per hub.
+
 ## Map height
 
 **Map height** defaults to Auto (empty). In Sections, the map fills the available card height; use HA’s Layout settings to choose the card’s rows. Leaving out `map_height` or setting it to `null` enables Auto. Enter 100–2000 px for a fixed map area, for example `map_height: 340`. Both orientations and view modes support this. Height and width changes automatically fit and centre the map while keeping device positions. Fit uses the smaller width/height scale ratio and includes device labels with an 8 px margin. Outside a constrained layout, Auto uses a 340 px map as its natural size.

@@ -90,8 +90,15 @@ export class WiserZigbeeCardEditor
   protected render(): TemplateResult {
     if (!this.hass || !this._config) return html``;
     if (!this._formReady) return html`<p>${this.t("editor.loading")}</p>`;
+    const hubs = [
+      ...new Set([
+        ...this._hubs,
+        ...(this._config.hub ? [this._config.hub] : []),
+      ]),
+    ];
     const data = {
       ...this._config,
+      hub: this._config.hub || this._hubs[0],
       name: this._config.name ?? this.t("card.title"),
       show_detailed_view: !(this._config.map_only ?? false),
       map_height: this._config.map_height ?? null,
@@ -99,14 +106,12 @@ export class WiserZigbeeCardEditor
       show_device_list: this._config.show_device_list ?? true,
     };
     const fields = [
-      ...(this._hubs.length > 1
-        ? [
-            {
-              name: "hub",
-              selector: { select: { options: this._hubs, mode: "dropdown" } },
-            },
-          ]
-        : []),
+      {
+        name: "hub",
+        required: true,
+        disabled: hubs.length === 0,
+        selector: { select: { options: hubs, mode: "dropdown" } },
+      },
       { name: "name", selector: { text: {} } },
       {
         name: "map_height",
@@ -203,7 +208,7 @@ export class WiserZigbeeCardEditor
     )
       value.map_height = null;
     const next = { ...this._config, ...value };
-    if (next.hub !== this._config.hub) {
+    if ((next.hub || this._hubs[0]) !== (this._config.hub || this._hubs[0])) {
       delete next.layout_data;
       delete next.layout_orientation;
     }

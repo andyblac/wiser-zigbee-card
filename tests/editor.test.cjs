@@ -144,3 +144,41 @@ editor.setConfig(JSON.parse(JSON.stringify(events.at(-1).detail.config)));
 assert.ok(editor.render().values.some((value) => value?.map_height === null));
 assert.equal(change({ show_detailed_view: false }).map_height, null);
 assert.equal(change({ map_height: 340 }).map_height, 340);
+
+function hubField() {
+  return editor
+    .render()
+    .values.filter(Array.isArray)
+    .flat()
+    .find((field) => field?.name === "hub");
+}
+editor.setConfig({
+  type: "custom:wiser-zigbee-card",
+  layout_data: layout,
+  layout_orientation: "horizontal",
+});
+editor._hubs = ["Hub A"];
+assert.deepEqual(hubField().selector.select.options, ["Hub A"]);
+assert.equal(hubField().required, true);
+assert.equal(hubField().disabled, false);
+assert.ok(editor.render().values.some((value) => value?.hub === "Hub A"));
+assert.deepEqual(
+  change({ hub: "Hub A", name: "Network" }).layout_data,
+  layout,
+  "Persisting the implicit first hub keeps its existing layout",
+);
+editor._hubs = ["Hub A", "Hub B"];
+assert.deepEqual(hubField().selector.select.options, ["Hub A", "Hub B"]);
+assert.equal(change({ hub: "Hub B" }).layout_data, undefined);
+assert.equal(events.at(-1).detail.config.layout_orientation, undefined);
+editor._hubs = [];
+assert.deepEqual(
+  hubField().selector.select.options,
+  ["Hub B"],
+  "Retain the configured hub when discovery is temporarily unavailable",
+);
+editor.setConfig({ type: "custom:wiser-zigbee-card" });
+assert.equal(hubField().disabled, true);
+console.log(
+  "Native hub picker covers single/multiple hubs and preserves layout isolation.",
+);
