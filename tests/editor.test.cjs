@@ -64,7 +64,7 @@ function switchFields(template) {
     .filter((field) => field?.selector?.boolean);
 }
 const switches = switchFields(template);
-assert.equal(switches.length, 4);
+assert.equal(switches.length, 5);
 assert.ok(
   switches.every((field) => field.selector && "boolean" in field.selector),
   "All switches use native boolean selectors",
@@ -211,3 +211,12 @@ const reloaded = { exports: {} };
 new Function("require", "exports", "module", source)(requireMock, reloaded.exports, reloaded);
 assert.equal(registered.get("wiser-zigbee-card-editor"), initialEditor);
 console.log("Loading the editor twice preserves its existing registration.");
+
+editor.setConfig({ type: "custom:wiser-zigbee-card", orientation: "vertical", layout_data: layout });
+editor.save_layout({ detail: { orientation: "vertical", show_labels: true, map_only: true, preferences_only: true } });
+assert.equal(events.at(-1).detail.config.show_labels, true);
+assert.equal(events.at(-1).detail.config.map_only, true);
+assert.deepEqual(events.at(-1).detail.config.layout_data, layout);
+editor.save_layout({ detail: { orientation: "vertical", show_labels: false, map_only: false, preferences_only: true } });
+assert.equal(events.at(-1).detail.config.show_labels, false);
+assert.equal(events.at(-1).detail.config.map_only, false);

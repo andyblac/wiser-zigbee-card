@@ -56,5 +56,6 @@
   "card.zoom_out": "Zoom arrière",
   "editor.group_by": "Grouper",
   "card.unassigned_area": "Non attribué",
-  "editor.pie": "Circulaire"
+  "editor.pie": "Circulaire",
+  "editor.show_labels": "Afficher les libellés des liaisons"
 }

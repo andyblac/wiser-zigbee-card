@@ -103,6 +103,7 @@ export class WiserZigbeeCardEditor
       map_height: this._config.map_height ?? null,
       show_layout_export: this._config.show_layout_export ?? true,
       show_device_list: this._config.show_device_list ?? true,
+      show_labels: this._config.show_labels ?? false,
     };
     const fields = [
       {
@@ -126,6 +127,7 @@ export class WiserZigbeeCardEditor
       },
     ];
     const switches = [
+      { name: "show_labels", selector: { boolean: {} } },
       { name: "auto_update", selector: { boolean: {} } },
       { name: "show_detailed_view", selector: { boolean: {} } },
       {
@@ -255,9 +257,13 @@ export class WiserZigbeeCardEditor
       return;
     this._config = {
       ...this._config,
-      layout_data: ev.detail.layout_data,
-      layout_orientation: ev.detail.orientation ?? "horizontal",
-      layout_group_by: ev.detail.group_by ?? "none",
+      ...(typeof ev.detail.map_only === "boolean" ? { map_only: ev.detail.map_only } : {}),
+      ...(typeof ev.detail.show_labels === "boolean" ? { show_labels: ev.detail.show_labels } : {}),
+      ...(!ev.detail.preferences_only ? {
+        layout_data: ev.detail.layout_data,
+        layout_orientation: ev.detail.orientation ?? "horizontal",
+        layout_group_by: ev.detail.group_by ?? "none",
+      } : {}),
     };
     fireEvent(this, "config-changed", { config: this._config });
   }

@@ -56,5 +56,6 @@
   "card.zoom_out": "Verkleinern",
   "editor.group_by": "Gruppieren",
   "card.unassigned_area": "Nicht zugewiesen",
-  "editor.pie": "Kreis"
+  "editor.pie": "Kreis",
+  "editor.show_labels": "Verbindungsbeschriftungen anzeigen"
 }

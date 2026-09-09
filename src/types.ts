@@ -25,6 +25,7 @@ export interface WiserZigbeeCardConfig extends LovelaceCardConfig {
   map_height?: number | null | "";
   show_layout_export?: boolean;
   show_device_list?: boolean;
+  show_labels?: boolean;
   orientation?: NetworkOrientation;
   layout_orientation?: NetworkOrientation;
   layout_id?: string;

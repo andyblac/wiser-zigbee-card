@@ -52,6 +52,9 @@ declare global {
   interface HASSDomEvents {
     "wiser-zigbee-save-layout": {
       layout_data: any;
+      show_labels?: boolean;
+      map_only?: boolean;
+      preferences_only?: boolean;
       hub?: string;
       name?: string;
       orientation?: "horizontal" | "vertical" | "pie";
@@ -139,6 +142,16 @@ export class WiserZigbeeCard
           (key) => JSON.stringify(previous[key]) === JSON.stringify(next[key]),
         );
     this.config = next;
+    this.showLabels = config.show_labels ?? false;
+    if (config.map_only === undefined) {
+      try {
+        const saved = localStorage.getItem(`${this.layoutKey}:map-only`);
+        if (saved !== null) this.config.map_only = saved === "true";
+      } catch {}
+    }
+    if (config.show_labels === undefined) {
+      try { this.showLabels = localStorage.getItem(`${this.layoutKey}:labels`) === "true"; } catch {}
+    }
     if (onlyHeightChanged) {
       this.fitAfterHeightChange ||= previousHeight !== this.mapHeight;
       return;
@@ -876,6 +889,7 @@ export class WiserZigbeeCard
   private toggleLabels(): void {
     this.showLabels = !this.showLabels;
     this.drawNetwork(true);
+    this.saveLayoutClick(true);
   }
   private tidyLayout(): void {
     if (!this.zigbeeData) return;
@@ -922,7 +936,7 @@ export class WiserZigbeeCard
     const layout = this.currentPositions();
     if (!layout) return;
     this.layoutYaml =
-      `orientation: ${this.orientation}\nlayout_orientation: ${this.orientation}\ngroup_by: ${this.config?.group_by ?? "none"}\nlayout_group_by: ${this.config?.group_by ?? "none"}\nlayout_data:\n` +
+      `show_labels: ${this.showLabels}\nmap_only: ${this.config?.map_only ?? false}\norientation: ${this.orientation}\nlayout_orientation: ${this.orientation}\ngroup_by: ${this.config?.group_by ?? "none"}\nlayout_group_by: ${this.config?.group_by ?? "none"}\nlayout_data:\n` +
       Object.entries(layout)
         .map(
           ([id, position]) =>
@@ -930,17 +944,22 @@ export class WiserZigbeeCard
         )
         .join("\n");
   }
-  private saveLayoutClick(): void {
+  private saveLayoutClick(preferencesOnly = false): void {
     const layout = this.currentPositions();
     if (!layout || !this.config) return;
     try {
-      localStorage.setItem(this.layoutKey, JSON.stringify(layout));
+      if (!preferencesOnly) localStorage.setItem(this.layoutKey, JSON.stringify(layout));
+      localStorage.setItem(`${this.layoutKey}:labels`, JSON.stringify(this.showLabels));
+      localStorage.setItem(`${this.layoutKey}:map-only`, JSON.stringify(this.config.map_only ?? false));
       this.layoutStatus = "";
     } catch {
       this.layoutStatus = "layout.storage_error";
     }
     fireEvent(this, "wiser-zigbee-save-layout", {
       layout_data: layout,
+      show_labels: this.showLabels,
+      map_only: this.config.map_only ?? false,
+      preferences_only: preferencesOnly,
       hub: this.config.hub,
       name: this.config.name,
       orientation: this.orientation,
@@ -999,6 +1018,7 @@ export class WiserZigbeeCard
   private toggleViewMode(): void {
     if (!this.config) return;
     this.config = { ...this.config, map_only: !this.config.map_only };
+    this.saveLayoutClick(true);
   }
   private layoutIcon(
     key: string,
