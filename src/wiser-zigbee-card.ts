@@ -440,7 +440,7 @@ export class WiserZigbeeCard
         this.network.moveNode(Number(id), position.x, position.y);
     }
   }
-  private areaBounds(): Array<{
+  private areaBounds(ctx?: CanvasRenderingContext2D): Array<{
     left: number;
     right: number;
     top: number;
@@ -448,17 +448,52 @@ export class WiserZigbeeCard
   }> {
     if (!this.network || this.config?.group_by !== "area") return [];
     const nodes = this.visibleData?.nodes ?? [];
+    const measure = ctx ?? document.createElement("canvas").getContext("2d");
+    const positions = this.network.getPositions();
     const keys = new Set(
       nodes
         .filter((node) => node.group === "Area")
         .map((node) => node.area_id ?? ""),
     );
     return [...keys].map((key) => {
-      const boxes = nodes
-        .filter(
-          (node) => node.group !== "Controller" && (node.area_id ?? "") === key,
-        )
-        .map((node) => this.network!.getBoundingBox(node.id));
+      const members = nodes.filter(
+        (node) => node.group !== "Controller" && (node.area_id ?? "") === key,
+      );
+      const boxes = members.map((node) => {
+          const box = { ...this.network!.getBoundingBox(node.id) };
+          const position = positions[node.id];
+          if (!measure || !position) return box;
+          const label = node.group === "Area"
+            ? `${node.label} ${this.collapsedAreas.has(node.area_id ?? "") ? "▸" : "▾"}`
+            : (node.label.match(/\(([^)]+)\)/)?.[1] ?? this.deviceName(node));
+          // Image bounds can omit labels before vis has drawn them. Measure
+          // explicitly so the first frame, dragging and fit include the text.
+          measure.save();
+          measure.font = "bold 14px system-ui, sans-serif";
+          const lines = label.split("\n");
+          const halfWidth = Math.max(...lines.map((line) => measure.measureText(line).width)) / 2;
+          measure.restore();
+          box.left = Math.min(box.left, position.x - halfWidth);
+          box.right = Math.max(box.right, position.x + halfWidth);
+          box.bottom = Math.max(box.bottom, position.y + 32 + 14 * (lines.length + 1));
+          return box;
+        });
+      const headerIndex = members.findIndex((node) => node.group === "Area");
+      const header = members[headerIndex];
+      const position = header && positions[header.id];
+      const deviceBoxes = boxes.filter((_, index) => index !== headerIndex);
+      if (position && deviceBoxes.length && !this.areaDrag) {
+        const center = (Math.min(...deviceBoxes.map((box) => box.left)) +
+          Math.max(...deviceBoxes.map((box) => box.right))) / 2;
+        const dx = center - position.x;
+        if (Math.abs(dx) > 0.01) {
+          // Move the actual node so its label and drag target follow the icon.
+          this.network!.moveNode(header.id, center, position.y);
+          this.areaPositions[header.id] = { x: center, y: position.y };
+          boxes[headerIndex].left += dx;
+          boxes[headerIndex].right += dx;
+        }
+      }
       return {
         left: Math.min(...boxes.map((box) => box.left)) - 18,
         right: Math.max(...boxes.map((box) => box.right)) + 18,
@@ -468,7 +503,7 @@ export class WiserZigbeeCard
     });
   }
   private drawAreaGroups(ctx: CanvasRenderingContext2D): void {
-    const bounds = this.areaBounds();
+    const bounds = this.areaBounds(ctx);
     if (!bounds.length || !this.network) return;
     const theme = getComputedStyle(this);
     const color =

@@ -30,6 +30,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   "./is-preview": {},
   "./device-images": { DEVICE_IMAGES: {}, FALLBACK_DEVICE_IMAGE: "" },
   "./const": { OPTIONS: {} },
+  "./signal-color": load("src/signal-color.ts"),
   "./layout": { arrangeNetwork: (data) => data },
   "./data/websockets": {
     fetchZigbeeData: () =>
@@ -526,6 +527,31 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     x: hiddenPosition.x + 20,
     y: hiddenPosition.y,
   });
+  const measuredLabels = [];
+  const measure = {
+    save() {}, restore() {},
+    measureText(text) { measuredLabels.push(text); return { width: 300 }; },
+  };
+  const boxes = card.areaBounds(measure);
+  assert.ok(boxes.length > 0);
+  assert.ok(measuredLabels.some((label) => /[▸▾]/.test(label)));
+  assert.ok(boxes.every((box) => box.right - box.left >= 336),
+    "Area boxes reserve measured label width plus padding");
+  card.areaDrag = undefined;
+  card.collapsedAreas.clear();
+  allPositions[2] = { x: 420, y: 200 };
+  card.network.getBoundingBox = (id) => {
+    const p = allPositions[id];
+    return { left: p.x - 32, right: p.x + 32, top: p.y - 32, bottom: p.y + 32 };
+  };
+  const deviceBeforeCenter = { ...allPositions[2] };
+  card.areaBounds(measure);
+  assert.equal(allPositions[kitchenArea.id].x, 420,
+    "Area marker is centred over its member bounds");
+  assert.deepEqual(allPositions[2], deviceBeforeCenter,
+    "Centring the marker does not move individual devices");
+  card.areaBounds(measure);
+  assert.equal(allPositions[kitchenArea.id].x, 420, "Centring is stable across frames");
   console.log(
     "Refresh preserves latest zoom, pan, dragged positions and double-click return view.",
   );
