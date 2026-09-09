@@ -106,6 +106,13 @@ export class WiserZigbeeCard
       ? visibleAreaGraph(data, this.collapsedAreas)
       : data;
   }
+  private areaDrag?: {
+    headerId: number;
+    origin: { x: number; y: number };
+    members: Record<string, { x: number; y: number }>;
+    dx: number;
+    dy: number;
+  };
   private infoRequest = 0;
   private deviceTapTimer?: ReturnType<typeof setTimeout>;
   private fitAfterHeightChange = false;
@@ -137,6 +144,7 @@ export class WiserZigbeeCard
       return;
     }
     this.cancelDeviceInfo();
+    this.areaDrag = undefined;
     this.mapData = undefined;
     this.collapsedAreas.clear();
     this.areaPositions = {};
@@ -198,6 +206,7 @@ export class WiserZigbeeCard
     this.requestId++;
     this.network?.destroy();
     this.network = undefined;
+    this.areaDrag = undefined;
     this.infoReturnView = undefined;
     this.zoomReturnView = undefined;
   }
@@ -360,15 +369,70 @@ export class WiserZigbeeCard
         this.cancelDeviceInfo();
         this.toggleDeviceZoom(event.nodes[0], event.pointer?.canvas);
       });
-      this.network.on("beforeDrawing", (ctx) => this.drawAreaGroups(ctx));
+      this.network.on("beforeDrawing", (ctx) => {
+        this.moveAreaDevices();
+        this.drawAreaGroups(ctx);
+      });
       this.network.on("afterDrawing", (ctx) => {
         this.positionAreaIcons();
         this.drawLinkLabels(ctx);
       });
-      this.network.on("dragStart", () => this.closeDeviceInfo(false));
+      this.network.on("dragStart", (event) =>
+        this.startAreaDrag(event.nodes[0]),
+      );
+      this.network.on("dragEnd", () => {
+        this.moveAreaDevices();
+        this.areaDrag = undefined;
+      });
       this.network.on("resize", () => this.fitNetwork());
       this.fitNetwork();
       this.requestUpdate();
+    }
+  }
+  private startAreaDrag(nodeId?: number): void {
+    this.closeDeviceInfo(false);
+    this.areaDrag = undefined;
+    if (!this.network || this.config?.group_by !== "area") return;
+    const header = this.mapData?.nodes.find(
+      (node) => node.id === nodeId && node.group === "Area",
+    );
+    if (!header) return;
+    const positions = this.currentPositions()!;
+    const members: Record<string, { x: number; y: number }> = {};
+    for (const node of this.mapData!.nodes) {
+      if (
+        node.group !== "Area" &&
+        node.group !== "Controller" &&
+        (node.area_id ?? "") === (header.area_id ?? "") &&
+        positions[node.id]
+      )
+        members[node.id] = { ...positions[node.id] };
+    }
+    this.areaDrag = {
+      headerId: header.id,
+      origin: { ...positions[header.id] },
+      members,
+      dx: 0,
+      dy: 0,
+    };
+  }
+  private moveAreaDevices(): void {
+    const drag = this.areaDrag;
+    if (!drag || !this.network) return;
+    const visible = this.network.getPositions();
+    const header = visible[drag.headerId];
+    if (!header) return;
+    const dx = header.x - drag.origin.x,
+      dy = header.y - drag.origin.y;
+    if (dx === drag.dx && dy === drag.dy) return;
+    drag.dx = dx;
+    drag.dy = dy;
+    this.areaPositions[drag.headerId] = { ...header };
+    for (const [id, origin] of Object.entries(drag.members)) {
+      const position = { x: origin.x + dx, y: origin.y + dy };
+      this.areaPositions[id] = position;
+      if (visible[id])
+        this.network.moveNode(Number(id), position.x, position.y);
     }
   }
   private areaBounds(): Array<{

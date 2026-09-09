@@ -477,6 +477,55 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   assert.equal(graphData.nodes.find((node) => node.id === 1).x, 123);
   assert.equal(graphData.nodes.find((node) => node.id === 1).y, 456);
   assert.deepEqual(view, beforeRouteRefresh);
+  const allPositions = card.currentPositions();
+  const kitchenArea = card.mapData.nodes.find(
+    (n) => n.group === "Area" && n.area_id === "kitchen",
+  );
+  card.network.getPositions = () => allPositions;
+  card.network.moveNode = (id, x, y) => {
+    allPositions[id] = { x, y };
+  };
+  const beforeMember = { ...allPositions[2] };
+  const otherMember = { ...allPositions[1] };
+  const headerBefore = { ...allPositions[kitchenArea.id] };
+  card.startAreaDrag(kitchenArea.id);
+  allPositions[kitchenArea.id] = {
+    x: headerBefore.x + 70,
+    y: headerBefore.y - 35,
+  };
+  card.moveAreaDevices();
+  assert.deepEqual(allPositions[2], {
+    x: beforeMember.x + 70,
+    y: beforeMember.y - 35,
+  });
+  assert.deepEqual(allPositions[1], otherMember, "Other areas do not move");
+  card.moveAreaDevices();
+  assert.equal(
+    allPositions[2].x,
+    beforeMember.x + 70,
+    "Repeated draw does not accumulate movement",
+  );
+  card.startAreaDrag(2);
+  assert.equal(
+    card.areaDrag,
+    undefined,
+    "Individual device dragging remains independent",
+  );
+  assert.deepEqual(allPositions[kitchenArea.id], {
+    x: headerBefore.x + 70,
+    y: headerBefore.y - 35,
+  });
+  // Hidden members must travel with a collapsed group's header too.
+  const hiddenPosition = { ...allPositions[2] };
+  card.areaPositions[2] = hiddenPosition;
+  delete allPositions[2];
+  card.startAreaDrag(kitchenArea.id);
+  allPositions[kitchenArea.id].x += 20;
+  card.moveAreaDevices();
+  assert.deepEqual(card.currentPositions()[2], {
+    x: hiddenPosition.x + 20,
+    y: hiddenPosition.y,
+  });
   console.log(
     "Refresh preserves latest zoom, pan, dragged positions and double-click return view.",
   );
