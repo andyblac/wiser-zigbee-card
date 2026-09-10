@@ -1,6 +1,5 @@
 {
   "common.version": "Version",
-  "common.invalid_configuration": "Invalid configuration",
   "card.title": "Zigbee network",
   "card.description": "An interactive map of your Wiser Zigbee network",
   "card.hub": "Wiser Hub",
@@ -39,8 +38,6 @@
   "signal.very_good": "Very good",
   "signal.good": "Good",
   "signal.poor": "Poor",
-  "signal.fair": "Fair",
-  "signal.excellent": "Excellent",
   "zigbee.type": "Device type",
   "zigbee.node": "Zigbee node ID",
   "zigbee.parent": "Parent node ID",
@@ -56,10 +53,9 @@
   "card.zoom_out": "Zoom out",
   "editor.group_by": "Group",
   "card.unassigned_area": "Unassigned",
-  "editor.pie": "Pie",
   "editor.show_labels": "Show link labels",
   "editor.link_status": "Link status",
   "editor.links": "Links",
-  "editor.icons": "Icons",
-  "editor.both": "Both"
+  "editor.both": "Both",
+  "signal.medium": "Medium"
 }

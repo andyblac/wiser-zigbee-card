@@ -1,6 +1,5 @@
 {
   "common.version": "Version",
-  "common.invalid_configuration": "Configuration invalide",
   "card.title": "Réseau Zigbee",
   "card.description": "Une carte interactive de votre réseau Zigbee Wiser",
   "card.hub": "Hub Wiser",
@@ -39,8 +38,6 @@
   "signal.very_good": "Très bon",
   "signal.good": "Bon",
   "signal.poor": "Faible",
-  "signal.fair": "Moyen",
-  "signal.excellent": "Excellent",
   "zigbee.type": "Type d’appareil",
   "zigbee.node": "ID du nœud Zigbee",
   "zigbee.parent": "ID du nœud parent",
@@ -56,10 +53,9 @@
   "card.zoom_out": "Zoom arrière",
   "editor.group_by": "Grouper",
   "card.unassigned_area": "Non attribué",
-  "editor.pie": "Circulaire",
   "editor.show_labels": "Afficher les libellés des liaisons",
   "editor.link_status": "État des liaisons",
   "editor.links": "Liaisons",
-  "editor.icons": "Icônes",
-  "editor.both": "Les deux"
+  "editor.both": "Les deux",
+  "signal.medium": "Moyenne"
 }

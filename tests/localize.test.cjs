@@ -129,3 +129,33 @@ assert.equal(
   "Offline",
 );
 assert.equal(localize("card.title", { language: "fr" }), "Réseau Zigbee");
+
+const auditedKeys = {
+  "editor.icons": "ui.panel.lovelace.editor.features.types.climate-preset-modes.style_list.icons",
+  "editor.pie": "ui.panel.lovelace.editor.card.energy-devices-graph.mode_options.pie",
+  "common.invalid_configuration": "ui.panel.lovelace.editor.condition-editor.visibility_status.invalid.headline",
+  "zigbee.type": "ui.panel.config.zha.visualization.device_type",
+  "card.unassigned_area": "ui.panel.config.automation.editor.unassigned",
+  "signal.medium": "ui.panel.config.matter.visualization.strength.medium",
+};
+for (const [key, nativeKey] of Object.entries(auditedKeys)) {
+  for (const language of ["en-US", "en-GB", "de", "fr"]) {
+    assert.equal(localize(key, {
+      language, localize: (lookup) => lookup === nativeKey ? "Native wording" : undefined,
+    }), "Native wording");
+  }
+}
+for (const dictionary of dictionaries) {
+  for (const key of ["editor.icons", "editor.pie", "common.invalid_configuration"]) {
+    assert.equal(Object.hasOwn(dictionary, key), false);
+  }
+}
+assert.equal(localizeSignal("Medium (50%)", { language: "de" }), "Mittel (50%)");
+assert.equal(localizeSignal("Medium", {
+  language: "de", localize: (key) => key === auditedKeys["signal.medium"] ? "HA medium" : undefined,
+}), "HA medium");
+for (const [reported, shown] of Object.entries({
+  VeryGood: "Very good", Good: "Good", Medium: "Medium", Poor: "Poor", NoSignal: "No signal", Online: "Online",
+})) {
+  assert.equal(localizeSignal(reported, { language: "en-GB" }), shown);
+}

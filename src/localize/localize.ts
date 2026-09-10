@@ -17,6 +17,9 @@ const languages: Record<SupportedLanguage, Record<string, string>> = {
 };
 // Core and Lovelace labels are owned by HA; no local copies.
 const nativeKeys: Record<string, string> = {
+  "editor.icons": "ui.panel.lovelace.editor.features.types.climate-preset-modes.style_list.icons",
+  "editor.pie": "ui.panel.lovelace.editor.card.energy-devices-graph.mode_options.pie",
+  "common.invalid_configuration": "ui.panel.lovelace.editor.condition-editor.visibility_status.invalid.headline",
   "editor.none": "ui.common.none",
   "editor.area": "ui.panel.lovelace.editor.card.area.name",
   "common.refresh": "ui.common.refresh",
@@ -33,6 +36,9 @@ const nativeKeys: Record<string, string> = {
 // These settings-panel translations may not be loaded on a dashboard.
 // Keep local text only for these known gaps and card-specific wording.
 const optionalNativeKeys: Record<string, string> = {
+  "zigbee.type": "ui.panel.config.zha.visualization.device_type",
+  "card.unassigned_area": "ui.panel.config.automation.editor.unassigned",
+  "signal.medium": "ui.panel.config.matter.visualization.strength.medium",
   "common.version": "ui.panel.config.zwave_js.visualization.version",
   "card.empty": "ui.panel.config.zha.groups.no_devices_found",
   "card.unknown_device":
@@ -86,6 +92,8 @@ export function localizeCount(
     count: new Intl.NumberFormat(language).format(count),
   });
 }
+// Preserve the reported Wiser category; native translations only replace its wording,
+// never reclassify quality (for example Poor must not become Offline).
 export function localizeSignal(
   label: string,
   hass?: TranslationContext,
@@ -102,8 +110,7 @@ export function localizeSignal(
       verygood: "very_good",
       good: "good",
       poor: "poor",
-      fair: "fair",
-      excellent: "excellent",
+      medium: "medium",
       unknown: "unknown",
     } as Record<string, string>
   )[match[1].replace(/[\s_-]/g, "").toLowerCase()];

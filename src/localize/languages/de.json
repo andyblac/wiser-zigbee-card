@@ -1,6 +1,5 @@
 {
   "common.version": "Version",
-  "common.invalid_configuration": "Ungültige Konfiguration",
   "card.title": "Zigbee-Netzwerk",
   "card.description": "Eine interaktive Karte Ihres Wiser-Zigbee-Netzwerks",
   "card.hub": "Wiser Hub",
@@ -39,8 +38,6 @@
   "signal.very_good": "Sehr gut",
   "signal.good": "Gut",
   "signal.poor": "Schwach",
-  "signal.fair": "Mittelmäßig",
-  "signal.excellent": "Ausgezeichnet",
   "zigbee.type": "Gerätetyp",
   "zigbee.node": "Zigbee-Knoten-ID",
   "zigbee.parent": "Übergeordnete Knoten-ID",
@@ -56,10 +53,9 @@
   "card.zoom_out": "Verkleinern",
   "editor.group_by": "Gruppieren",
   "card.unassigned_area": "Nicht zugewiesen",
-  "editor.pie": "Kreis",
   "editor.show_labels": "Verbindungsbeschriftungen anzeigen",
   "editor.link_status": "Verbindungsstatus",
   "editor.links": "Verbindungen",
-  "editor.icons": "Symbole",
-  "editor.both": "Beides"
+  "editor.both": "Beides",
+  "signal.medium": "Mittel"
 }
