@@ -26,3 +26,11 @@ assert.equal(deviceMapLabel("Smart Plug\n( Kitchen )"), "Kitchen");
 assert.equal(deviceMapLabel("Sensor\n()"), "Sensor");
 assert.equal(deviceMapLabel("Temperature sensor (outside)"), "Temperature sensor (outside)");
 assert.equal(deviceMapLabel("Thermostat (v2)\n(No Room)"), "Thermostat (v2)");
+
+const { statusImage } = require("./load-ts.cjs")("src/device-appearance.ts");
+assert.equal(statusImage(original), original);
+const tinted = decodeURIComponent(statusImage(original, "#ff9800"));
+assert.ok(tinted.includes('flood-color="#ff9800"'));
+assert.ok(tinted.includes('mode="multiply"'));
+assert.ok(tinted.includes('opacity="1"'));
+assert.ok(decodeURIComponent(statusImage(original, "#db4437", true)).includes('opacity="0.3"'));

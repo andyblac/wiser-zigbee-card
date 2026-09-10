@@ -548,6 +548,25 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     "Centring the marker does not move individual devices");
   card.areaBounds(measure);
   assert.equal(allPositions[kitchenArea.id].x, 420, "Centring is stable across frames");
+  global.getComputedStyle = () => ({ getPropertyValue: (key) =>
+    key === "--success-color" ? "#00ff00" : "#888888" });
+  card.config = { hub: "test", group_by: "none" };
+  card.zigbeeData = {
+    nodes: [{ id: 0, group: "Controller", label: "Hub" }, { id: 1, group: "RoomStat", label: "Sensor" }],
+    edges: [{ from: 1, to: 0, label: "Good (80%)" }],
+  };
+  card.mapData = card.zigbeeData;
+  for (const mode of ["links", "icons", "both", "none"]) {
+    card.config.link_status = mode;
+    for (const labels of [true, false]) {
+      card.showLabels = labels;
+      card.drawNetwork();
+      assert.equal(graphData.edges[0].color.color,
+        ["links", "both"].includes(mode) ? "#00ff00" : "#888888");
+      const artwork = decodeURIComponent(graphData.nodes.find((node) => node.id === 1).image);
+      assert.equal(artwork.includes('flood-color="#00ff00"'), ["icons", "both"].includes(mode));
+    }
+  }
   console.log(
     "Refresh preserves latest zoom, pan, dragged positions and double-click return view.",
   );

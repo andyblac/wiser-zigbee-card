@@ -57,5 +57,9 @@
   "editor.group_by": "Grouper",
   "card.unassigned_area": "Non attribué",
   "editor.pie": "Circulaire",
-  "editor.show_labels": "Afficher les libellés des liaisons"
+  "editor.show_labels": "Afficher les libellés des liaisons",
+  "editor.link_status": "État des liaisons",
+  "editor.links": "Liaisons",
+  "editor.icons": "Icônes",
+  "editor.both": "Les deux"
 }

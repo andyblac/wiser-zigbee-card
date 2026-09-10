@@ -76,3 +76,5 @@ python3 -m http.server 8127 --bind 127.0.0.1
 ```
 
 Open `http://127.0.0.1:8127/demo/` for a sample network without a Home Assistant instance. Use `?lang=de` or `?lang=fr` to preview translations. Native editor controls require Home Assistant. The demo uses mock data and supports checking layout controls, local persistence and light/dark colours.
+
+**Link status** uses a native editor toggle: **Links** (default), **Icons**, **Both** or **None** (YAML: `link_status: links|icons|both|none`). Offline/unknown is red; very low/low/poor is orange; medium/online is yellow; good/very good is green. Colours follow HA theme colour tokens. Device artwork is tinted when Icons or Both is selected; offline artwork remains ghosted. **Link labels** only controls label visibility, independently of status colours.

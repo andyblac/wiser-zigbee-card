@@ -4,11 +4,14 @@ const theme = { getPropertyValue: (name) => name };
 for (const [label, token] of Object.entries({
   "VeryGood (86%)": "success",
   Good: "success",
-  Medium: "warning",
-  Poor: "error",
-  NoSignal: "disabled-text",
-  Online: "secondary-text",
-  "Unknown (100%)": "secondary-text",
+  Medium: "yellow",
+  Poor: "orange",
+  NoSignal: "error",
+  Online: "yellow",
+  "Unknown (100%)": "error",
+  Offline: "error",
+  "Very low": "orange",
+  "Low quality": "orange",
 })) {
   assert.equal(signalColor(label, true, theme), `--${token}-color`);
   assert.equal(signalColor(label, false, theme), "--secondary-text-color");

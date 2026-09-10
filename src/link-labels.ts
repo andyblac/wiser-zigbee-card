@@ -61,8 +61,8 @@ export function placeLinkLabels(
   const placed: PlacedLabel[] = [];
   for (const label of labels) {
     let chosen: PlacedLabel | undefined;
-    for (const offset of [14, -14, 26, -26, 40, -40]) {
-      for (const t of [0.3, 0.4, 0.5, 0.2, 0.6, 0.7, 0.8]) {
+    for (const offset of [0, 14, -14, 26, -26, 40, -40]) {
+      for (const t of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8]) {
         const anchor = curve(label.from, label.to, t, vertical);
         const before = curve(label.from, label.to, t - 0.01, vertical);
         const after = curve(label.from, label.to, t + 0.01, vertical);

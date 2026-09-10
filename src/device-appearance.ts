@@ -11,19 +11,23 @@ export function disconnectedDevice(device: node, data: zigbeeData): boolean {
   });
 }
 
-const ghosts = new Map<string, string>();
-// Fade only artwork: vis node opacity also fades its device label.
-export function ghostImage(source: string): string {
-  let image = ghosts.get(source);
+const appearances = new Map<string, string>();
+const escapeAttribute = (text: string) => text.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+// Colour only the product pixels, retaining shading and transparent backgrounds.
+export function statusImage(source: string, color?: string, offline = false): string {
+  if (!color && !offline) return source;
+  const key = JSON.stringify([source, color, offline]);
+  let image = appearances.get(key);
   if (!image) {
-    const safe = source.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+    const filter = color ? `<defs><filter id="status" color-interpolation-filters="sRGB"><feFlood flood-color="${escapeAttribute(color)}"/><feComposite in2="SourceGraphic" operator="in"/><feBlend in2="SourceGraphic" mode="multiply"/></filter></defs>` : "";
     image = "data:image/svg+xml," + encodeURIComponent(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><image href="${safe}" width="160" height="160" opacity="0.3"/></svg>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">${filter}<image href="${escapeAttribute(source)}" width="160" height="160"${color ? ' filter="url(#status)"' : ""} opacity="${offline ? 0.3 : 1}"/></svg>`,
     );
-    ghosts.set(source, image);
+    appearances.set(key, image);
   }
   return image;
 }
+export function ghostImage(source: string): string { return statusImage(source, undefined, true); }
 
 // The integration sends "device name\n(room name)"; "No Room" is a
 // protocol placeholder, not a user-visible room or an HA area assignment.

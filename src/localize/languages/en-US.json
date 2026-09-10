@@ -57,5 +57,9 @@
   "editor.group_by": "Group",
   "card.unassigned_area": "Unassigned",
   "editor.pie": "Pie",
-  "editor.show_labels": "Show link labels"
+  "editor.show_labels": "Show link labels",
+  "editor.link_status": "Link status",
+  "editor.links": "Links",
+  "editor.icons": "Icons",
+  "editor.both": "Both"
 }

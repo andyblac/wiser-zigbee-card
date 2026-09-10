@@ -52,3 +52,11 @@ assert.equal(
 console.log(
   "Five crowded links avoid each other and device bounds; blocked space never draws overlapping labels.",
 );
+for (const vertical of [true, false]) {
+  const [label] = placeLinkLabels([{
+    id: "middle", text: "92%", width: 30,
+    from: { x: 100, y: 100 }, to: { x: 500, y: 300 },
+  }], [], 700, 400, vertical);
+  assert.deepEqual(label.center, { x: 300, y: 200 });
+  assert.deepEqual(label.anchor, label.center);
+}

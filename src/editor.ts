@@ -188,6 +188,19 @@ export class WiserZigbeeCardEditor
         .computeLabel=${this.computeLabel}
         @value-changed=${this.valueChanged}
       ></ha-form>
+      <ha-form
+        class="orientation-control"
+        .hass=${this.hass}
+        .data=${{ link_status: this._config.link_status ?? "links" }}
+        .schema=${[{
+          name: "link_status",
+          selector: { button_toggle: { options: ["links", "icons", "both", "none"].map((value) => ({
+            value, label: this.t(`editor.${value}`),
+          })) } },
+        }]}
+        .computeLabel=${this.computeLabel}
+        @value-changed=${this.valueChanged}
+      ></ha-form>
       <div class="switches">
         ${switches.map(
           (field) =>

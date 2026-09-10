@@ -1,6 +1,6 @@
-import { disconnectedDevice, ghostImage, deviceMapLabel } from "./device-appearance";
+import { disconnectedDevice, statusImage, deviceMapLabel } from "./device-appearance";
 import { separateAreas } from "./area-spacing";
-import { signalColor } from "./signal-color";
+import { signalColor, signalPalette } from "./signal-color";
 import { LitElement, html, TemplateResult, PropertyValues, css } from "lit";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { state, eventOptions } from "lit/decorators.js";
@@ -82,6 +82,7 @@ export class WiserZigbeeCard
   @state() private layoutStatus = "";
   @state() private layoutYaml = "";
   private textColor = "";
+  private statusPalette = "";
   private displayLanguage = "";
   private t(key: string): string {
     return localize(key, this.hass);
@@ -235,6 +236,7 @@ export class WiserZigbeeCard
           .trim() || "#273448";
       if (
         color !== this.textColor ||
+        signalPalette(getComputedStyle(this)) !== this.statusPalette ||
         languageFor(this.hass) !== this.displayLanguage
       )
         this.drawNetwork(true);
@@ -321,17 +323,25 @@ export class WiserZigbeeCard
       getComputedStyle(this).getPropertyValue("--primary-text-color").trim() ||
       "#273448";
     this.textColor = textColor;
+    const theme = getComputedStyle(this);
+    this.statusPalette = signalPalette(theme);
+    const mode = this.config?.link_status ?? "links";
+    const colorLinks = mode === "links" || mode === "both";
+    const colorIcons = mode === "icons" || mode === "both";
     this.displayLanguage = languageFor(this.hass);
     const data = {
       nodes: visible.nodes.map((node) => {
         const offline = disconnectedDevice(node, this.zigbeeData!);
+        const status = offline ? "Offline" : this.zigbeeData!.edges.find((edge) => edge.from === node.id)?.label;
+        const tint = colorIcons && node.group !== "Area" && node.group !== "Controller"
+          ? signalColor(status, true, theme) : undefined;
         const artwork = node.group === "Area" ? AREA_NODE_IMAGE : (DEVICE_IMAGES[node.group] ?? FALLBACK_DEVICE_IMAGE);
         return {
         ...node,
         ...(positions?.[node.id] ?? {}),
         shape: "image",
-        image: offline ? ghostImage(artwork) : artwork,
-        brokenImage: offline ? ghostImage(FALLBACK_DEVICE_IMAGE) : FALLBACK_DEVICE_IMAGE,
+        image: statusImage(artwork, tint, offline),
+        brokenImage: statusImage(FALLBACK_DEVICE_IMAGE, tint, offline),
         size: 32,
         label:
           node.group === "Area"
@@ -343,7 +353,7 @@ export class WiserZigbeeCard
       };
       }),
       edges: visible.edges.map((edge) => {
-        const color = signalColor(edge.label, this.showLabels, getComputedStyle(this));
+        const color = signalColor(edge.label, colorLinks, theme);
         return {
           ...edge,
           label: "",

@@ -220,3 +220,13 @@ assert.deepEqual(events.at(-1).detail.config.layout_data, layout);
 editor.save_layout({ detail: { orientation: "vertical", show_labels: false, map_only: false, preferences_only: true } });
 assert.equal(events.at(-1).detail.config.show_labels, false);
 assert.equal(events.at(-1).detail.config.map_only, false);
+
+editor.setConfig({ type: "custom:wiser-zigbee-card" });
+const statusField = editor.render().values.filter(Array.isArray).flat()
+  .find((field) => field?.name === "link_status");
+assert.deepEqual(statusField.selector.button_toggle.options.map((option) => option.value),
+  ["links", "icons", "both", "none"]);
+assert.ok(editor.render().values.some((value) => value?.link_status === "links"));
+for (const mode of ["links", "icons", "both", "none"]) {
+  assert.equal(change({ link_status: mode }).link_status, mode);
+}
