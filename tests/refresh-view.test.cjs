@@ -6,6 +6,8 @@ global.location = { pathname: "/test" };
 global.localStorage = { getItem: () => null };
 global.getComputedStyle = () => ({ getPropertyValue: () => "#ffffff" });
 let resolveFetch;
+let preview = true;
+let savedChanges;
 const infoEvents = [];
 const decorator = () => () => {};
 const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
@@ -28,7 +30,11 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     fireEvent: (_, type, detail) => infoEvents.push({ type, detail }),
   },
   "vis-network": {},
-  "./is-preview": {},
+  "./is-preview": { is_preview: () => preview },
+  "./save-config": { saveCardConfig: async (_, original, changes) => {
+    savedChanges = changes;
+    return { ...original, ...changes };
+  } },
   "./device-images": { DEVICE_IMAGES: {}, FALLBACK_DEVICE_IMAGE: "" },
   "./const": { OPTIONS: {} },
   "./area-spacing": load("src/area-spacing.ts"),
@@ -567,6 +573,59 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
       assert.equal(artwork.includes('flood-color="#00ff00"'), ["icons", "both"].includes(mode));
     }
   }
+  card.mapData = card.zigbeeData = {
+    nodes: [],
+    edges: [
+      { id: "first", from: 1, to: 0, label: "Good (80%)" },
+      { id: "second", from: 2, to: 0, label: "Medium (50%)" },
+    ],
+  };
+  let redraws = 0;
+  card.network.redraw = () => { redraws++; };
+  card.network.getScale = () => 1;
+  card.network.getPositions = () => ({
+    0: { x: 400, y: 100 }, 1: { x: 100, y: 500 }, 2: { x: 700, y: 500 },
+  });
+  card.network.canvasToDOM = card.network.DOMtoCanvas = (point) => point;
+  card.shadowRoot = { getElementById: () => ({ clientWidth: 800, clientHeight: 600 }) };
+  const drawn = [];
+  const ctx = new Proxy({
+    measureText: () => ({ width: 30 }),
+    fillText: (text) => drawn.push(text),
+  }, { get: (target, key) => target[key] ?? (() => {}) });
+  card.showLabels = false;
+  card.hoverLink("first");
+  card.drawLinkLabels(ctx);
+  assert.deepEqual(drawn.splice(0), ["80%"]);
+  card.hoverLink("second");
+  card.drawLinkLabels(ctx);
+  assert.deepEqual(drawn.splice(0), ["50%"]);
+  card.hoverLink();
+  card.drawLinkLabels(ctx);
+  assert.deepEqual(drawn, []);
+  assert.equal(redraws, 3);
+  card.showLabels = true;
+  card.hoverLink("first");
+  card.drawLinkLabels(ctx);
+  assert.deepEqual(drawn.splice(0), ["80%", "50%"]);
+  assert.equal(redraws, 3, "Hover does not disturb always-visible labels");
+  preview = false;
+  global.localStorage = { getItem: () => null, setItem: () => {} };
+  const savingCard = new WiserZigbeeCard();
+  savingCard.setConfig({ type: "custom:wiser-zigbee-card", show_labels: false, map_only: false });
+  savingCard.currentPositions = () => ({ 1: { x: 10, y: 20 } });
+  savingCard.showLabels = true;
+  savingCard.config.map_only = true;
+  await savingCard.saveLayoutClick();
+  assert.equal(savedChanges.show_labels, true);
+  assert.equal(savedChanges.map_only, true);
+  assert.deepEqual(savedChanges.layout_data, { 1: { x: 10, y: 20 } });
+  assert.equal(savingCard.config.show_labels, true);
+  savingCard.showLabels = false;
+  savingCard.config.map_only = false;
+  await savingCard.saveLayoutClick();
+  assert.equal(savedChanges.show_labels, false);
+  assert.equal(savedChanges.map_only, false);
   console.log(
     "Refresh preserves latest zoom, pan, dragged positions and double-click return view.",
   );

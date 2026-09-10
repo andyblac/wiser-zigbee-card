@@ -1,3 +1,4 @@
+import { saveCardConfig } from "./save-config";
 import { disconnectedDevice, statusImage, deviceMapLabel } from "./device-appearance";
 import { separateAreas } from "./area-spacing";
 import { signalColor, signalPalette } from "./signal-color";
@@ -75,6 +76,9 @@ export class WiserZigbeeCard
   @state() private loading = false;
   @state() private error = "";
   @state() private showLabels = false;
+  private hoveredEdge?: string;
+  private suppliedConfig?: WiserZigbeeCardConfig;
+  private savingConfig = false;
   @state() private activeIcon?: string;
   private activeIconTimer?: ReturnType<typeof setTimeout>;
   @state() private selected?: number;
@@ -133,6 +137,7 @@ export class WiserZigbeeCard
   }
   public setConfig(config: WiserZigbeeCardConfig): void {
     if (!config) throw new Error(this.t("common.invalid_configuration"));
+    this.suppliedConfig = config;
     const next = { ...config, auto_update: config.auto_update ?? true };
     const previous = this.config;
     const previousHeight = this.mapHeight;
@@ -368,6 +373,7 @@ export class WiserZigbeeCard
         position: this.network.getViewPosition(),
         scale: this.network.getScale(),
       };
+      this.hoveredEdge = undefined;
       this.network.setData(data);
       this.network.moveTo({ ...view, animation: false });
       if (
@@ -393,6 +399,8 @@ export class WiserZigbeeCard
           },
         },
       );
+      this.network.on("hoverEdge", (event) => this.hoverLink(event.edge));
+      this.network.on("blurEdge", () => this.hoverLink());
       this.network.on("click", (event) => this.deviceClick(event.nodes[0]));
       this.network.on("hold", (event) => this.deviceHold(event.nodes[0]));
       this.network.on("doubleClick", (event) => {
@@ -803,8 +811,13 @@ export class WiserZigbeeCard
     );
     if (view) this.network.moveTo({ ...view, animation: false });
   }
+  private hoverLink(edgeId?: string): void {
+    if (this.hoveredEdge === edgeId) return;
+    this.hoveredEdge = edgeId;
+    if (!this.showLabels) this.network?.redraw();
+  }
   private drawLinkLabels(ctx: CanvasRenderingContext2D): void {
-    if (!this.showLabels || !this.network || !this.zigbeeData) return;
+    if ((!this.showLabels && this.hoveredEdge === undefined) || !this.network || !this.zigbeeData) return;
     const network = this.network;
     const map = this.shadowRoot?.getElementById("zigbee-network");
     if (!map) return;
@@ -833,7 +846,7 @@ export class WiserZigbeeCard
     ctx.font = `${14 / scale}px system-ui, sans-serif`;
     const labels: LinkLabel[] = [];
     for (const edge of this.visibleData!.edges) {
-      if (!edge.label) continue;
+      if (!edge.label || (!this.showLabels && edge.id !== this.hoveredEdge)) continue;
       if (!positions[edge.from] || !positions[edge.to]) continue;
       const text = compactSignal(edge.label, this.hass);
       labels.push({
@@ -981,7 +994,7 @@ export class WiserZigbeeCard
         )
         .join("\n");
   }
-  private saveLayoutClick(preferencesOnly = false): void {
+  private async saveLayoutClick(preferencesOnly = false): Promise<void> {
     const layout = this.currentPositions();
     if (!layout || !this.config) return;
     try {
@@ -991,6 +1004,26 @@ export class WiserZigbeeCard
       this.layoutStatus = "";
     } catch {
       this.layoutStatus = "layout.storage_error";
+    }
+    if (!preferencesOnly && !is_preview(this)) {
+      if (this.savingConfig || !this.suppliedConfig) return;
+      this.savingConfig = true;
+      try {
+        this.suppliedConfig = await saveCardConfig(this, this.suppliedConfig, {
+          show_labels: this.showLabels,
+          map_only: this.config.map_only ?? false,
+          layout_data: layout,
+          layout_orientation: this.orientation,
+          layout_group_by: this.config.group_by ?? "none",
+        }) as WiserZigbeeCardConfig;
+        this.config = { ...this.config, ...this.suppliedConfig };
+        this.layoutStatus = "";
+      } catch {
+        this.layoutStatus = "layout.config_save_error";
+      } finally {
+        this.savingConfig = false;
+      }
+      return;
     }
     fireEvent(this, "wiser-zigbee-save-layout", {
       layout_data: layout,

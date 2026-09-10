@@ -57,5 +57,6 @@
   "editor.link_status": "Verbindungsstatus",
   "editor.links": "Verbindungen",
   "editor.both": "Beides",
-  "signal.medium": "Mittel"
+  "signal.medium": "Mittel",
+  "layout.config_save_error": "Die Kartenkonfiguration konnte nicht gespeichert werden. Speichere im Karteneditor oder kopiere das Layout-YAML für ein YAML-Dashboard."
 }
