@@ -641,6 +641,31 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   assert.equal(toggles, 0, "Release after long press must not toggle the magnifier");
   buttonTemplate.values[clickIndex]();
   assert.equal(toggles, 1, "Subsequent normal click still toggles");
+  for (const localX of [999, -500]) {
+    const shared = new WiserZigbeeCard();
+    shared.hass = { language: "en-GB" };
+    shared.setConfig({
+      type: "custom:wiser-zigbee-card", hub: "shared",
+      orientation: "vertical", layout_data: { 1: { x: 100, y: 200 } },
+    });
+    shared.drawNetwork = () => {};
+    global.localStorage = { getItem: () => JSON.stringify({ 1: { x: localX, y: 777 } }) };
+    let pendingLoad = shared.loadData();
+    resolveFetch({ nodes: [{ id: 1, label: "Sensor", group: "RoomStat", x: 0, y: 0 }], edges: [] });
+    await pendingLoad;
+    assert.equal(shared.mapData.nodes[0].x, 100, "Shared config wins over each browser's older layout");
+    assert.equal(shared.mapData.nodes[0].y, 200);
+    shared.config.layout_data = undefined;
+    pendingLoad = shared.loadData();
+    resolveFetch({ nodes: [{ id: 1, label: "Sensor", group: "RoomStat", x: 0, y: 0 }], edges: [] });
+    await pendingLoad;
+    assert.equal(shared.mapData.nodes[0].x, localX, "Local-only layouts remain supported");
+    shared.config.layout_data = {};
+    pendingLoad = shared.loadData();
+    resolveFetch({ nodes: [{ id: 1, label: "Sensor", group: "RoomStat", x: 0, y: 0 }], edges: [] });
+    await pendingLoad;
+    assert.equal(shared.mapData.nodes[0].x, 0, "Empty configured layout does not revive stale browser positions");
+  }
   console.log(
     "Refresh preserves latest zoom, pan, dragged positions and double-click return view.",
   );

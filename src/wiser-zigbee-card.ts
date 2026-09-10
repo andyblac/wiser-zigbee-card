@@ -295,13 +295,18 @@ export class WiserZigbeeCard
           (this.config.group_by ?? "none")
           ? this.config.layout_data
           : undefined;
-      try {
-        const stored = JSON.parse(
-          localStorage.getItem(this.layoutKey) || "null",
-        );
-        if (stored && typeof stored === "object") saved = stored;
-      } catch {
-        /* Saved YAML and the automatic layout remain available. */
+      // Dashboard configuration is shared across browsers. Local positions
+      // are only a fallback for cards without a compatible configured layout.
+      if (!saved || typeof saved !== "object" || Array.isArray(saved)) {
+        try {
+          const stored = JSON.parse(
+            localStorage.getItem(this.layoutKey) || "null",
+          );
+          if (stored && typeof stored === "object" && !Array.isArray(stored))
+            saved = stored;
+        } catch {
+          /* The automatic layout remains available. */
+        }
       }
       const positions = {
         ...this.areaPositions,
