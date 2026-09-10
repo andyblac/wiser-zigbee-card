@@ -60,5 +60,6 @@
   "signal.medium": "Moyenne",
   "layout.config_save_error": "Impossible d’enregistrer la configuration de cette carte. Utilisez l’éditeur de carte ou copiez le YAML de disposition pour un tableau de bord YAML.",
   "editor.magnifier": "Loupe",
-  "editor.lens_size": "Taille de la loupe"
+  "editor.lens_size": "Taille de la loupe",
+  "layout.export_error": "Impossible de charger le champ de sortie YAML. Actualisez la page et réessayez."
 }

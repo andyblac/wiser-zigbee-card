@@ -39,6 +39,7 @@ import {
   expansionPanel,
   readonlyText,
   watchNativeElements,
+  ensureNativeTextarea,
 } from "./native-ui";
 import "./editor";
 import { containedView } from "./fit";
@@ -996,9 +997,16 @@ export class WiserZigbeeCard
       ...this.network.getPositions(),
     };
   }
-  private exportLayout(): void {
+  private async exportLayout(): Promise<void> {
     const layout = this.currentPositions();
     if (!layout) return;
+    try {
+      await ensureNativeTextarea(this, this.hass);
+    } catch {
+      this.layoutStatus = "layout.export_error";
+      return;
+    }
+    this.layoutStatus = "";
     this.layoutYaml =
       `magnifier: ${this.config?.magnifier ?? false}\nshow_labels: ${this.showLabels}\nmap_only: ${this.config?.map_only ?? false}\norientation: ${this.orientation}\ngroup_by: ${this.config?.group_by ?? "none"}\nlayout_data:\n` +
       Object.entries(layout)

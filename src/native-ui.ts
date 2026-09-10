@@ -56,3 +56,28 @@ export function watchNativeElements(
       });
   }
 }
+
+// HA lazy-loads textarea through its native text selector. Rendering its button
+// editor loads that selector without importing versioned frontend bundle URLs.
+export async function ensureNativeTextarea(host: HTMLElement, hass: unknown): Promise<void> {
+  if (customElements.get("ha-textarea")) return;
+  const helpers = await (window as any).loadCardHelpers();
+  const card = helpers.createCardElement({ type: "button" });
+  const editor = await card.constructor.getConfigElement();
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    editor.hidden = true;
+    editor.hass = hass;
+    editor.setConfig({ type: "button" });
+    (host.shadowRoot ?? host).appendChild(editor);
+    await Promise.race([
+      customElements.whenDefined("ha-textarea"),
+      new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(new Error("Native textarea did not load")), 10000);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeout);
+    editor.remove();
+  }
+}

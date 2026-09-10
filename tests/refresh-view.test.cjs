@@ -50,7 +50,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   },
   "./components/subscribe-mixin": { SubscribeMixin: (Base) => Base },
   "./localize/localize": load("src/localize/localize.ts"),
-  "./native-ui": {},
+  "./native-ui": { ensureNativeTextarea: async () => {} },
   "./editor": {},
   "./area-graph": load("src/area-graph.ts"),
   "./areas": { withDeviceAreas: async (_, data) => data },
@@ -666,6 +666,9 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     await pendingLoad;
     assert.equal(shared.mapData.nodes[0].x, 0, "Empty configured layout does not revive stale browser positions");
   }
+  await savingCard.exportLayout();
+  assert.ok(savingCard.layoutYaml.includes("\nlayout_data:\n"));
+  assert.ok(savingCard.layoutYaml.includes('  "1":\n    x: 10\n    y: 20'));
   console.log(
     "Refresh preserves latest zoom, pan, dragged positions and double-click return view.",
   );
