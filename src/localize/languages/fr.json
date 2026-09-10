@@ -58,5 +58,6 @@
   "editor.links": "Liaisons",
   "editor.both": "Les deux",
   "signal.medium": "Moyenne",
-  "layout.config_save_error": "Impossible d’enregistrer la configuration de cette carte. Utilisez l’éditeur de carte ou copiez le YAML de disposition pour un tableau de bord YAML."
+  "layout.config_save_error": "Impossible d’enregistrer la configuration de cette carte. Utilisez l’éditeur de carte ou copiez le YAML de disposition pour un tableau de bord YAML.",
+  "editor.magnifier": "Loupe"
 }

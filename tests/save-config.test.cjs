@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const load = require("./load-ts.cjs");
 const { saveCardConfig } = load("src/save-config.ts", {
+  "./sanitize-config": load("src/sanitize-config.ts"),
   "./preserve-scroll": load("src/preserve-scroll.ts"),
 });
 (async () => {

@@ -1,3 +1,4 @@
+import { sanitizeConfig } from "./sanitize-config";
 import { preserveDashboardScroll } from "./preserve-scroll";
 type Config = Record<string, any>;
 interface Dashboard {
@@ -41,7 +42,7 @@ export async function saveCardConfig(host: Element, original: Config, changes: C
   const path = candidates[0].path;
   let parent = next;
   for (const key of path.slice(0, -1)) parent = parent[key];
-  const updated = { ...candidates[0].value, ...changes };
+  const updated = sanitizeConfig({ ...candidates[0].value, ...changes });
   parent[path[path.length - 1]] = updated;
   const finishScrollRestore = preserveDashboardScroll(host.ownerDocument?.defaultView ?? null);
   try {

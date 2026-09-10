@@ -1,0 +1,17 @@
+const assert = require("node:assert/strict");
+const { sanitizeConfig } = require("./load-ts.cjs")("src/sanitize-config.ts");
+const layout = { 0: { x: 1, y: 2 } };
+const original = { type: "custom:wiser-zigbee-card", orientation: "vertical", layout_orientation: "vertical", group_by: "area", layout_group_by: "area", layout_data: layout, show_labels: true };
+const clean = sanitizeConfig(original);
+assert.equal("layout_orientation" in clean, false);
+assert.equal("layout_group_by" in clean, false);
+assert.equal(clean.orientation, "vertical");
+assert.equal(clean.group_by, "area");
+assert.equal(clean.show_labels, true);
+assert.deepEqual(clean.layout_data, layout);
+assert.equal(original.layout_orientation, "vertical");
+assert.deepEqual(sanitizeConfig(clean), clean);
+assert.equal(sanitizeConfig({ ...original, orientation: "pie" }).layout_data, undefined);
+assert.equal(sanitizeConfig({ ...original, group_by: "none" }).layout_data, undefined);
+assert.deepEqual(sanitizeConfig({ orientation: "pie", layout_data: layout }).layout_data, layout);
+console.log("Configuration sanitization removes redundant guards and rejects stale coordinates.");

@@ -58,5 +58,6 @@
   "editor.links": "Verbindungen",
   "editor.both": "Beides",
   "signal.medium": "Mittel",
-  "layout.config_save_error": "Die Kartenkonfiguration konnte nicht gespeichert werden. Speichere im Karteneditor oder kopiere das Layout-YAML für ein YAML-Dashboard."
+  "layout.config_save_error": "Die Kartenkonfiguration konnte nicht gespeichert werden. Speichere im Karteneditor oder kopiere das Layout-YAML für ein YAML-Dashboard.",
+  "editor.magnifier": "Lupe"
 }

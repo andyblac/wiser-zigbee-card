@@ -46,6 +46,8 @@ export function watchNativeElements(
     "ha-textarea",
     "ha-button-toggle-group",
     "ha-alert",
+    "ha-dropdown",
+    "ha-dropdown-item",
   ]) {
     if (!customElements.get(name))
       void customElements.whenDefined(name).then(() => {

@@ -1,3 +1,4 @@
+import { MapMagnifier } from "./map-magnifier";
 import { saveCardConfig } from "./save-config";
 import { disconnectedDevice, statusImage, deviceMapLabel } from "./device-appearance";
 import { separateAreas } from "./area-spacing";
@@ -58,6 +59,7 @@ declare global {
       show_labels?: boolean;
       map_only?: boolean;
       preferences_only?: boolean;
+      magnifier?: boolean;
       hub?: string;
       name?: string;
       orientation?: "horizontal" | "vertical" | "pie";
@@ -79,6 +81,9 @@ export class WiserZigbeeCard
   private hoveredEdge?: string;
   private suppliedConfig?: WiserZigbeeCardConfig;
   private savingConfig = false;
+  private magnifier = new MapMagnifier();
+  private magnifierHoldTimer?: ReturnType<typeof setTimeout>;
+  private magnifierHeld = false;
   @state() private activeIcon?: string;
   private activeIconTimer?: ReturnType<typeof setTimeout>;
   @state() private selected?: number;
@@ -137,6 +142,7 @@ export class WiserZigbeeCard
   }
   public setConfig(config: WiserZigbeeCardConfig): void {
     if (!config) throw new Error(this.t("common.invalid_configuration"));
+    this.magnifier.hide();
     this.suppliedConfig = config;
     const next = { ...config, auto_update: config.auto_update ?? true };
     const previous = this.config;
@@ -220,6 +226,8 @@ export class WiserZigbeeCard
     this.requestUpdate();
   }
   public disconnectedCallback(): void {
+    clearTimeout(this.magnifierHoldTimer);
+    this.magnifier.hide();
     clearTimeout(this.activeIconTimer);
     this.activeIcon = undefined;
     this.cancelDeviceInfo();
@@ -282,8 +290,8 @@ export class WiserZigbeeCard
       );
       if (request !== this.requestId || !this.isConnected) return;
       let saved =
-        (this.config.layout_orientation ?? "horizontal") === this.orientation &&
-        (this.config.layout_group_by ?? "none") ===
+        (this.config.layout_orientation ?? this.orientation) === this.orientation &&
+        (this.config.layout_group_by ?? this.config.group_by ?? "none") ===
           (this.config.group_by ?? "none")
           ? this.config.layout_data
           : undefined;
@@ -414,6 +422,7 @@ export class WiserZigbeeCard
       this.network.on("afterDrawing", (ctx) => {
         this.positionAreaIcons();
         this.drawLinkLabels(ctx);
+        this.magnifier.refresh();
       });
       this.network.on("dragStart", (event) =>
         this.startAreaDrag(event.nodes[0]),
@@ -986,7 +995,7 @@ export class WiserZigbeeCard
     const layout = this.currentPositions();
     if (!layout) return;
     this.layoutYaml =
-      `show_labels: ${this.showLabels}\nmap_only: ${this.config?.map_only ?? false}\norientation: ${this.orientation}\nlayout_orientation: ${this.orientation}\ngroup_by: ${this.config?.group_by ?? "none"}\nlayout_group_by: ${this.config?.group_by ?? "none"}\nlayout_data:\n` +
+      `magnifier: ${this.config?.magnifier ?? false}\nshow_labels: ${this.showLabels}\nmap_only: ${this.config?.map_only ?? false}\norientation: ${this.orientation}\ngroup_by: ${this.config?.group_by ?? "none"}\nlayout_data:\n` +
       Object.entries(layout)
         .map(
           ([id, position]) =>
@@ -1011,12 +1020,15 @@ export class WiserZigbeeCard
       try {
         this.suppliedConfig = await saveCardConfig(this, this.suppliedConfig, {
           show_labels: this.showLabels,
+          magnifier: this.config.magnifier ?? false,
           map_only: this.config.map_only ?? false,
           layout_data: layout,
-          layout_orientation: this.orientation,
-          layout_group_by: this.config.group_by ?? "none",
+          orientation: this.orientation,
+          group_by: this.config.group_by ?? "none",
+          layout_orientation: undefined,
+          layout_group_by: undefined,
         }) as WiserZigbeeCardConfig;
-        this.config = { ...this.config, ...this.suppliedConfig };
+        this.config = { ...this.suppliedConfig, auto_update: this.suppliedConfig.auto_update ?? true };
         this.layoutStatus = "";
       } catch {
         this.layoutStatus = "layout.config_save_error";
@@ -1029,6 +1041,7 @@ export class WiserZigbeeCard
       layout_data: layout,
       show_labels: this.showLabels,
       map_only: this.config.map_only ?? false,
+      magnifier: this.config.magnifier ?? false,
       preferences_only: preferencesOnly,
       hub: this.config.hub,
       name: this.config.name,
@@ -1090,6 +1103,62 @@ export class WiserZigbeeCard
     this.config = { ...this.config, map_only: !this.config.map_only };
     this.saveLayoutClick(true);
   }
+  private async openMagnifierMenu(anchor: HTMLElement): Promise<void> {
+    clearTimeout(this.magnifierHoldTimer);
+    this.magnifierHeld = true;
+    const menu = this.shadowRoot?.querySelector<any>("#magnifier-menu");
+    if (!menu) return;
+    await menu.updateComplete;
+    menu.anchorElement = anchor.querySelector("ha-icon-button");
+    menu.open = true;
+  }
+  private magnifierControl(): TemplateResult {
+    return html`<span
+      @pointerdown=${(event: PointerEvent) => {
+        if (!this.network || event.button !== 0) return;
+        clearTimeout(this.magnifierHoldTimer);
+        this.magnifierHeld = false;
+        const anchor = event.currentTarget as HTMLElement;
+        this.magnifierHoldTimer = setTimeout(() => void this.openMagnifierMenu(anchor), 500);
+      }}
+      @pointerup=${() => clearTimeout(this.magnifierHoldTimer)}
+      @pointerleave=${() => clearTimeout(this.magnifierHoldTimer)}
+      @pointercancel=${() => clearTimeout(this.magnifierHoldTimer)}
+      @contextmenu=${(event: Event) => {
+        event.preventDefault();
+        if (this.network) void this.openMagnifierMenu(event.currentTarget as HTMLElement);
+      }}
+      @keydown=${(event: KeyboardEvent) => {
+        if (event.key === "ArrowDown" && this.network) {
+          event.preventDefault();
+          void this.openMagnifierMenu(event.currentTarget as HTMLElement);
+        }
+      }}
+    >${this.layoutIcon(
+            "editor.magnifier",
+            "M9.5 3a6.5 6.5 0 1 0 3.98 11.64L19.85 21 21 19.85l-6.36-6.37A6.5 6.5 0 0 0 9.5 3m0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9m-1 1v2.5H6V10h2.5v2.5H10V10h2.5V8.5H10V6Z",
+            () => {
+              this.config = { ...this.config!, magnifier: !this.config?.magnifier };
+              this.magnifier.hide();
+              void this.saveLayoutClick(true);
+            },
+            this.config?.magnifier ?? false,
+          )}</span>
+    <ha-dropdown id="magnifier-menu" placement="bottom-end"
+      @wa-select=${(event: CustomEvent) => {
+        this.magnifier.setZoom(Number(event.detail.item.value));
+        this.requestUpdate();
+      }}
+      @wa-after-hide=${() => {
+        const menu = this.shadowRoot?.querySelector<any>("#magnifier-menu");
+        if (menu?.anchorElement) menu.anchorElement.selected = this.config?.magnifier ?? false;
+      }}
+    >
+      ${[2, 3, 4].map((zoom) => html`<ha-dropdown-item
+        .value=${String(zoom)} .selected=${this.magnifier.zoom === zoom}
+      >${zoom}×</ha-dropdown-item>`)}
+    </ha-dropdown>`;
+  }
   private layoutIcon(
     key: string,
     path: string,
@@ -1103,6 +1172,10 @@ export class WiserZigbeeCard
       (key === "common.refresh" ? this.loading : this.activeIcon === key);
     const activate = () => {
       if (disabled) return;
+      if (key === "editor.magnifier" && this.magnifierHeld) {
+        this.magnifierHeld = false;
+        return;
+      }
       if (pressed === undefined && key !== "common.refresh") {
         clearTimeout(this.activeIconTimer);
         this.activeIcon = key;
@@ -1177,6 +1250,7 @@ export class WiserZigbeeCard
             () => this.toggleLabels(),
             this.showLabels,
           )}
+          ${this.magnifierControl()}
           ${this.layoutIcon(
             "card.show_detailed_view",
             "M3 3H21V21H3V3M5 5V7H19V5H5M5 9V19H19V9H5Z",
@@ -1213,6 +1287,11 @@ export class WiserZigbeeCard
         <div
           id="zigbee-network"
           style=${this.mapHeight === null ? "" : `height: ${this.mapHeight}px`}
+          @pointermove=${(event: PointerEvent) => {
+            if (this.config?.magnifier) this.magnifier.show(event.currentTarget as HTMLElement, event);
+          }}
+          @pointerleave=${() => this.magnifier.hide()}
+          @pointerdown=${() => this.magnifier.hide()}
           @wheel=${this.panZoomedView}
           @touchstart=${this.touchZoomStart}
           role="img"
@@ -1455,9 +1534,28 @@ export class WiserZigbeeCard
       pointer-events: none;
       color: var(--primary-text-color);
     }
-    .area-icons ha-icon {
+    .area-icons ha-icon, .magnifier-area-icons ha-icon {
       position: absolute;
       transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    #magnifier-menu { position: absolute; }
+    .map-magnifier {
+      position: absolute;
+      z-index: 2;
+      overflow: hidden;
+      border-radius: 50%;
+      outline: 2px solid var(--primary-color);
+      box-shadow: 0 3px 12px rgb(0 0 0 / 35%);
+      background: var(--ha-card-background, var(--card-background-color, #fff));
+      pointer-events: none;
+    }
+    .magnifier-area-icons {
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform-origin: 0 0;
+      color: var(--primary-text-color);
       pointer-events: none;
     }
     .message {

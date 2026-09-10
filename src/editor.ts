@@ -1,3 +1,4 @@
+import { sanitizeConfig } from "./sanitize-config";
 import { LitElement, html, TemplateResult, css } from "lit";
 import {
   HomeAssistant,
@@ -104,6 +105,7 @@ export class WiserZigbeeCardEditor
       show_layout_export: this._config.show_layout_export ?? true,
       show_device_list: this._config.show_device_list ?? true,
       show_labels: this._config.show_labels ?? false,
+      magnifier: this._config.magnifier ?? false,
     };
     const fields = [
       {
@@ -128,6 +130,7 @@ export class WiserZigbeeCardEditor
     ];
     const switches = [
       { name: "show_labels", selector: { boolean: {} } },
+      { name: "magnifier", selector: { boolean: {} } },
       { name: "auto_update", selector: { boolean: {} } },
       { name: "show_detailed_view", selector: { boolean: {} } },
       {
@@ -244,7 +247,8 @@ export class WiserZigbeeCardEditor
     const next = { ...this._config, ...value };
     if (
       (next.hub || this._hubs[0]) !== (this._config.hub || this._hubs[0]) ||
-      (next.group_by ?? "none") !== (this._config.group_by ?? "none")
+      (next.group_by ?? "none") !== (this._config.group_by ?? "none") ||
+      (next.orientation ?? "vertical") !== (this._config.orientation ?? "vertical")
     ) {
       delete next.layout_data;
       delete next.layout_orientation;
@@ -253,7 +257,7 @@ export class WiserZigbeeCardEditor
     // Keep the implicit default translated when other form fields change.
     if (this._config.name == null && next.name === this.t("card.title"))
       delete next.name;
-    this._config = next;
+    this._config = sanitizeConfig(next);
     fireEvent(this, "config-changed", { config: this._config });
   }
   private save_layout(ev): void {
@@ -268,16 +272,19 @@ export class WiserZigbeeCardEditor
         (this._config.name ?? "Wiser Zigbee Network")
     )
       return;
-    this._config = {
+    this._config = sanitizeConfig({
       ...this._config,
+      ...(typeof ev.detail.magnifier === "boolean" ? { magnifier: ev.detail.magnifier } : {}),
       ...(typeof ev.detail.map_only === "boolean" ? { map_only: ev.detail.map_only } : {}),
       ...(typeof ev.detail.show_labels === "boolean" ? { show_labels: ev.detail.show_labels } : {}),
       ...(!ev.detail.preferences_only ? {
         layout_data: ev.detail.layout_data,
-        layout_orientation: ev.detail.orientation ?? "horizontal",
-        layout_group_by: ev.detail.group_by ?? "none",
+        orientation: ev.detail.orientation ?? "vertical",
+        group_by: ev.detail.group_by ?? "none",
+        layout_orientation: undefined,
+        layout_group_by: undefined,
       } : {}),
-    };
+    });
     fireEvent(this, "config-changed", { config: this._config });
   }
   static styles = css`

@@ -20,6 +20,7 @@ const source = ts.transpileModule(fs.readFileSync("src/editor.ts", "utf8"), {
 const output = { exports: {} };
 const decorator = () => () => {};
 const requireMock = (id) => {
+  if (id === "./sanitize-config") return require("./load-ts.cjs")("src/sanitize-config.ts");
   if (id === "lit")
     return {
       LitElement: class {},
@@ -51,6 +52,7 @@ editor.setConfig({
   hub: "one",
   layout_data: layout,
   layout_orientation: "horizontal",
+  orientation: "horizontal",
 });
 editor.hass = {};
 let template = editor.render();
@@ -64,7 +66,7 @@ function switchFields(template) {
     .filter((field) => field?.selector?.boolean);
 }
 const switches = switchFields(template);
-assert.equal(switches.length, 5);
+assert.equal(switches.length, 6);
 assert.ok(
   switches.every((field) => field.selector && "boolean" in field.selector),
   "All switches use native boolean selectors",
@@ -166,6 +168,7 @@ editor.setConfig({
   type: "custom:wiser-zigbee-card",
   layout_data: layout,
   layout_orientation: "horizontal",
+  orientation: "horizontal",
 });
 editor._hubs = ["Hub A"];
 assert.deepEqual(hubField().selector.select.options, ["Hub A"]);
@@ -230,3 +233,16 @@ assert.ok(editor.render().values.some((value) => value?.link_status === "links")
 for (const mode of ["links", "icons", "both", "none"]) {
   assert.equal(change({ link_status: mode }).link_status, mode);
 }
+editor.setConfig({
+  type: "custom:wiser-zigbee-card", orientation: "vertical",
+  layout_orientation: "vertical", group_by: "area", layout_group_by: "area", layout_data: layout,
+});
+const cleaned = change({ show_labels: true });
+assert.equal("layout_orientation" in cleaned, false);
+assert.equal("layout_group_by" in cleaned, false);
+assert.deepEqual(cleaned.layout_data, layout);
+assert.equal(change({ orientation: "pie" }).layout_data, undefined);
+editor.setConfig({ type: "custom:wiser-zigbee-card" });
+assert.equal(change({ magnifier: true }).magnifier, true);
+editor.save_layout({ detail: { orientation: "vertical", magnifier: false, preferences_only: true } });
+assert.equal(events.at(-1).detail.config.magnifier, false);

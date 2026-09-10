@@ -17,7 +17,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
       isConnected = true;
       updateComplete = Promise.resolve();
     },
-    html: () => {},
+    html: (strings, ...values) => ({ strings, values }),
     css: () => {},
   },
   "lit/directives/if-defined.js": { ifDefined: (value) => value },
@@ -31,6 +31,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   },
   "vis-network": {},
   "./is-preview": { is_preview: () => preview },
+  "./map-magnifier": load("src/map-magnifier.ts"),
   "./save-config": { saveCardConfig: async (_, original, changes) => {
     savedChanges = changes;
     return { ...original, ...changes };
@@ -626,6 +627,20 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   await savingCard.saveLayoutClick();
   assert.equal(savedChanges.show_labels, false);
   assert.equal(savedChanges.map_only, false);
+  const menu = { updateComplete: Promise.resolve(), open: false };
+  const anchorButton = {};
+  savingCard.shadowRoot = { querySelector: () => menu };
+  savingCard.network = {};
+  await savingCard.openMagnifierMenu({ querySelector: () => anchorButton });
+  assert.equal(menu.open, true);
+  assert.equal(menu.anchorElement, anchorButton);
+  let toggles = 0;
+  const buttonTemplate = savingCard.layoutIcon("editor.magnifier", "", () => toggles++, false, false);
+  const clickIndex = buttonTemplate.strings.findIndex((part) => part.endsWith("@click="));
+  buttonTemplate.values[clickIndex]();
+  assert.equal(toggles, 0, "Release after long press must not toggle the magnifier");
+  buttonTemplate.values[clickIndex]();
+  assert.equal(toggles, 1, "Subsequent normal click still toggles");
   console.log(
     "Refresh preserves latest zoom, pan, dragged positions and double-click return view.",
   );
