@@ -59,5 +59,6 @@
   "editor.both": "Both",
   "signal.medium": "Medium",
   "layout.config_save_error": "Unable to save this card’s configuration. Use the card editor to save, or copy the layout YAML for a YAML dashboard.",
-  "editor.magnifier": "Magnifying glass"
+  "editor.magnifier": "Magnifying glass",
+  "editor.lens_size": "Lens size"
 }

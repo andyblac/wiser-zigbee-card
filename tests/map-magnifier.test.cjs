@@ -71,3 +71,21 @@ global.localStorage = { getItem() { throw Error(); }, setItem() { throw Error();
 const blocked = new MapMagnifier();
 blocked.setZoom(3);
 assert.equal(blocked.zoom, 3, "Lens still works with browser storage unavailable");
+global.localStorage = {
+  getItem: (key) => storage.get(key) ?? null,
+  setItem: (key, value) => storage.set(key, value),
+};
+const sized = new MapMagnifier();
+assert.equal(sized.size,180);
+sized.setSize(240);
+assert.equal(new MapMagnifier().size,240);
+assert.equal(lensGeometry(300,200,800,600,3,240).size,240);
+assert.equal(lensGeometry(30,30,80,70,3,240).size,70);
+sized.setSize(1000);
+assert.equal(sized.size,360);
+sized.setSize(-5);
+assert.equal(sized.size,100);
+sized.setSize(NaN);
+assert.equal(sized.size,100);
+storage.set("wiser-zigbee-magnifier-size","broken");
+assert.equal(new MapMagnifier().size,180);

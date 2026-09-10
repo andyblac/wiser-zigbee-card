@@ -59,5 +59,6 @@
   "editor.both": "Beides",
   "signal.medium": "Mittel",
   "layout.config_save_error": "Die Kartenkonfiguration konnte nicht gespeichert werden. Speichere im Karteneditor oder kopiere das Layout-YAML für ein YAML-Dashboard.",
-  "editor.magnifier": "Lupe"
+  "editor.magnifier": "Lupe",
+  "editor.lens_size": "Lupengröße"
 }

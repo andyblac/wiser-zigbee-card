@@ -1154,9 +1154,30 @@ export class WiserZigbeeCard
         if (menu?.anchorElement) menu.anchorElement.selected = this.config?.magnifier ?? false;
       }}
     >
+      <div class="magnifier-options">
+      <div class="magnifier-zoom-options">
       ${[2, 3, 4].map((zoom) => html`<ha-dropdown-item
         .value=${String(zoom)} .selected=${this.magnifier.zoom === zoom}
       >${zoom}×</ha-dropdown-item>`)}
+      </div>
+      <div class="lens-size-control"
+        @click=${(event: Event) => event.stopPropagation()}
+        @keydown=${(event: KeyboardEvent) => {
+          if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
+        }}
+      >
+        <ha-slider orientation="vertical" tooltip-placement="right"
+          aria-label=${this.t("editor.lens_size")}
+          .min=${100} .max=${360} .step=${10}
+          .value=${this.magnifier.size}
+          @input=${(event: Event) => {
+            this.magnifier.setSize(Number((event.target as HTMLInputElement).value));
+            this.requestUpdate();
+          }}
+        ></ha-slider>
+        <span>${this.magnifier.size} px</span>
+      </div>
+      </div>
     </ha-dropdown>`;
   }
   private layoutIcon(
@@ -1540,6 +1561,33 @@ export class WiserZigbeeCard
       pointer-events: none;
     }
     #magnifier-menu { position: absolute; }
+    .magnifier-options { display: flex; align-items: stretch; }
+    .magnifier-zoom-options { width: 64px; display: flex; flex-direction: column; }
+    .lens-size-control {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-left: 1px solid var(--divider-color);
+      color: var(--primary-text-color);
+    }
+    .lens-size-control ha-slider {
+      display: block;
+      width: 36px;
+      min-width: 0;
+      height: 80px;
+      min-height: 0;
+      flex: none;
+    }
+    .lens-size-control ha-slider::part(slider) {
+      justify-content: center;
+      padding: 8px 0;
+      margin: 0;
+    }
+    .lens-size-control ha-slider::part(track) { height: 64px; }
+    .lens-size-control span { font-size: 12px; color: var(--secondary-text-color); }
     .map-magnifier {
       position: absolute;
       z-index: 2;

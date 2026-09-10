@@ -48,6 +48,7 @@ export function watchNativeElements(
     "ha-alert",
     "ha-dropdown",
     "ha-dropdown-item",
+    "ha-slider",
   ]) {
     if (!customElements.get(name))
       void customElements.whenDefined(name).then(() => {

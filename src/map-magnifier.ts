@@ -1,7 +1,8 @@
 const SIZE = 180;
+const SIZE_KEY = "wiser-zigbee-magnifier-size";
 const ZOOM_KEY = "wiser-zigbee-magnifier-zoom";
-export function lensGeometry(x: number, y: number, width: number, height: number, zoom = 2) {
-  const size = Math.min(SIZE, width, height);
+export function lensGeometry(x: number, y: number, width: number, height: number, zoom = 2, diameter = SIZE) {
+  const size = Math.min(diameter, width, height);
   const left = Math.max(0, Math.min(width - size, x - size / 2));
   const top = Math.max(0, Math.min(height - size, y - size / 2));
   return { size, left, top, imageX: size / 2 - x * zoom, imageY: size / 2 - y * zoom };
@@ -9,11 +10,20 @@ export function lensGeometry(x: number, y: number, width: number, height: number
 
 export class MapMagnifier {
   public zoom = 2;
+  public size = SIZE;
   constructor() {
     try {
       const saved = Number(localStorage.getItem(ZOOM_KEY));
       if ([2, 3, 4].includes(saved)) this.zoom = saved;
+      const size = Number(localStorage.getItem(SIZE_KEY));
+      if (size >= 100 && size <= 360) this.size = Math.round(size / 10) * 10;
     } catch {}
+  }
+  setSize(value: number): void {
+    if (!Number.isFinite(value)) return;
+    this.size = Math.max(100, Math.min(360, Math.round(value / 10) * 10));
+    try { localStorage.setItem(SIZE_KEY, String(this.size)); } catch {}
+    this.refresh();
   }
   setZoom(value: number): void {
     if (![2, 3, 4].includes(value)) return;
@@ -63,7 +73,7 @@ export class MapMagnifier {
       this.lens.append(map.ownerDocument.createElement("canvas"), map.ownerDocument.createElement("div"));
       map.parentElement!.append(this.lens);
     }
-    const g = lensGeometry(point.x, point.y, map.clientWidth, map.clientHeight, this.zoom);
+    const g = lensGeometry(point.x, point.y, map.clientWidth, map.clientHeight, this.zoom, this.size);
     this.lens.style.cssText = `left:${g.left}px;top:${g.top}px;width:${g.size}px;height:${g.size}px`;
     const canvas = this.lens.firstElementChild as HTMLCanvasElement;
     const ratio = map.ownerDocument.defaultView?.devicePixelRatio || 1;
