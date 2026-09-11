@@ -1,3 +1,5 @@
+import { buttonConfirmation } from "./action-confirmation";
+import { copyText } from "./copy-text";
 import { MapMagnifier } from "./map-magnifier";
 import { saveCardConfig } from "./save-config";
 import { disconnectedDevice, statusImage, deviceMapLabel } from "./device-appearance";
@@ -37,9 +39,7 @@ import {
 import {
   actionButton,
   expansionPanel,
-  readonlyText,
   watchNativeElements,
-  ensureNativeTextarea,
 } from "./native-ui";
 import "./editor";
 import { containedView } from "./fit";
@@ -90,7 +90,6 @@ export class WiserZigbeeCard
   @state() private selected?: number;
   @state() private selectedEntity?: string;
   @state() private layoutStatus = "";
-  @state() private layoutYaml = "";
   private textColor = "";
   private statusPalette = "";
   private displayLanguage = "";
@@ -181,7 +180,6 @@ export class WiserZigbeeCard
     this.network = undefined;
     this.infoReturnView = undefined;
     this.zoomReturnView = undefined;
-    this.layoutYaml = "";
     this.layoutStatus = "";
     this.pendingLoad = true;
     this.requestId++;
@@ -997,17 +995,17 @@ export class WiserZigbeeCard
       ...this.network.getPositions(),
     };
   }
-  private async exportLayout(): Promise<void> {
+  private prepareConfirmation(action: string, message: "common.copied" | "common.saved"): () => void {
+    return buttonConfirmation(
+      this.shadowRoot?.querySelector<HTMLElement>(`[data-action="${action}"]`) ?? null,
+      this.t(message),
+    );
+  }
+  private async copyLayout(): Promise<void> {
+    const confirm = this.prepareConfirmation("common.copy", "common.copied");
     const layout = this.currentPositions();
     if (!layout) return;
-    try {
-      await ensureNativeTextarea(this, this.hass);
-    } catch {
-      this.layoutStatus = "layout.export_error";
-      return;
-    }
-    this.layoutStatus = "";
-    this.layoutYaml =
+    const yaml =
       `magnifier: ${this.config?.magnifier ?? false}\nshow_labels: ${this.showLabels}\nmap_only: ${this.config?.map_only ?? false}\norientation: ${this.orientation}\ngroup_by: ${this.config?.group_by ?? "none"}\nlayout_data:\n` +
       Object.entries(layout)
         .map(
@@ -1015,10 +1013,18 @@ export class WiserZigbeeCard
             `  ${JSON.stringify(id)}:\n    x: ${Math.round(position.x)}\n    y: ${Math.round(position.y)}`,
         )
         .join("\n");
+    try {
+      await copyText(yaml);
+      this.layoutStatus = "";
+      confirm();
+    } catch {
+      this.layoutStatus = "layout.copy_error";
+    }
   }
   private async saveLayoutClick(preferencesOnly = false): Promise<void> {
     const layout = this.currentPositions();
     if (!layout || !this.config) return;
+    const confirm = preferencesOnly ? () => {} : this.prepareConfirmation("card.save_layout", "common.saved");
     try {
       if (!preferencesOnly) localStorage.setItem(this.layoutKey, JSON.stringify(layout));
       localStorage.setItem(`${this.layoutKey}:labels`, JSON.stringify(this.showLabels));
@@ -1043,6 +1049,7 @@ export class WiserZigbeeCard
         }) as WiserZigbeeCardConfig;
         this.config = { ...this.suppliedConfig, auto_update: this.suppliedConfig.auto_update ?? true };
         this.layoutStatus = "";
+        confirm();
       } catch {
         this.layoutStatus = "layout.config_save_error";
       } finally {
@@ -1062,6 +1069,7 @@ export class WiserZigbeeCard
       layout_id: this.config.layout_id,
       group_by: this.config.group_by ?? "none",
     });
+    if (!preferencesOnly && !this.layoutStatus) confirm();
   }
   private renderZigbeeDetails(node: ZigbeeNode): TemplateResult {
     const attrs = this.selectedEntity
@@ -1221,6 +1229,7 @@ export class WiserZigbeeCard
     };
     return html`<ha-icon-button
       class="layout-icon"
+      data-action=${key}
       .label=${label}
       title=${label}
       .path=${path}
@@ -1291,6 +1300,11 @@ export class WiserZigbeeCard
             () => this.toggleViewMode(),
             !(this.config?.map_only ?? false),
             !this.config,
+          )}
+          ${this.layoutIcon(
+            "common.copy",
+            "M19 21H8V7H19M19 5H8A2 2 0 0 0 6 7V21A2 2 0 0 0 8 23H19A2 2 0 0 0 21 21V7A2 2 0 0 0 19 5M16 1H4A2 2 0 0 0 2 3V17H4V3H16Z",
+            () => void this.copyLayout(),
           )}
           ${this.layoutIcon("card.save_layout", savePath, () =>
             this.saveLayoutClick(),
@@ -1402,18 +1416,6 @@ export class WiserZigbeeCard
                     </div>`,
                 )}`
           : html`<p class="hint">${this.t("card.hint")}</p>`}
-        ${!this.config?.map_only && this.config?.show_layout_export !== false
-          ? expansionPanel(
-              this.t("layout.export_title"),
-              html` <p>${this.t("layout.export_help")}</p>
-                ${actionButton(this.t("layout.generate"), () =>
-                  this.exportLayout(),
-                )}
-                ${this.layoutYaml
-                  ? readonlyText(this.t("layout.yaml"), this.layoutYaml)
-                  : ""}`,
-            )
-          : ""}
         ${!this.config?.map_only && this.config?.show_device_list !== false
           ? expansionPanel(
               this.t("layout.device_list"),

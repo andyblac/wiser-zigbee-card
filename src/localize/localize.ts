@@ -17,6 +17,9 @@ const languages: Record<SupportedLanguage, Record<string, string>> = {
 };
 // Core and Lovelace labels are owned by HA; no local copies.
 const nativeKeys: Record<string, string> = {
+  "common.copy": "ui.common.copy",
+  "common.copied": "ui.common.copied",
+  "common.saved": "ui.common.successfully_saved",
   "editor.icons": "ui.panel.lovelace.editor.features.types.climate-preset-modes.style_list.icons",
   "editor.pie": "ui.panel.lovelace.editor.card.energy-devices-graph.mode_options.pie",
   "common.invalid_configuration": "ui.panel.lovelace.editor.condition-editor.visibility_status.invalid.headline",

@@ -102,7 +102,6 @@ export class WiserZigbeeCardEditor
       name: this._config.name ?? this.t("card.title"),
       show_detailed_view: !(this._config.map_only ?? false),
       map_height: this._config.map_height ?? null,
-      show_layout_export: this._config.show_layout_export ?? true,
       show_device_list: this._config.show_device_list ?? true,
       show_labels: this._config.show_labels ?? false,
       magnifier: this._config.magnifier ?? false,
@@ -133,11 +132,6 @@ export class WiserZigbeeCardEditor
       { name: "magnifier", selector: { boolean: {} } },
       { name: "auto_update", selector: { boolean: {} } },
       { name: "show_detailed_view", selector: { boolean: {} } },
-      {
-        name: "show_layout_export",
-        selector: { boolean: {} },
-        disabled: !data.show_detailed_view,
-      },
       {
         name: "show_device_list",
         selector: { boolean: {} },

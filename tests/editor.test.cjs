@@ -66,7 +66,7 @@ function switchFields(template) {
     .filter((field) => field?.selector?.boolean);
 }
 const switches = switchFields(template);
-assert.equal(switches.length, 6);
+assert.equal(switches.length, 5);
 assert.ok(
   switches.every((field) => field.selector && "boolean" in field.selector),
   "All switches use native boolean selectors",
@@ -88,7 +88,7 @@ const disabled = switchFields(template);
 assert.ok(
   disabled
     .filter((field) =>
-      ["show_layout_export", "show_device_list"].includes(field.name),
+      ["show_device_list"].includes(field.name),
     )
     .every((field) => field.disabled),
 );

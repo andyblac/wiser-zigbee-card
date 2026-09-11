@@ -46,7 +46,7 @@ Transparent product images are embedded in the JavaScript, with a transparent ge
 
 The Title field starts with the translated “Zigbee network”. Clear it to hide the title while keeping the brand label and device counts. In YAML, omit `name` for the translated default, set `name: ""` to hide it, or supply your own title.
 
-Refresh, Fit view, Zoom in/out, Tidy layout, Link labels, Show detailed view and Save layout sit together as icons at the top right beside WISER · ZIGBEE in both normal and Map only modes. They use the same muted theme colour, with translated tooltips and accessible labels. Link labels highlights while enabled. Show detailed view highlights in detailed mode and is unhighlighted in map-only mode. Refresh highlights while loading; Fit view, Tidy layout and Save layout briefly highlight when used. Tidy layout keeps the current device order within each hop while aligning and spacing devices, and preserves zoom and pan. The Show detailed view icon switches between normal and map-only views without rebuilding the graph. Press Save layout to store the current label visibility, detailed view setting and positions in the card configuration. The Save icon briefly highlights to confirm the action; a message appears only if saving fails.
+Refresh, Fit view, Zoom in/out, Tidy layout, Link labels, Show detailed view, Copy and Save layout sit together as icons at the top right beside WISER · ZIGBEE in both normal and Map only modes. They use the same muted theme colour, with translated tooltips and accessible labels. Link labels highlights while enabled. Show detailed view highlights in detailed mode and is unhighlighted in map-only mode. Refresh highlights while loading; Fit view, Tidy layout and Save layout briefly highlight when used. Tidy layout keeps the current device order within each hop while aligning and spacing devices, and preserves zoom and pan. The Show detailed view icon switches between normal and map-only views without rebuilding the graph. Press Save layout to store the current label visibility, detailed view setting and positions in the card configuration. Copy and Save show brief native HA tooltip confirmations beside their buttons after success; failures show an error.
 
 ## Optional sections
 
@@ -54,7 +54,7 @@ The editor uses Home Assistant’s native form selectors for themed switches and
 
 Turn off **Show detailed view** in the editor (or `map_only: true` in YAML) to keep the WISER · ZIGBEE label, icon controls and map while hiding the title, device counts and expandable sections. Tapping a device still shows its Zigbee information. The map keeps its chosen orientation, device labels, dragging and double-click zoom. Loading and error messages still appear when needed. Show detailed view is on by default. Turn it back on to restore the title, counts and your previous section visibility settings.
 
-The editor has independent switches for **Show layout for other browsers** and **Show all devices & connections**. Both are shown by default. In YAML, set `show_layout_export: false` or `show_device_list: false` to hide either section.
+**Copy** in the toolbar copies the current layout YAML directly to the clipboard in both views. The former layout-export section and its editor option have been removed. **Show all devices & connections** remains available in the editor; use `show_device_list: false` to hide that section.
 
 ## Languages
 

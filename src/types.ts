@@ -23,7 +23,6 @@ export interface WiserZigbeeCardConfig extends LovelaceCardConfig {
   group_by?: "none" | "area";
   layout_group_by?: "none" | "area";
   map_height?: number | null | "";
-  show_layout_export?: boolean;
   show_device_list?: boolean;
   show_labels?: boolean;
   magnifier?: boolean;

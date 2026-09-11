@@ -15,3 +15,4 @@ assert.equal(sanitizeConfig({ ...original, orientation: "pie" }).layout_data, un
 assert.equal(sanitizeConfig({ ...original, group_by: "none" }).layout_data, undefined);
 assert.deepEqual(sanitizeConfig({ orientation: "pie", layout_data: layout }).layout_data, layout);
 console.log("Configuration sanitization removes redundant guards and rejects stale coordinates.");
+assert.equal("show_layout_export" in sanitizeConfig({ show_layout_export: true }), false);

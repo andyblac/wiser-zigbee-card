@@ -21,13 +21,8 @@
   "map.accessible_list": "Interactive Zigbee network map. Device and connection details are available in the list below. Tap a device for Zigbee details. Long-press for More info.",
   "map.accessible_details": "Interactive Zigbee network map. Tap a device for Zigbee details. Long-press for More info.",
   "layout.storage_error": "Browser storage unavailable. Copy the layout into your card configuration.",
-  "layout.export_title": "Layout for other browsers",
-  "layout.export_help": "Generate and copy this into your card’s YAML configuration to use the same positions on other devices.",
-  "layout.generate": "Generate layout YAML",
-  "layout.yaml": "Layout YAML",
   "layout.device_list": "All devices & connections",
   "editor.auto_update": "Auto refresh",
-  "editor.show_layout_export": "Show layout for other browsers",
   "editor.show_device_list": "Show all devices & connections",
   "editor.orientation": "Network view",
   "editor.loading": "Loading Home Assistant controls…",
@@ -61,5 +56,5 @@
   "layout.config_save_error": "Unable to save this card’s configuration. Use the card editor to save, or copy the layout YAML for a YAML dashboard.",
   "editor.magnifier": "Magnifying glass",
   "editor.lens_size": "Lens size",
-  "layout.export_error": "Unable to load the YAML output control. Refresh the page and try again."
+  "layout.copy_error": "Unable to copy the layout. Check clipboard permissions and try again."
 }

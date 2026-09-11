@@ -8,6 +8,9 @@ global.getComputedStyle = () => ({ getPropertyValue: () => "#ffffff" });
 let resolveFetch;
 let preview = true;
 let savedChanges;
+let clipboardText;
+const confirmations = [];
+let failCopy = false;
 const infoEvents = [];
 const decorator = () => () => {};
 const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
@@ -27,7 +30,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     eventOptions: decorator,
   },
   "custom-card-helpers": {
-    fireEvent: (_, type, detail) => infoEvents.push({ type, detail }),
+    fireEvent: (target, type, detail) => infoEvents.push({ type, detail, ...(type === "hass-notification" ? { target } : {}) }),
   },
   "vis-network": {},
   "./is-preview": { is_preview: () => preview },
@@ -50,7 +53,9 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   },
   "./components/subscribe-mixin": { SubscribeMixin: (Base) => Base },
   "./localize/localize": load("src/localize/localize.ts"),
-  "./native-ui": { ensureNativeTextarea: async () => {} },
+  "./native-ui": {},
+  "./action-confirmation": { buttonConfirmation: (_, message) => () => confirmations.push(message) },
+  "./copy-text": { copyText: async (text) => { if (failCopy) throw Error("Denied"); clipboardText = text; } },
   "./editor": {},
   "./area-graph": load("src/area-graph.ts"),
   "./areas": { withDeviceAreas: async (_, data) => data },
@@ -666,9 +671,25 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     await pendingLoad;
     assert.equal(shared.mapData.nodes[0].x, 0, "Empty configured layout does not revive stale browser positions");
   }
-  await savingCard.exportLayout();
-  assert.ok(savingCard.layoutYaml.includes("\nlayout_data:\n"));
-  assert.ok(savingCard.layoutYaml.includes('  "1":\n    x: 10\n    y: 20'));
+  const appRoot = {};
+  savingCard.ownerDocument = { querySelector: (selector) => {
+    assert.equal(selector, "home-assistant");
+    return appRoot;
+  } };
+  savingCard.hass = { localize: (key) => key === "ui.common.copied" ? "Copied" : "Successfully saved" };
+  await savingCard.copyLayout();
+  assert.ok(clipboardText.includes("\nlayout_data:\n"));
+  assert.ok(clipboardText.includes('  "1":\n    x: 10\n    y: 20'));
+  assert.equal(confirmations.at(-1), "Copied");
+  await savingCard.saveLayoutClick();
+  assert.equal(confirmations.at(-1), "Successfully saved");
+  const count = confirmations.length;
+  await savingCard.saveLayoutClick(true);
+  assert.equal(confirmations.length, count, "No confirmation for automatic preference persistence");
+  failCopy = true;
+  await savingCard.copyLayout();
+  assert.equal(savingCard.layoutStatus, "layout.copy_error");
+  assert.equal(confirmations.length, count, "No confirmation on failure");
   console.log(
     "Refresh preserves latest zoom, pan, dragged positions and double-click return view.",
   );

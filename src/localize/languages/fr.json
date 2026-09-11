@@ -21,13 +21,8 @@
   "map.accessible_list": "Carte interactive du réseau Zigbee. Les détails des appareils et des connexions figurent dans la liste ci-dessous. Appuyez sur un appareil pour afficher ses détails Zigbee. Maintenez-le enfoncé pour afficher Plus d’informations.",
   "map.accessible_details": "Carte interactive du réseau Zigbee. Appuyez sur un appareil pour afficher ses détails Zigbee. Maintenez-le enfoncé pour afficher Plus d’informations.",
   "layout.storage_error": "Stockage du navigateur indisponible. Copiez la disposition dans la configuration de votre carte.",
-  "layout.export_title": "Disposition pour les autres navigateurs",
-  "layout.export_help": "Générez ce contenu et copiez-le dans la configuration YAML de votre carte pour utiliser les mêmes positions sur d’autres appareils.",
-  "layout.generate": "Générer le YAML de la disposition",
-  "layout.yaml": "YAML de la disposition",
   "layout.device_list": "Tous les appareils et connexions",
   "editor.auto_update": "Actualisation automatique",
-  "editor.show_layout_export": "Afficher la disposition pour les autres navigateurs",
   "editor.show_device_list": "Afficher tous les appareils et connexions",
   "editor.orientation": "Vue du réseau",
   "editor.loading": "Chargement des commandes Home Assistant…",
@@ -61,5 +56,5 @@
   "layout.config_save_error": "Impossible d’enregistrer la configuration de cette carte. Utilisez l’éditeur de carte ou copiez le YAML de disposition pour un tableau de bord YAML.",
   "editor.magnifier": "Loupe",
   "editor.lens_size": "Taille de la loupe",
-  "layout.export_error": "Impossible de charger le champ de sortie YAML. Actualisez la page et réessayez."
+  "layout.copy_error": "Impossible de copier la disposition. Vérifiez les autorisations du presse-papiers et réessayez."
 }
