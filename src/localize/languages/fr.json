@@ -56,5 +56,10 @@
   "layout.config_save_error": "Impossible d’enregistrer la configuration de cette carte. Utilisez l’éditeur de carte ou copiez le YAML de disposition pour un tableau de bord YAML.",
   "editor.magnifier": "Loupe",
   "editor.lens_size": "Taille de la loupe",
-  "layout.copy_error": "Impossible de copier la disposition. Vérifiez les autorisations du presse-papiers et réessayez."
+  "layout.copy_error": "Impossible de copier la disposition. Vérifiez les autorisations du presse-papiers et réessayez.",
+  "panel.menu": "Afficher ou masquer la barre latérale",
+  "panel.settings": "Paramètres du panneau",
+  "panel.description": "Personnalisez ce panneau. Les cartes du tableau de bord conservent leurs propres paramètres.",
+  "panel.editor_error": "Impossible d’ouvrir l’éditeur. Fermez cette boîte de dialogue et réessayez.",
+  "panel.save_error": "Impossible d’enregistrer les paramètres dans Home Assistant. Veuillez réessayer."
 }

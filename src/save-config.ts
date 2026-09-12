@@ -17,6 +17,9 @@ export async function saveCardConfig(host: Element, original: Config, changes: C
   let current: any = host;
   let dashboard: Dashboard | undefined;
   while (current) {
+    if (current.localName === "wiser-zigbee-panel" && current.saveZigbeeCardConfig) {
+      return current.saveZigbeeCardConfig(host, sanitizeConfig({ ...original, ...changes }));
+    }
     if (current.lovelace?.saveConfig) {
       dashboard = current.lovelace;
       break;

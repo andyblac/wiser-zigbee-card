@@ -57,3 +57,9 @@ Originally created by [Mark Parker (@msp1974)](https://github.com/msp1974).
 [Report a bug](https://github.com/andyblac/wiser-zigbee-card/issues) or [share ideas and ask questions](https://github.com/andyblac/wiser-zigbee-card/discussions).
 
 Compiled card builds include a `WISER-CARD-VERSION` comment containing the card name and build version. Home Assistant can read this marker to update the resource URL without relying on minified variable names or editor text.
+
+## Sidebar panel
+
+With the matching Wiser integration update, enable **Show Wiser Zigbee in sidebar** in the integration’s options for each hub you want to include. The **Wiser Zigbee** panel uses hub tabs and an administrator-only settings button, following the schedules panel. Settings and saved map layouts are stored per hub in Home Assistant, separately from dashboard cards.
+
+The panel is included in `wiser-zigbee-card.js`; both the updated bundle and integration sidebar support are required.

@@ -17,6 +17,7 @@ export class WiserZigbeeCardEditor
   implements LovelaceCardEditor
 {
   @property({ attribute: false }) public hass?: HomeAssistant;
+  @property({ attribute: false }) public hideHubSelector = false;
   @state() private _config?: WiserZigbeeCardConfig;
   @state() private _hubs: string[] = [];
   @state() private _formReady = !!customElements.get("ha-form");
@@ -141,7 +142,7 @@ export class WiserZigbeeCardEditor
     return html` <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${fields}
+        .schema=${this.hideHubSelector ? fields.filter((field) => field.name !== "hub") : fields}
         .computeLabel=${this.computeLabel}
         @value-changed=${this.valueChanged}
       ></ha-form>

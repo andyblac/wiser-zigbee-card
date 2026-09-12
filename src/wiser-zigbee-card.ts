@@ -42,6 +42,7 @@ import {
   watchNativeElements,
 } from "./native-ui";
 import "./editor";
+import "./wiser-zigbee-panel.js";
 import { containedView } from "./fit";
 import { placeLinkLabels, LinkLabel } from "./link-labels";
 import { deviceInfoEntity, receptionMetrics } from "./device-info";
@@ -74,6 +75,7 @@ export class WiserZigbeeCard
   extends SubscribeMixin(LitElement)
   implements LovelaceCard
 {
+  static panelApiVersion = 1;
   @state() private config?: WiserZigbeeCardConfig;
   @state() private zigbeeData?: zigbeeData;
   @state() private loading = false;

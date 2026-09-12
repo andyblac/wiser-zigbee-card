@@ -56,5 +56,10 @@
   "layout.config_save_error": "Unable to save this card’s configuration. Use the card editor to save, or copy the layout YAML for a YAML dashboard.",
   "editor.magnifier": "Magnifying glass",
   "editor.lens_size": "Lens size",
-  "layout.copy_error": "Unable to copy the layout. Check clipboard permissions and try again."
+  "layout.copy_error": "Unable to copy the layout. Check clipboard permissions and try again.",
+  "panel.menu": "Toggle sidebar",
+  "panel.settings": "Panel settings",
+  "panel.description": "Customise this panel. Dashboard cards keep their own settings.",
+  "panel.editor_error": "Unable to open the editor. Close this dialogue and try again.",
+  "panel.save_error": "Unable to save settings to Home Assistant. Please try again."
 }

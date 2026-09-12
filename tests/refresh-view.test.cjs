@@ -57,6 +57,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   "./action-confirmation": { buttonConfirmation: (_, message) => () => confirmations.push(message) },
   "./copy-text": { copyText: async (text) => { if (failCopy) throw Error("Denied"); clipboardText = text; } },
   "./editor": {},
+  "./wiser-zigbee-panel.js": {},
   "./area-graph": load("src/area-graph.ts"),
   "./areas": { withDeviceAreas: async (_, data) => data },
   "./fit": load("src/fit.ts"),

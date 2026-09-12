@@ -56,5 +56,10 @@
   "layout.config_save_error": "Die Kartenkonfiguration konnte nicht gespeichert werden. Speichere im Karteneditor oder kopiere das Layout-YAML für ein YAML-Dashboard.",
   "editor.magnifier": "Lupe",
   "editor.lens_size": "Lupengröße",
-  "layout.copy_error": "Das Layout konnte nicht kopiert werden. Prüfe die Berechtigungen für die Zwischenablage und versuche es erneut."
+  "layout.copy_error": "Das Layout konnte nicht kopiert werden. Prüfe die Berechtigungen für die Zwischenablage und versuche es erneut.",
+  "panel.menu": "Seitenleiste umschalten",
+  "panel.settings": "Panel-Einstellungen",
+  "panel.description": "Dieses Panel anpassen. Dashboard-Karten behalten ihre eigenen Einstellungen.",
+  "panel.editor_error": "Der Editor konnte nicht geöffnet werden. Schließe den Dialog und versuche es erneut.",
+  "panel.save_error": "Einstellungen konnten nicht in Home Assistant gespeichert werden. Bitte versuche es erneut."
 }
