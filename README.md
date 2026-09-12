@@ -55,3 +55,5 @@ Originally created by [Mark Parker (@msp1974)](https://github.com/msp1974).
 ## Feedback
 
 [Report a bug](https://github.com/andyblac/wiser-zigbee-card/issues) or [share ideas and ask questions](https://github.com/andyblac/wiser-zigbee-card/discussions).
+
+Compiled card builds include a `WISER-CARD-VERSION` comment containing the card name and build version. Home Assistant can read this marker to update the resource URL without relying on minified variable names or editor text.

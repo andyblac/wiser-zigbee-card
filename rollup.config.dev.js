@@ -1,3 +1,4 @@
+import cardVersion from "./scripts/card-version.mjs";
 import resolve from "@rollup/plugin-node-resolve";
 import typescript from "@rollup/plugin-typescript";
 import babel from "@rollup/plugin-babel";
@@ -17,6 +18,7 @@ export default {
     name: "wiserzigbeecard",
   },
   plugins: [
+    cardVersion(),
     resolve(),
     typescript(),
     json(),

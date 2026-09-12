@@ -1,3 +1,4 @@
+import cardVersion from "./scripts/card-version.mjs";
 import nodeResolve from "@rollup/plugin-node-resolve";
 import typescript from "@rollup/plugin-typescript";
 import babel from "@rollup/plugin-babel";
@@ -9,6 +10,7 @@ import { ignoreSelectFiles } from "./elements/ignore/select";
 import { ignoreSwitchFiles } from "./elements/ignore/switch";
 
 const plugins = [
+  cardVersion(),
   nodeResolve(),
   typescript(),
   json(),
