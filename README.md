@@ -1,6 +1,6 @@
 # Wiser Zigbee Card
 
-An interactive Zigbee network map for the [Wiser Home Assistant integration](https://github.com/asantaga/wiserHomeAssistantPlatform). See how devices connect to your hub and repeaters, inspect signal quality, and arrange the map to suit your dashboard.
+An interactive Zigbee network map for the [wiserHomeAssistantPlatform](https://github.com/asantaga/wiserHomeAssistantPlatform) integration. See how devices connect to your hub and repeaters, inspect signal quality, and arrange the map to suit your dashboard.
 
 ![Wiser network grouped by Home Assistant area, with device images and signal-coloured links](https://raw.githubusercontent.com/wiki/andyblac/wiser-zigbee-card/images/network-overview.png)
 
@@ -12,7 +12,7 @@ An interactive Zigbee network map for the [Wiser Home Assistant integration](htt
 
 ## Getting started
 
-Release versions of Wiser Zigbee Card are included with the main Wiser Home Assistant integration. Install or update the integration to receive the bundled card; no separate card installation is needed.
+Release versions of Wiser Zigbee Card are included with the [wiserHomeAssistantPlatform](https://github.com/asantaga/wiserHomeAssistantPlatform) integration. Install or update the integration to receive the bundled card; no separate card installation is needed.
 
 You need a configured Wiser integration. Each card displays one hub; add separate cards for additional hubs.
 
