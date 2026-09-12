@@ -1,6 +1,6 @@
 {
   "name": "wiser-zigbee-card",
-  "version": "3.0.0-dev.65",
+  "version": "3.0.0",
   "description": "Wiser Zigbee Card",
   "keywords": [
     "home-assistant",
@@ -11,7 +11,7 @@
     "custom-cards"
   ],
   "module": "wiser-zigbee-card.js",
-  "repository": "git@github.com:custom_cards/boilerplate-card.git",
+  "repository": "https://github.com/andyblac/wiser-zigbee-card.git",
   "author": "Mark Parker <msparker@sky.com>",
   "license": "MIT",
   "dependencies": {
@@ -52,6 +52,8 @@
     "rollup": "rollup -c --bundleConfigAsCjs",
     "images": "node scripts/build-device-images.cjs",
     "prerollup": "npm run images",
-    "prestart": "npm run images"
+    "prestart": "npm run images",
+    "test": "node --test tests/*.test.cjs tests/*.test.mjs",
+    "typecheck": "tsc --noEmit"
   }
 }

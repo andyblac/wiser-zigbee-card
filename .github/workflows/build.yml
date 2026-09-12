@@ -1,20 +1,28 @@
-name: "Build"
+name: Build
 
 on:
   push:
-    branches:
-      - master
+    branches: [main, dev]
   pull_request:
-    branches:
-      - master
+    branches: [main, dev]
+
+permissions:
+  contents: read
 
 jobs:
   build:
-    name: Test build
+    name: Test and build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - name: Build
-        run: |
-          npm install
-          npm run build
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run rollup
+      - run: node --check dist/wiser-zigbee-card.js

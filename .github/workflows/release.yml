@@ -4,27 +4,37 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write
+
 jobs:
   release:
-    name: Prepare release
+    name: Build release asset
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-
-      # Build
-      - name: Build the file
-        run: |
-          cd /home/runner/work/boilerplate-card/boilerplate-card
-          npm install
-          npm run build
-
-      # Upload build file to the releas as an asset.
-      - name: Upload zip to release
-        uses: svenstaro/upload-release-action@v1-release
-
+      - uses: actions/checkout@v7
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: /home/runner/work/wiser-schedule-card/wiser-schedule-card/dist/wiser-schedule-card.js
-          asset_name: wiser-schedule-card.js
-          tag: ${{ github.ref }}
-          overwrite: true
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci
+      - name: Check release version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          node -e 'const v = require("./package.json").version; if (process.env.RELEASE_TAG !== `v${v}`) throw new Error(`Expected release tag v${v}`);'
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run rollup
+      - name: Check bundle
+        run: |
+          node --check dist/wiser-zigbee-card.js
+          node -e 'const fs = require("node:fs"); const v = require("./package.json").version; if (!fs.readFileSync("dist/wiser-zigbee-card.js", "utf8").startsWith(`/*! WISER-CARD-VERSION wiser-zigbee-card ${v} */`)) throw new Error("Bundle version mismatch");'
+      - name: Upload card bundle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" dist/wiser-zigbee-card.js --clobber
