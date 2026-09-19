@@ -147,7 +147,7 @@ class WiserZigbeePanel extends HTMLElement {
       throw new Error("Only administrators can save panel settings");
     }
     const hub = this._config.hubs[this._cards.indexOf(card)];
-    const settings = { ...config, type: "custom:wiser-zigbee-card", hub };
+    const settings = { ...config, type: "custom:wiser-zigbee-card", hub, map_height: null };
     await this._hass.callWS({ type: "wiser/zigbee_panel/configure", configs: { [hub]: settings } });
     this._config = { ...this._config, card_configs: { ...this._config.card_configs, [hub]: settings } };
     return settings;

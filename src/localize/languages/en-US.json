@@ -61,5 +61,8 @@
   "panel.settings": "Panel settings",
   "panel.description": "Customize this panel. Dashboard cards keep their own settings.",
   "panel.editor_error": "Unable to open the editor. Close this dialog and try again.",
-  "panel.save_error": "Unable to save settings to Home Assistant. Please try again."
+  "panel.save_error": "Unable to save settings to Home Assistant. Please try again.",
+  "layout.paste_error": "Unable to paste these settings. Copy settings and layout from a Wiser Zigbee card or panel first.",
+  "layout.paste_save_error": "Unable to save the pasted settings and layout. Nothing has been changed.",
+  "layout.paste_hint": "Paste the settings and layout copied from a Wiser Zigbee card or panel below."
 }

@@ -61,5 +61,8 @@
   "panel.settings": "Panel-Einstellungen",
   "panel.description": "Dieses Panel anpassen. Dashboard-Karten behalten ihre eigenen Einstellungen.",
   "panel.editor_error": "Der Editor konnte nicht geöffnet werden. Schließe den Dialog und versuche es erneut.",
-  "panel.save_error": "Einstellungen konnten nicht in Home Assistant gespeichert werden. Bitte versuche es erneut."
+  "panel.save_error": "Einstellungen konnten nicht in Home Assistant gespeichert werden. Bitte versuche es erneut.",
+  "layout.paste_error": "Diese Einstellungen können nicht eingefügt werden. Kopiere zuerst Einstellungen und Layout von einer Wiser-Zigbee-Karte oder einem Panel.",
+  "layout.paste_save_error": "Die eingefügten Einstellungen und das Layout konnten nicht gespeichert werden. Es wurde nichts geändert.",
+  "layout.paste_hint": "Füge unten die von einer Wiser-Zigbee-Karte oder einem Panel kopierten Einstellungen und das Layout ein."
 }

@@ -8,6 +8,7 @@ global.getComputedStyle = () => ({ getPropertyValue: () => "#ffffff" });
 let resolveFetch;
 let preview = true;
 let savedChanges;
+let failSave = false;
 let clipboardText;
 const confirmations = [];
 let failCopy = false;
@@ -37,6 +38,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   "./is-preview": { is_preview: () => preview },
   "./map-magnifier": load("src/map-magnifier.ts"),
   "./save-config": { saveCardConfig: async (_, original, changes) => {
+    if (failSave) throw Error("Offline");
     savedChanges = changes;
     return { ...original, ...changes };
   } },
@@ -56,7 +58,11 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   "./localize/localize": load("src/localize/localize.ts"),
   "./native-ui": {},
   "./action-confirmation": { buttonConfirmation: (_, message) => () => confirmations.push(message) },
-  "./copy-text": { copyText: async (text) => { if (failCopy) throw Error("Denied"); clipboardText = text; } },
+  "./copy-text": {
+    copyText: async (text) => { if (failCopy) throw Error("Denied"); clipboardText = text; },
+    readCopiedText: async () => navigator.clipboard.readText(),
+  },
+  "./settings-transfer": load("src/settings-transfer.ts"),
   "./editor": {},
   "./wiser-zigbee-panel.js": {},
   "./area-graph": load("src/area-graph.ts"),
@@ -683,7 +689,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   savingCard.hass = { localize: (key) => key === "ui.common.copied" ? "Copied" : "Successfully saved" };
   await savingCard.copyLayout();
   assert.ok(clipboardText.includes("\nlayout_data:\n"));
-  assert.ok(clipboardText.includes('  "1":\n    x: 10\n    y: 20'));
+  assert.deepEqual(load("src/settings-transfer.ts").pasteSettings(clipboardText).layout_data[1], {x: 10, y: 20});
   assert.equal(confirmations.at(-1), "Copied");
   await savingCard.saveLayoutClick();
   assert.equal(confirmations.at(-1), "Successfully saved");
@@ -694,6 +700,37 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   await savingCard.copyLayout();
   assert.equal(savingCard.layoutStatus, "layout.copy_error");
   assert.equal(confirmations.length, count, "No confirmation on failure");
+  const { copySettings } = load("src/settings-transfer.ts");
+  const pasted = {
+    name: "Imported map", auto_update: false, map_only: true,
+    show_device_list: false, show_labels: true, magnifier: true,
+    map_height: 600, orientation: "pie", group_by: "area", link_status: "both",
+    layout_data: { 1: { x: 123, y: -456 } },
+  };
+  const pasteCard = new WiserZigbeeCard();
+  pasteCard.setConfig({ type: "custom:wiser-zigbee-card", hub: "destination", layout_id: "keep-me" });
+  Object.defineProperty(global, "navigator", { configurable: true, value: {clipboard: {
+    readText: async () => { throw Error("Denied"); },
+  }} });
+  await pasteCard.pasteLayout();
+  assert.equal(pasteCard.pasteDialogOpen, true, "Denied clipboard access offers manual paste");
+  const original = pasteCard.config;
+  await pasteCard.pasteLayout("not YAML");
+  assert.equal(pasteCard.config, original, "Invalid clipboard text cannot change settings");
+  assert.equal(pasteCard.layoutStatus, "layout.paste_error");
+  failSave = true;
+  await pasteCard.pasteLayout(copySettings(pasted));
+  assert.equal(pasteCard.config, original, "Failed persistence cannot change settings");
+  assert.equal(pasteCard.layoutStatus, "layout.paste_save_error");
+  failSave = false;
+  const valid = copySettings(pasted);
+  navigator.clipboard.readText = async () => valid;
+  await pasteCard.pasteLayout();
+  assert.equal(pasteCard.config.hub, "destination");
+  assert.equal(pasteCard.config.layout_id, "keep-me");
+  for (const [key, value] of Object.entries(pasted)) assert.deepEqual(pasteCard.config[key], value);
+  assert.equal(pasteCard.layoutStatus, "common.saved");
+  assert.equal(pasteCard.pastingSettings, false);
   console.log(
     "Refresh preserves latest zoom, pan, dragged positions and double-click return view.",
   );

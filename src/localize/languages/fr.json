@@ -61,5 +61,8 @@
   "panel.settings": "Paramètres du panneau",
   "panel.description": "Personnalisez ce panneau. Les cartes du tableau de bord conservent leurs propres paramètres.",
   "panel.editor_error": "Impossible d’ouvrir l’éditeur. Fermez cette boîte de dialogue et réessayez.",
-  "panel.save_error": "Impossible d’enregistrer les paramètres dans Home Assistant. Veuillez réessayer."
+  "panel.save_error": "Impossible d’enregistrer les paramètres dans Home Assistant. Veuillez réessayer.",
+  "layout.paste_error": "Impossible de coller ces paramètres. Copiez d’abord les paramètres et la disposition d’une carte ou d’un panneau Wiser Zigbee.",
+  "layout.paste_save_error": "Impossible d’enregistrer les paramètres et la disposition collés. Aucune modification n’a été effectuée.",
+  "layout.paste_hint": "Collez ci-dessous les paramètres et la disposition copiés depuis une carte ou un panneau Wiser Zigbee."
 }

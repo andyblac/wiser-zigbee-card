@@ -1,5 +1,6 @@
 import { buttonConfirmation } from "./action-confirmation";
-import { copyText } from "./copy-text";
+import { copyText, readCopiedText } from "./copy-text";
+import { copySettings, pasteSettings } from "./settings-transfer";
 import { MapMagnifier } from "./map-magnifier";
 import { saveCardConfig } from "./save-config";
 import { disconnectedDevice, statusImage, deviceMapLabel } from "./device-appearance";
@@ -86,6 +87,9 @@ export class WiserZigbeeCard
   private hoveredEdge?: string;
   private suppliedConfig?: WiserZigbeeCardConfig;
   private savingConfig = false;
+  @state() private pastingSettings = false;
+  @state() private pasteDialogOpen = false;
+  @state() private pasteError = "";
   private magnifier = new MapMagnifier();
   private magnifierHoldTimer?: ReturnType<typeof setTimeout>;
   private magnifierHeld = false;
@@ -1010,23 +1014,111 @@ export class WiserZigbeeCard
     const confirm = this.prepareConfirmation("common.copy", "common.copied");
     const layout = this.currentPositions();
     if (!layout) return;
-    const yaml =
-      `magnifier: ${this.config?.magnifier ?? false}\nshow_labels: ${this.showLabels}\nmap_only: ${this.config?.map_only ?? false}\norientation: ${this.orientation}\ngroup_by: ${this.config?.group_by ?? "none"}\nlayout_data:\n` +
-      Object.entries(layout)
-        .map(
-          ([id, position]) =>
-            `  ${JSON.stringify(id)}:\n    x: ${Math.round(position.x)}\n    y: ${Math.round(position.y)}`,
-        )
-        .join("\n");
     try {
-      await copyText(yaml);
+      const text = copySettings({
+        name: this.config?.name ?? this.t("card.title"),
+        auto_update: this.config?.auto_update ?? true,
+        map_only: this.config?.map_only ?? false,
+        show_device_list: this.config?.show_device_list ?? true,
+        show_labels: this.showLabels,
+        magnifier: this.config?.magnifier ?? false,
+        link_status: this.config?.link_status ?? "links",
+        map_height: this.mapHeight,
+        orientation: this.orientation,
+        group_by: this.config?.group_by ?? "none",
+        layout_data: layout,
+      });
+      await copyText(text);
       this.layoutStatus = "";
       confirm();
     } catch {
       this.layoutStatus = "layout.copy_error";
     }
   }
+  private async pasteLayout(text?: string): Promise<void> {
+    if (this.pastingSettings || this.savingConfig || !this.suppliedConfig) return;
+    const original = this.suppliedConfig;
+    this.pastingSettings = true;
+    if (text === undefined) {
+      try {
+        text = await readCopiedText();
+      } catch {
+        this.pasteError = "";
+        this.pasteDialogOpen = true;
+        this.pastingSettings = false;
+        await this.updateComplete;
+        this.shadowRoot?.querySelector<HTMLTextAreaElement>("#settings-paste")?.focus();
+        return;
+      }
+    }
+    let changes: Record<string, any>;
+    try {
+      changes = pasteSettings(text);
+    } catch {
+      this.layoutStatus = "layout.paste_error";
+      this.pasteError = "layout.paste_error";
+      this.pastingSettings = false;
+      return;
+    }
+    try {
+      if (this.suppliedConfig !== original || !this.isConnected) return;
+      const next = await saveCardConfig(this, original, {
+        ...changes, layout_orientation: undefined, layout_group_by: undefined,
+      });
+      if (this.suppliedConfig !== original || !this.isConnected) return;
+      this.setConfig(next as WiserZigbeeCardConfig);
+      this.layoutStatus = "common.saved";
+      this.pasteDialogOpen = false;
+      this.pasteError = "";
+    } catch {
+      this.layoutStatus = "layout.paste_save_error";
+      this.pasteError = "layout.paste_save_error";
+    } finally {
+      this.pastingSettings = false;
+    }
+  }
+  private pasteSettingsDialog(): TemplateResult {
+    return html`<ha-dialog .open=${this.pasteDialogOpen}
+      header-title=${this.t("common.paste")} .heading=${this.t("common.paste")}
+      @closed=${() => { this.pasteDialogOpen = false; }}
+      @close-dialog=${() => { this.pasteDialogOpen = false; }}
+    >
+      <p>${this.t("layout.paste_hint")}</p>
+      <textarea id="settings-paste" aria-label=${this.t("common.paste")}
+        spellcheck="false"></textarea>
+      ${this.pasteError ? html`<p role="alert">${this.t(this.pasteError)}</p>` : ""}
+      <div slot="footer" class="paste-actions">
+        <ha-button appearance="plain" .disabled=${this.pastingSettings}
+          @click=${() => { this.pasteDialogOpen = false; }}>${this.t("panel.cancel")}</ha-button>
+        <ha-button .disabled=${this.pastingSettings} @click=${() => void this.pasteLayout(
+          this.shadowRoot?.querySelector<HTMLTextAreaElement>("#settings-paste")?.value ?? "",
+        )}>${this.t("common.save")}</ha-button>
+      </div>
+    </ha-dialog>`;
+  }
+  private settingsTransferControl(): TemplateResult {
+    const label = `${this.t("common.copy")} / ${this.t("common.paste")}`;
+    return html`<ha-dropdown placement="bottom-end"
+      @wa-select=${(event: CustomEvent) => {
+        if (event.detail.item.value === "copy") void this.copyLayout();
+        else if (event.detail.item.value === "paste") void this.pasteLayout();
+      }}
+    >
+      <ha-icon-button slot="trigger" class="layout-icon" data-action="common.copy"
+        .label=${label} title=${label}
+        .path=${"M16 17V7H14V17H11L15 21L19 17H16M9 3L5 7H8V17H10V7H13L9 3Z"}
+        .disabled=${!this.config || this.pastingSettings}
+      ></ha-icon-button>
+      <ha-dropdown-item value="copy" .disabled=${!this.network}>
+        ${this.t("common.copy")}
+      </ha-dropdown-item>
+      <ha-dropdown-item value="paste" .disabled=${this.savingConfig || is_preview(this) || this.hass?.user?.is_admin === false}>
+        ${this.t("common.paste")}
+      </ha-dropdown-item>
+    </ha-dropdown>`;
+  }
   private async saveLayoutClick(preferencesOnly = false): Promise<void> {
+    if (this.pastingSettings) return;
     const layout = this.currentPositions();
     if (!layout || !this.config) return;
     const confirm = preferencesOnly ? () => {} : this.prepareConfirmation("card.save_layout", "common.saved");
@@ -1306,11 +1398,7 @@ export class WiserZigbeeCard
             !(this.config?.map_only ?? false),
             !this.config,
           )}
-          ${this.layoutIcon(
-            "common.copy",
-            "M19 21H8V7H19M19 5H8A2 2 0 0 0 6 7V21A2 2 0 0 0 8 23H19A2 2 0 0 0 21 21V7A2 2 0 0 0 19 5M16 1H4A2 2 0 0 0 2 3V17H4V3H16Z",
-            () => void this.copyLayout(),
-          )}
+          ${this.settingsTransferControl()}
           ${this.layoutIcon("card.save_layout", savePath, () =>
             this.saveLayoutClick(),
           )}
@@ -1447,7 +1535,7 @@ export class WiserZigbeeCard
             )
           : ""}
       </footer>
-    </ha-card>`;
+    </ha-card>${this.pasteSettingsDialog()}`;
   }
   static styles = css`
     :host {
@@ -1496,6 +1584,19 @@ export class WiserZigbeeCard
     [hidden] {
       display: none !important;
     }
+    #settings-paste {
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 200px;
+      resize: vertical;
+      color: var(--primary-text-color);
+      background: var(--secondary-background-color);
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+      padding: 12px;
+      font: 14px monospace;
+    }
+    .paste-actions { display: flex; justify-content: flex-end; gap: 8px; }
     .brand-row {
       display: flex;
       flex-wrap: wrap;

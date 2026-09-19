@@ -50,6 +50,8 @@ The [wiki](https://github.com/andyblac/wiser-zigbee-card/wiki) contains the full
 
 Product images are embedded in the bundle. See [ASSETS.md](ASSETS.md) for image sources and device coverage.
 
+Use the toolbar’s **Copy / Paste from clipboard** menu to transfer settings and map layout between dashboard cards and sidebar panels. Copy puts YAML on the clipboard, including the title, display settings, node positions, orientation and area grouping. Paste validates and saves it to the destination; hub selection and dashboard placement stay unchanged, and sidebar panels retain automatic height. If clipboard reading is blocked, Paste uses the last successful Wiser Copy in the current browser tab session. If no copy is available, a text box opens for manual paste followed by Save. Paste is unavailable in the card editor preview; YAML dashboards can use Copy and paste the YAML into their configuration.
+
 Originally created by [Mark Parker (@msp1974)](https://github.com/msp1974).
 
 ## Feedback

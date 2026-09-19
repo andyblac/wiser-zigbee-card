@@ -75,6 +75,7 @@ console.log(
 );
 
 for (const [key, nativeKey] of Object.entries({
+  "common.paste": "ui.panel.lovelace.editor.card.generic.paste",
   "common.title": "ui.panel.lovelace.editor.card.generic.title",
   "common.refresh": "ui.common.refresh",
   "editor.horizontal":
@@ -109,6 +110,7 @@ console.log(
 
 for (const dictionary of dictionaries) {
   for (const key of [
+    "common.paste",
     "common.refresh",
     "common.close",
     "common.save",

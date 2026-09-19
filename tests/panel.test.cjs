@@ -251,8 +251,9 @@ test("layout save only updates its own hub and requires an administrator", async
   const calls = [];
   panel.hass = { user: { is_admin: true }, callWS: async (msg) => calls.push(msg) };
   panel.panel = { config: { hubs: ["first", "second"], card_configs: { second: { map_only: true } } } };
-  const result = await panel.saveZigbeeCardConfig(panel._cards[0], { show_labels: true, hub: "second" });
+  const result = await panel.saveZigbeeCardConfig(panel._cards[0], { show_labels: true, hub: "second", map_height: 500 });
   assert.equal(result.hub, "first");
+  assert.equal(result.map_height, null, "Imported fixed heights cannot constrain the panel");
   assert.deepEqual(Object.keys(calls[0].configs), ["first"]);
   assert.equal(panel._config.card_configs.second.map_only, true);
   panel.hass = { user: { is_admin: false } };

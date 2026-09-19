@@ -20,6 +20,7 @@ const nativeKeys: Record<string, string> = {
   "panel.cancel": "ui.common.cancel",
   "panel.retry": "ui.common.retry",
   "common.copy": "ui.common.copy",
+  "common.paste": "ui.panel.lovelace.editor.card.generic.paste",
   "common.copied": "ui.common.copied",
   "common.saved": "ui.common.successfully_saved",
   "editor.icons": "ui.panel.lovelace.editor.features.types.climate-preset-modes.style_list.icons",
