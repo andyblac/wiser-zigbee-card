@@ -168,8 +168,8 @@ class WiserZigbeePanel extends HTMLElement {
     const container = this.shadowRoot.getElementById("hub-tabs");
     container.hidden = hubs.length === 0;
     this._tabs = hubs.map((hub, index) => {
-      const tab = document.createElement("ha-button");
-      tab.setAttribute("appearance", "plain");
+      const tab = document.createElement("button");
+      tab.type = "button";
       tab.className = "hub-tab";
       tab.textContent = hub;
       tab.id = `hub-tab-${index}`;
