@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <title>Wiser Zigbee network</title>
+  <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 5v3M4.5 19l3-3M19.5 19l-3-3"/>
+    <path d="m6.5 12 5.5-4.5 5.5 4.5M8 11v6h8v-6"/>
+  </g>
+  <circle cx="12" cy="3.25" r="2.25"/>
+  <circle cx="3.25" cy="20.25" r="2.25"/>
+  <circle cx="20.75" cy="20.25" r="2.25"/>
+</svg>
