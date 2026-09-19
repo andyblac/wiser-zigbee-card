@@ -7,7 +7,7 @@ An interactive Zigbee network map for the [wiserHomeAssistantPlatform](https://g
 - Real device connections with product images, signal colours and optional link labels.
 - Horizontal, Vertical and Pie layouts, with optional Home Assistant area grouping.
 - Device details, zoom controls and a magnifying glass for exploring larger networks.
-- Saved layouts shared through dashboard configuration, plus a Copy button for YAML dashboards.
+- Saved layouts shared through dashboard configuration, plus toolbar Copy/Paste for card and panel settings.
 - Native Home Assistant controls and theme support, with English, German and French translations.
 
 ## Getting started
