@@ -83,6 +83,16 @@ test("menu button dispatches Home Assistant's sidebar event", () => {
   assert.equal(panel.event.bubbles, true);
 });
 
+test("panel overrides saved fixed map heights and hides the height editor", async () => {
+  const panel = setup();
+  panel.hass = { user: { is_admin: true } };
+  panel.panel = { config: { hubs: ["hub"], card_configs: { hub: { map_height: 340 } } } };
+  assert.equal(panel._cards[0].config.map_height, null);
+  await panel._openEditor();
+  assert.equal(panel._editors[0].hideMapHeight, true);
+  assert.equal(panel._editors[0].config.map_height, null);
+});
+
 test("load errors display a retry action", async () => {
   const panel = setup();
   panel.panel = { config: { hubs: null } };

@@ -7,7 +7,7 @@ import { separateAreas } from "./area-spacing";
 import { signalColor, signalPalette } from "./signal-color";
 import { LitElement, html, TemplateResult, PropertyValues, css } from "lit";
 import { ifDefined } from "lit/directives/if-defined.js";
-import { state, eventOptions } from "lit/decorators.js";
+import { state, eventOptions, property } from "lit/decorators.js";
 import {
   LovelaceCardEditor,
   LovelaceCard,
@@ -76,6 +76,8 @@ export class WiserZigbeeCard
   implements LovelaceCard
 {
   static panelApiVersion = 1;
+  @property({ type: Boolean, reflect: true, attribute: "auto-height" })
+  private autoHeight = true;
   @state() private config?: WiserZigbeeCardConfig;
   @state() private zigbeeData?: zigbeeData;
   @state() private loading = false;
@@ -158,6 +160,7 @@ export class WiserZigbeeCard
           (key) => JSON.stringify(previous[key]) === JSON.stringify(next[key]),
         );
     this.config = next;
+    this.autoHeight = this.mapHeight === null;
     this.showLabels = config.show_labels ?? false;
     if (config.map_only === undefined) {
       try {
@@ -1460,7 +1463,7 @@ export class WiserZigbeeCard
       color: var(--primary-text-color, #273448);
       background: var(--ha-card-background, var(--card-background-color, #fff));
     }
-    :host(:has(ha-card.auto-height)) {
+    :host([auto-height]) {
       height: 100%;
       min-height: 0;
     }

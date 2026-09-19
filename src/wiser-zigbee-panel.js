@@ -6,9 +6,9 @@ class WiserZigbeePanel extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this.shadowRoot.innerHTML = `
       <style>
-        :host { display: block; height: 100%; overflow: auto;
+        :host { display: flex; flex-direction: column; height: 100vh; height: 100dvh; min-width: 0; min-height: 0; overflow: hidden;
           color: var(--primary-text-color); background: var(--primary-background-color); }
-        header { display: flex; align-items: center; gap: 16px; height: 64px;
+        header { display: flex; flex: 0 0 64px; align-items: center; gap: 16px; min-width: 0;
           padding: 0 16px; background: var(--app-header-background-color);
           color: var(--app-header-text-color); }
         h1 { flex: 0 0 auto; font-size: 20px; font-weight: 400; margin: 0; }
@@ -26,7 +26,7 @@ class WiserZigbeePanel extends HTMLElement {
         #editors h3 { font-size: 16px; font-weight: 500; margin: 0 0 16px; }
         #editor-error:empty { display: none; }
         #editor-error { color: var(--error-color, #db4437); }
-        main { max-width: 1200px; margin: auto; padding: 16px; }
+        main { flex: 1; min-width: 0; min-height: 0; padding: 16px; overflow: auto; }
         #hub-tabs { display: flex; flex: 1; min-width: 0; margin-inline-start: 24px; align-self: stretch; overflow-x: auto; }
         #hub-tabs[hidden], wiser-zigbee-card[hidden] { display: none; }
         .hub-tab { flex: 0 0 auto; min-height: 48px; padding: 0 24px;
@@ -41,7 +41,7 @@ class WiserZigbeePanel extends HTMLElement {
           h1 { flex: 0 1 auto; min-width: 0; max-width: 30%; font-size: 16px; }
           .hub-tab { padding: 0 12px; }
         }
-        wiser-zigbee-card { display: block; margin-bottom: 16px; }
+        wiser-zigbee-card { display: block; width: 100%; min-width: 0; }
       </style>
       <header><ha-button id="menu" appearance="plain" aria-label="Toggle sidebar"><ha-icon icon="mdi:menu"></ha-icon></ha-button>
         <h1>Wiser Zigbee</h1>
@@ -108,7 +108,7 @@ class WiserZigbeePanel extends HTMLElement {
     return {
       layout_id: `wiser-zigbee-panel:${hub}`,
       ...this._config.card_configs?.[hub],
-      type: "custom:wiser-zigbee-card", hub,
+      type: "custom:wiser-zigbee-card", hub, map_height: null,
     };
   }
 
@@ -207,6 +207,7 @@ class WiserZigbeePanel extends HTMLElement {
         this._drafts[hub] = config;
         editor.hass = this._hass;
         editor.hideHubSelector = true;
+        editor.hideMapHeight = true;
         
         editor.setConfig({ ...config });
         editor.addEventListener("config-changed", (event) => {

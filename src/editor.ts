@@ -18,6 +18,7 @@ export class WiserZigbeeCardEditor
 {
   @property({ attribute: false }) public hass?: HomeAssistant;
   @property({ attribute: false }) public hideHubSelector = false;
+  @property({ attribute: false }) public hideMapHeight = false;
   @state() private _config?: WiserZigbeeCardConfig;
   @state() private _hubs: string[] = [];
   @state() private _formReady = !!customElements.get("ha-form");
@@ -142,7 +143,9 @@ export class WiserZigbeeCardEditor
     return html` <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this.hideHubSelector ? fields.filter((field) => field.name !== "hub") : fields}
+        .schema=${fields.filter((field) =>
+          !(this.hideHubSelector && field.name === "hub") &&
+          !(this.hideMapHeight && field.name === "map_height"))}
         .computeLabel=${this.computeLabel}
         @value-changed=${this.valueChanged}
       ></ha-form>

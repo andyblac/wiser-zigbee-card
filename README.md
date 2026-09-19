@@ -58,6 +58,8 @@ Originally created by [Mark Parker (@msp1974)](https://github.com/msp1974).
 
 Compiled card builds include a `WISER-CARD-VERSION` comment containing the card name and build version. Home Assistant can read this marker to update the resource URL without relying on minified variable names or editor text.
 
+`npm run build` and `npm run rollup` automatically increment only `-dev.N` build numbers in both package files (for example, `3.0.0-dev.68` becomes `3.0.0-dev.69`). `npm start` increments it once when starting the watch session. Beta, release candidate and stable versions remain unchanged. Tagged release builds set `WISER_SKIP_VERSION_BUMP=1` to preserve the published version.
+
 ## Sidebar panel
 
 With the matching Wiser integration update, enable **Show Wiser Zigbee in sidebar** in the integration’s options for each hub you want to include. The **Wiser Zigbee** panel uses hub tabs and an administrator-only settings button, following the schedules panel. Settings and saved map layouts are stored per hub in Home Assistant, separately from dashboard cards.

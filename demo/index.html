@@ -153,5 +153,15 @@
         card.setConfig(event.detail.config),
       );
     }
+    if (new URLSearchParams(location.search).has("panel")) {
+      // Deliberately leave ancestor heights automatic, as in a custom panel host.
+      document.body.style.cssText = "margin:0;padding:0";
+      const panel = document.createElement("wiser-zigbee-panel");
+      panel.hass = window.mockHass;
+      panel.panel = { config: { hubs: ["Demo"], card_configs: {
+        Demo: { map_only: true, orientation: "vertical", map_height: 340 },
+      } } };
+      document.body.replaceChildren(panel);
+    }
   </script>
 </html>

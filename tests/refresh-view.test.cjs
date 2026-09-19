@@ -27,6 +27,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   "lit/decorators.js": {
     customElement: decorator,
     state: decorator,
+    property: decorator,
     eventOptions: decorator,
   },
   "custom-card-helpers": {
@@ -275,6 +276,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   );
   assert.deepEqual(view, originalView);
   assert.equal(card.mapHeight, null);
+  assert.equal(card.autoHeight, true, "Automatic sizing is reflected on the host");
   card.config.map_height = 500;
   assert.equal(card.mapHeight, 500);
   card.config.map_height = null;
@@ -302,6 +304,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     bottom: 100,
   });
   card.setConfig({ ...card.config, map_height: 600 });
+  assert.equal(card.autoHeight, false, "Explicit height disables host stretching");
   assert.equal(
     card.network,
     originalNetwork,

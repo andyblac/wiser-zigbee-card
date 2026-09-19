@@ -1,6 +1,6 @@
 {
   "name": "wiser-zigbee-card",
-  "version": "3.0.0-dev.67",
+  "version": "3.0.0-dev.72",
   "description": "Wiser Zigbee Card",
   "keywords": [
     "home-assistant",
@@ -51,8 +51,8 @@
     "lint": "prettier --write .",
     "rollup": "rollup -c --bundleConfigAsCjs",
     "images": "node scripts/build-device-images.cjs",
-    "prerollup": "npm run images",
-    "prestart": "npm run images",
+    "prerollup": "node scripts/bump-version.mjs && npm run images",
+    "prestart": "node scripts/bump-version.mjs && npm run images",
     "test": "node --test tests/*.test.cjs tests/*.test.mjs",
     "typecheck": "tsc --noEmit"
   }
