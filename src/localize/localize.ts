@@ -52,6 +52,13 @@ const optionalNativeKeys: Record<string, string> = {
   "signal.online": "ui.panel.config.zha.configuration_page.status_online",
   "signal.offline": "ui.panel.config.zha.configuration_page.status_offline",
 };
+// Keep fragment loading aligned with every native key used by the card/editor.
+export const requiredTranslationFragments = [...new Set(
+  Object.values({ ...nativeKeys, ...optionalNativeKeys })
+    .map((key) => /^ui\.panel\.([^.]+)\./.exec(key)?.[1])
+    .filter((fragment): fragment is string => !!fragment),
+)];
+
 export function languageFor(hass?: TranslationContext): SupportedLanguage {
   const language = (
     hass?.locale?.language ||

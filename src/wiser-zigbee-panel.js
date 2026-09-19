@@ -1,4 +1,4 @@
-import { localize } from "./localize/localize";
+import { localize, requiredTranslationFragments } from "./localize/localize";
 /** Sidebar host for the existing Wiser Zigbee card. */
 class WiserZigbeePanel extends HTMLElement {
   constructor() {
@@ -76,11 +76,41 @@ class WiserZigbeePanel extends HTMLElement {
   _t(key) { return localize(key, this._hass); }
 
   set hass(hass) {
+    const previousHass = this._hass;
     this._hass = hass;
     this._localizeControls();
     for (const card of this._cards) card.hass = hass;
     for (const editor of this._editors) editor.hass = hass;
     this.shadowRoot.getElementById("settings").hidden = !hass?.user?.is_admin;
+    if (hass && (!previousHass || previousHass.language !== hass.language)) {
+      void this._loadTranslations().catch((error) => {
+        if (this.shadowRoot.getElementById("editor-dialog").open)
+          this.shadowRoot.getElementById("editor-error").textContent = this._t("panel.editor_error");
+        console.error("Unable to load Wiser editor translations", error);
+      });
+    }
+  }
+
+  async _loadTranslations() {
+    const hass = this._hass;
+    if (!hass?.loadFragmentTranslation) return;
+    if (this._translationLoad?.language === hass.language)
+      return this._translationLoad.promise;
+    const load = { language: hass.language };
+    this._translationLoad = load;
+    load.promise = (async () => {
+      // Sequential loads ensure the returned localizer includes every fragment.
+      let localize;
+      for (const fragment of requiredTranslationFragments) {
+        localize = await hass.loadFragmentTranslation(fragment) || localize;
+        if (this._translationLoad !== load) return this._loadTranslations();
+      }
+      if (localize) this.hass = { ...this._hass, localize };
+    })().catch((error) => {
+      if (this._translationLoad === load) this._translationLoad = undefined;
+      throw error;
+    });
+    return load.promise;
   }
 
   _localizeControls() {
@@ -190,6 +220,8 @@ class WiserZigbeePanel extends HTMLElement {
     }
     dialog.open = true;
     try {
+      await this._loadTranslations();
+      if (!dialog.open) return;
       // The bundled editor needs HA's helpers, which may not be loaded when
       // this dedicated panel is opened before any Lovelace dashboard.
       if (!window.loadCardHelpers) {

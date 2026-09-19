@@ -1,9 +1,10 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const load = require("./load-ts.cjs");
-const { localize, languageFor, localizeCount, localizeSignal } = load(
+const { localize, languageFor, localizeCount, localizeSignal, requiredTranslationFragments } = load(
   "src/localize/localize.ts",
 );
+assert.deepEqual([...requiredTranslationFragments].sort(), ["config", "lovelace"]);
 const dictionaries = ["en-US", "en-GB", "de", "fr"].map((lang) =>
   JSON.parse(fs.readFileSync(`src/localize/languages/${lang}.json`, "utf8")),
 );

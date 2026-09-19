@@ -32,6 +32,7 @@ function setup() {
   }
   const registry = new Map([["wiser-zigbee-card", Element]]);
   const context = vm.createContext({
+    requiredTranslationFragments: require("./load-ts.cjs")("src/localize/localize.ts").requiredTranslationFragments,
     localize: (key) => ({"panel.retry": "Retry", "panel.save_error": "Unable to save"}[key] || key),
     HTMLElement: Element,
     window: { loadCardHelpers: async () => ({}) },
@@ -134,6 +135,89 @@ test("failed save keeps editor open and offers retry", async () => {
   assert.equal(panel.shadowRoot.getElementById("editor-dialog").open, true);
   assert.match(panel.shadowRoot.getElementById("editor-error").textContent, /Unable to save/);
   assert.equal(panel.shadowRoot.getElementById("save").disabled, false);
+});
+
+test("panel waits for native Lovelace translations before rendering the editor", async () => {
+  const panel = setup();
+  let finish;
+  const nativeLocalize = () => "Senkrecht";
+  const fragments = [];
+  panel.hass = {
+    user: { is_admin: true }, language: "de",
+    localize: () => "",
+    loadFragmentTranslation: (fragment) => {
+      fragments.push(fragment);
+      if (fragment === "config") return Promise.resolve(nativeLocalize);
+      return new Promise(resolve => { finish = resolve; });
+    },
+  };
+  panel.panel = { config: { hubs: ["hub"] } };
+  const opening = panel._openEditor();
+  assert.deepEqual(fragments, ["lovelace"]);
+  assert.equal(panel._editors.length, 0);
+  assert.equal(panel.shadowRoot.getElementById("save").disabled, true);
+  finish(nativeLocalize);
+  await opening;
+  assert.deepEqual(fragments, ["lovelace", "config"]);
+  assert.equal(panel._editors[0].hass.localize, nativeLocalize);
+  assert.equal(panel._editors[0].hass.language, "de");
+  assert.equal(panel.shadowRoot.getElementById("save").disabled, false);
+});
+
+test("translation failure shows an error instead of a blank editor and supports retry", async () => {
+  const panel = setup();
+  let fail = true;
+  panel.hass = { user: { is_admin: true }, language: "fr", loadFragmentTranslation: async () => {
+    if (fail) throw Error("Offline");
+    return () => "Vertical";
+  } };
+  panel.panel = { config: { hubs: ["hub"] } };
+  await panel._openEditor();
+  assert.equal(panel._editors.length, 0);
+  assert.ok(panel.shadowRoot.getElementById("editor-error").textContent);
+  assert.equal(panel.shadowRoot.getElementById("save").disabled, true);
+  panel._closeEditor();
+  fail = false;
+  await panel._openEditor();
+  assert.equal(panel._editors.length, 1);
+});
+
+test("translations are reused for state updates and reloaded when language changes", async () => {
+  const panel = setup();
+  const calls = [];
+  const makeHass = language => ({ user: { is_admin: true }, language,
+    loadFragmentTranslation: async fragment => {
+      calls.push(`${language}:${fragment}`);
+      return () => language;
+    },
+  });
+  panel.hass = makeHass("de");
+  panel.panel = { config: { hubs: ["hub"] } };
+  await panel._openEditor();
+  panel.hass = { ...panel._hass, states: {} };
+  await panel._loadTranslations();
+  assert.deepEqual(calls, ["de:lovelace", "de:config"]);
+  panel.hass = makeHass("fr");
+  await panel._loadTranslations();
+  assert.deepEqual(calls, ["de:lovelace", "de:config", "fr:lovelace", "fr:config"]);
+  assert.equal(panel._editors[0].hass.localize("example"), "fr");
+  assert.equal(panel._cards[0].hass.localize("example"), "fr");
+});
+
+test("a delayed request cannot overwrite translations after switching language away and back", async () => {
+  const panel = setup();
+  let finishOldRequest;
+  panel.hass = { language: "de", loadFragmentTranslation: () =>
+    new Promise(resolve => { finishOldRequest = resolve; }),
+  };
+  const oldLoad = panel._loadTranslations();
+  panel.hass = { language: "fr", loadFragmentTranslation: async () => () => "French" };
+  await panel._loadTranslations();
+  panel.hass = { language: "de", loadFragmentTranslation: async () => () => "Current German" };
+  await panel._loadTranslations();
+  finishOldRequest(() => "Stale German");
+  await oldLoad;
+  assert.equal(panel._hass.localize("example"), "Current German");
 });
 
 test("Cancel leaves the card unchanged", async () => {
