@@ -102,6 +102,7 @@ export class WiserZigbeeCardEditor
       ...this._config,
       hub: this._config.hub || this._hubs[0],
       name: this._config.name ?? this.t("card.title"),
+      theme_mode: this._config.theme_mode ?? "auto",
       show_detailed_view: !(this._config.map_only ?? false),
       map_height: this._config.map_height ?? null,
       show_device_list: this._config.show_device_list ?? true,
@@ -197,6 +198,19 @@ export class WiserZigbeeCardEditor
           name: "link_status",
           selector: { button_toggle: { options: ["links", "icons", "both", "none"].map((value) => ({
             value, label: this.t(`editor.${value}`),
+          })) } },
+        }]}
+        .computeLabel=${this.computeLabel}
+        @value-changed=${this.valueChanged}
+      ></ha-form>
+      <ha-form
+        class="orientation-control"
+        .hass=${this.hass}
+        .data=${{ theme_mode: this._config.theme_mode ?? "auto" }}
+        .schema=${[{
+          name: "theme_mode",
+          selector: { button_toggle: { options: ["auto", "dark", "light"].map(value => ({
+            value, label: this.t(`editor.theme_${value}`),
           })) } },
         }]}
         .computeLabel=${this.computeLabel}

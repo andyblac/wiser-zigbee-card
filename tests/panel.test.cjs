@@ -8,7 +8,7 @@ function setup() {
   class Element {
     constructor() { this.listeners = {}; }
     addEventListener(name, callback) { this.listeners[name] = callback; }
-    setAttribute() {}
+    setAttribute(name, value) { (this.attributes ||= {})[name] = value; }
     removeAttribute() {}
     append(child) { (this.children ||= []).push(child); }
     showModal() { this.open = true; }
@@ -42,7 +42,7 @@ function setup() {
     console: { error() {} },
   });
   vm.runInContext(readFileSync(resolve(__dirname,
-    "../src/wiser-zigbee-panel.js"), "utf8").replace(/^import .*;\n/, ""), context);
+    "../src/wiser-zigbee-panel.js"), "utf8").replace(/^import .*;\n/gm, ""), context);
   return new (registry.get("wiser-zigbee-panel"))();
 }
 
@@ -134,6 +134,21 @@ test("failed save keeps editor open and offers retry", async () => {
   await panel._saveEditor();
   assert.equal(panel.shadowRoot.getElementById("editor-dialog").open, true);
   assert.match(panel.shadowRoot.getElementById("editor-error").textContent, /Unable to save/);
+  assert.equal(panel.shadowRoot.getElementById("save").disabled, false);
+});
+
+test("save shows backend validation details without discarding the draft", async () => {
+  const panel = setup();
+  panel.hass = { user: { is_admin: true }, callWS: async () => {
+    throw { code: "invalid_config", message: "Invalid Zigbee card setting: theme_mode" };
+  } };
+  panel.panel = { config: { hubs: ["hub"] } };
+  await panel._openEditor();
+  panel._drafts.hub.theme_mode = "light";
+  await panel._saveEditor();
+  assert.match(panel.shadowRoot.getElementById("editor-error").textContent, /Invalid Zigbee card setting: theme_mode/);
+  assert.equal(panel._drafts.hub.theme_mode, "light");
+  assert.equal(panel.shadowRoot.getElementById("editor-dialog").open, true);
   assert.equal(panel.shadowRoot.getElementById("save").disabled, false);
 });
 
@@ -244,6 +259,23 @@ test("hub tabs preserve selection across settings updates", () => {
   panel.panel = { config: { hubs: ["first", "second"], card_configs: { second: { show_labels: true } } } };
   assert.equal(panel._cards[1].hidden, false);
   assert.equal(panel._cards[1].config.show_labels, true);
+});
+
+test("panel preserves Home Assistant theme while forwarding map theme settings", async () => {
+  const panel = setup();
+  panel.hass = { user: { is_admin: true }, callWS: async () => {} };
+  panel.panel = { config: { hubs: ["first", "second"], card_configs: {
+    first: { theme_mode: "dark" }, second: { theme_mode: "light" },
+  } } };
+  assert.equal(panel.attributes?.["theme-mode"], undefined);
+  assert.equal(panel._cards[0].config.theme_mode, "dark");
+  panel._selectHub("second");
+  assert.equal(panel.attributes?.["theme-mode"], undefined);
+  assert.equal(panel._cards[1].config.theme_mode, "light");
+  await panel.saveZigbeeCardConfig(panel._cards[1], { theme_mode: "auto" });
+  assert.equal(panel.attributes?.["theme-mode"], undefined);
+  assert.equal(panel._cardConfig("second").theme_mode, "auto");
+  assert.doesNotMatch(panel.shadowRoot.innerHTML, /color-scheme:|:host\(\[theme-mode/);
 });
 
 test("layout save only updates its own hub and requires an administrator", async () => {

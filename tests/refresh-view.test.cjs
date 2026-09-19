@@ -23,6 +23,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     },
     html: (strings, ...values) => ({ strings, values }),
     css: () => {},
+    unsafeCSS: value => value,
   },
   "lit/directives/if-defined.js": { ifDefined: (value) => value },
   "lit/decorators.js": {
@@ -63,6 +64,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     readCopiedText: async () => navigator.clipboard.readText(),
   },
   "./settings-transfer": load("src/settings-transfer.ts"),
+  "./theme-mode": load("src/theme-mode.ts"),
   "./editor": {},
   "./wiser-zigbee-panel.js": {},
   "./area-graph": load("src/area-graph.ts"),
@@ -326,6 +328,11 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   assert.equal(card.fitAfterHeightChange, false);
   card.updated(new Map());
   assert.equal(resizeCalls.length, 2, "Ordinary updates must not refit");
+  for (const mode of ["dark", "light", "auto"]) {
+    card.setConfig({ ...card.config, theme_mode: mode });
+    assert.equal(card.themeMode, mode);
+    assert.equal(card.network, originalNetwork, "Changing theme preserves the graph and dragged positions");
+  }
   card.zoomReturnView = undefined;
   card.touchZoomStart({ touches: [{}] });
   assert.equal(

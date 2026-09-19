@@ -56,6 +56,9 @@ editor.setConfig({
 });
 editor.hass = {};
 let template = editor.render();
+const themeField = template.values.filter(Array.isArray).flat().find(field => field?.name === "theme_mode");
+assert.deepEqual(themeField.selector.button_toggle.options.map(option => option.value), ["auto", "dark", "light"]);
+assert.ok(template.values.some(value => value?.theme_mode === "auto"));
 function switchFields(template) {
   return template.values
     .filter(Array.isArray)

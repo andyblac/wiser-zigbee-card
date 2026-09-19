@@ -274,8 +274,10 @@ class WiserZigbeePanel extends HTMLElement {
       this._editors = [];
       this._loadCards();
     } catch (error) {
+      const detail = error?.code === "invalid_config" && typeof error.message === "string"
+        ? ` ${error.message}` : "";
       this.shadowRoot.getElementById("editor-error").textContent =
-        this._t("panel.save_error");
+        this._t("panel.save_error") + detail;
       console.error("Unable to save Wiser panel settings", error);
     } finally {
       save.disabled = false;

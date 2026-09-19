@@ -6,7 +6,8 @@ import { saveCardConfig } from "./save-config";
 import { disconnectedDevice, statusImage, deviceMapLabel } from "./device-appearance";
 import { separateAreas } from "./area-spacing";
 import { signalColor, signalPalette } from "./signal-color";
-import { LitElement, html, TemplateResult, PropertyValues, css } from "lit";
+import { LitElement, html, TemplateResult, PropertyValues, css, unsafeCSS } from "lit";
+import { themeMode, ThemeMode, THEME_MODE_STYLES } from "./theme-mode";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { state, eventOptions, property } from "lit/decorators.js";
 import {
@@ -79,6 +80,7 @@ export class WiserZigbeeCard
   static panelApiVersion = 1;
   @property({ type: Boolean, reflect: true, attribute: "auto-height" })
   private autoHeight = true;
+  @property({ attribute: "theme-mode", reflect: true }) private themeMode: ThemeMode = "auto";
   @state() private config?: WiserZigbeeCardConfig;
   @state() private zigbeeData?: zigbeeData;
   @state() private loading = false;
@@ -155,16 +157,17 @@ export class WiserZigbeeCard
     const next = { ...config, auto_update: config.auto_update ?? true };
     const previous = this.config;
     const previousHeight = this.mapHeight;
-    const onlyHeightChanged =
+    const onlyAppearanceChanged =
       previous &&
       this.network &&
       [...new Set([...Object.keys(previous), ...Object.keys(next)])]
-        .filter((key) => key !== "map_height")
+        .filter((key) => key !== "map_height" && key !== "theme_mode")
         .every(
           (key) => JSON.stringify(previous[key]) === JSON.stringify(next[key]),
         );
     this.config = next;
     this.autoHeight = this.mapHeight === null;
+    this.themeMode = themeMode(config.theme_mode);
     this.showLabels = config.show_labels ?? false;
     if (config.map_only === undefined) {
       try {
@@ -175,7 +178,7 @@ export class WiserZigbeeCard
     if (config.show_labels === undefined) {
       try { this.showLabels = localStorage.getItem(`${this.layoutKey}:labels`) === "true"; } catch {}
     }
-    if (onlyHeightChanged) {
+    if (onlyAppearanceChanged) {
       this.fitAfterHeightChange ||= previousHeight !== this.mapHeight;
       return;
     }
@@ -250,7 +253,7 @@ export class WiserZigbeeCard
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
     this.positionAreaIcons();
-    if (changed.has("hass") && this.network) {
+    if ((changed.has("hass") || changed.has("themeMode")) && this.network) {
       const color =
         getComputedStyle(this)
           .getPropertyValue("--primary-text-color")
@@ -1018,6 +1021,7 @@ export class WiserZigbeeCard
       const text = copySettings({
         name: this.config?.name ?? this.t("card.title"),
         auto_update: this.config?.auto_update ?? true,
+        theme_mode: this.themeMode,
         map_only: this.config?.map_only ?? false,
         show_device_list: this.config?.show_device_list ?? true,
         show_labels: this.showLabels,
@@ -1538,6 +1542,7 @@ export class WiserZigbeeCard
     </ha-card>${this.pasteSettingsDialog()}`;
   }
   static styles = css`
+    ${unsafeCSS(THEME_MODE_STYLES)}
     :host {
       display: block;
       min-width: 0;

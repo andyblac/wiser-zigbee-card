@@ -5,6 +5,7 @@ const choices: Record<string, string[]> = {
   orientation: ["vertical", "horizontal", "pie"],
   group_by: ["none", "area"],
   link_status: ["links", "icons", "both", "none"],
+  theme_mode: ["auto", "dark", "light"],
 };
 const object = (value: any): value is Settings =>
   value !== null && typeof value === "object" && !Array.isArray(value);

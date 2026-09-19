@@ -5,6 +5,7 @@ const { copySettings, pasteSettings } = require("./load-ts.cjs")(
 );
 const layout = {
   name: "My map",
+  theme_mode: "dark",
   auto_update: true,
   map_only: true,
   show_device_list: false,
@@ -46,6 +47,7 @@ test("invalid clipboard text is rejected before applying any layout", () => {
     assert.throws(() => pasteSettings(text));
   for (const change of [
     { orientation: "diagonal" },
+    { theme_mode: "invalid" },
     { group_by: "floor" },
     { layout_data: [] },
     { map_height: "500" },

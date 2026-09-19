@@ -75,6 +75,10 @@ console.log(
 );
 
 for (const [key, nativeKey] of Object.entries({
+  "editor.theme_mode": "ui.panel.lovelace.editor.card.map.theme_mode",
+  "editor.theme_auto": "ui.panel.lovelace.editor.card.map.theme_modes.auto",
+  "editor.theme_dark": "ui.panel.lovelace.editor.card.map.theme_modes.dark",
+  "editor.theme_light": "ui.panel.lovelace.editor.card.map.theme_modes.light",
   "common.paste": "ui.panel.lovelace.editor.card.generic.paste",
   "common.title": "ui.panel.lovelace.editor.card.generic.title",
   "common.refresh": "ui.common.refresh",

@@ -15,6 +15,7 @@ export type NetworkOrientation = "vertical" | "horizontal" | "pie";
 export interface WiserZigbeeCardConfig extends LovelaceCardConfig {
   type: string;
   name?: string;
+  theme_mode?: "auto" | "dark" | "light";
   hub: string;
   auto_update: boolean;
   log_seed: boolean;

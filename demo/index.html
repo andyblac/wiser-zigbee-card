@@ -119,6 +119,7 @@
     card.setConfig({
       type: "custom:wiser-zigbee-card",
       hub: "Demo",
+      theme_mode: new URLSearchParams(location.search).get("theme_mode") || "auto",
       auto_update: true,
       map_only: new URLSearchParams(location.search).has("map_only"),
       orientation:
@@ -159,7 +160,8 @@
       const panel = document.createElement("wiser-zigbee-panel");
       panel.hass = window.mockHass;
       panel.panel = { config: { hubs: ["Demo"], card_configs: {
-        Demo: { map_only: true, orientation: "vertical", map_height: 340 },
+        Demo: { map_only: true, orientation: "vertical", map_height: 340,
+          theme_mode: new URLSearchParams(location.search).get("theme_mode") || "auto" },
       } } };
       document.body.replaceChildren(panel);
     }
