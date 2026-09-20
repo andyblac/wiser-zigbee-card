@@ -1,6 +1,6 @@
 {
   "name": "wiser-zigbee-card",
-  "version": "3.0.1-dev.5",
+  "version": "3.0.1",
   "description": "Wiser Zigbee Card",
   "keywords": [
     "home-assistant",
