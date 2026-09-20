@@ -10,7 +10,7 @@ const script = fileURLToPath(
   new URL("../scripts/bump-version.mjs", import.meta.url),
 );
 
-test("build bumps only dev versions in both package files and preserves tagged releases", () => {
+test("build starts or increments a dev version and preserves tagged releases", () => {
   const root = mkdtempSync(join(tmpdir(), "zigbee-bump-"));
   try {
     for (const [before, after, skip] of [
@@ -18,7 +18,8 @@ test("build bumps only dev versions in both package files and preserves tagged r
       ["3.0.0-dev.69", "3.0.0-dev.70", ""],
       ["3.0.0-beta.1", "3.0.0-beta.1", ""],
       ["3.0.0-rc.1", "3.0.0-rc.1", ""],
-      ["3.0.0", "3.0.0", ""],
+      ["3.0.0", "3.0.1-dev.1", ""],
+      ["2.4.9", "2.4.10-dev.1", ""],
       ["3.0.0-dev.69", "3.0.0-dev.69", "1"],
       ["3.0.0", "3.0.0", "1"],
     ]) {

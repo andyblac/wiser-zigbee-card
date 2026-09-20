@@ -1,12 +1,16 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
-// Tagged releases must retain the version that was explicitly published.
+// A build after a stable release starts the next patch's development series.
+// Tagged release builds set the skip flag to retain the published version.
 if (process.env.WISER_SKIP_VERSION_BUMP !== "1") {
   const pkg = JSON.parse(readFileSync("package.json", "utf8"));
-  const match = /^(\d+\.\d+\.\d+-dev\.)(\d+)$/.exec(pkg.version);
-  if (!match) process.exit(0);
+  const development = /^(\d+\.\d+\.\d+-dev\.)(\d+)$/.exec(pkg.version);
+  const release = /^(\d+)\.(\d+)\.(\d+)$/.exec(pkg.version);
+  if (!development && !release) process.exit(0);
   const lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
-  const version = `${match[1]}${BigInt(match[2]) + 1n}`;
+  const version = development
+    ? `${development[1]}${BigInt(development[2]) + 1n}`
+    : `${release[1]}.${release[2]}.${BigInt(release[3]) + 1n}-dev.1`;
   pkg.version = lock.version = version;
   if (lock.packages?.[""]) lock.packages[""].version = version;
   writeFileSync("package.json", `${JSON.stringify(pkg, null, 2)}\n`);
