@@ -1,5 +1,7 @@
 const assert = require("node:assert/strict");
-const { preserveDashboardScroll } = require("./load-ts.cjs")("src/preserve-scroll.ts");
+const { preserveDashboardScroll } = require("./load-ts.cjs")(
+  "src/preserve-scroll.ts",
+);
 const clock = Date.now;
 let now = 0;
 Date.now = () => now;
@@ -7,13 +9,27 @@ function windowMock() {
   const listeners = new Map();
   let callback;
   return {
-    scrollX: 15, scrollY: 800, location: { href: "/dashboard/test" },
+    scrollX: 15,
+    scrollY: 800,
+    location: { href: "/dashboard/test" },
     addEventListener: (name, fn) => listeners.set(name, fn),
     removeEventListener: (name) => listeners.delete(name),
-    requestAnimationFrame: (fn) => { callback = fn; return 1; },
-    cancelAnimationFrame: () => { callback = undefined; },
-    scrollTo(options) { this.scrollX = options.left; this.scrollY = options.top; },
-    tick() { const fn = callback; callback = undefined; fn?.(); },
+    requestAnimationFrame: (fn) => {
+      callback = fn;
+      return 1;
+    },
+    cancelAnimationFrame: () => {
+      callback = undefined;
+    },
+    scrollTo(options) {
+      this.scrollX = options.left;
+      this.scrollY = options.top;
+    },
+    tick() {
+      const fn = callback;
+      callback = undefined;
+      fn?.();
+    },
     listeners,
   };
 }
@@ -51,6 +67,14 @@ try {
   preserveDashboardScroll(slow);
   now += 2501;
   slow.tick();
-  assert.equal(slow.listeners.size, 0, "Bound restoration even if saving stalls");
-  console.log("Scroll survives dashboard rerender without overriding user interaction or navigation.");
-} finally { Date.now = clock; }
+  assert.equal(
+    slow.listeners.size,
+    0,
+    "Bound restoration even if saving stalls",
+  );
+  console.log(
+    "Scroll survives dashboard rerender without overriding user interaction or navigation.",
+  );
+} finally {
+  Date.now = clock;
+}

@@ -23,7 +23,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     },
     html: (strings, ...values) => ({ strings, values }),
     css: () => {},
-    unsafeCSS: value => value,
+    unsafeCSS: (value) => value,
   },
   "lit/directives/if-defined.js": { ifDefined: (value) => value },
   "lit/decorators.js": {
@@ -33,16 +33,23 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     eventOptions: decorator,
   },
   "custom-card-helpers": {
-    fireEvent: (target, type, detail) => infoEvents.push({ type, detail, ...(type === "hass-notification" ? { target } : {}) }),
+    fireEvent: (target, type, detail) =>
+      infoEvents.push({
+        type,
+        detail,
+        ...(type === "hass-notification" ? { target } : {}),
+      }),
   },
   "vis-network": {},
   "./is-preview": { is_preview: () => preview },
   "./map-magnifier": load("src/map-magnifier.ts"),
-  "./save-config": { saveCardConfig: async (_, original, changes) => {
-    if (failSave) throw Error("Offline");
-    savedChanges = changes;
-    return { ...original, ...changes };
-  } },
+  "./save-config": {
+    saveCardConfig: async (_, original, changes) => {
+      if (failSave) throw Error("Offline");
+      savedChanges = changes;
+      return { ...original, ...changes };
+    },
+  },
   "./device-images": { DEVICE_IMAGES: {}, FALLBACK_DEVICE_IMAGE: "" },
   "./const": { OPTIONS: {} },
   "./area-spacing": load("src/area-spacing.ts"),
@@ -58,9 +65,14 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   "./components/subscribe-mixin": { SubscribeMixin: (Base) => Base },
   "./localize/localize": load("src/localize/localize.ts"),
   "./native-ui": {},
-  "./action-confirmation": { buttonConfirmation: (_, message) => () => confirmations.push(message) },
+  "./action-confirmation": {
+    buttonConfirmation: (_, message) => () => confirmations.push(message),
+  },
   "./copy-text": {
-    copyText: async (text) => { if (failCopy) throw Error("Denied"); clipboardText = text; },
+    copyText: async (text) => {
+      if (failCopy) throw Error("Denied");
+      clipboardText = text;
+    },
     readCopiedText: async () => navigator.clipboard.readText(),
   },
   "./settings-transfer": load("src/settings-transfer.ts"),
@@ -284,7 +296,11 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   );
   assert.deepEqual(view, originalView);
   assert.equal(card.mapHeight, null);
-  assert.equal(card.autoHeight, true, "Automatic sizing is reflected on the host");
+  assert.equal(
+    card.autoHeight,
+    true,
+    "Automatic sizing is reflected on the host",
+  );
   card.config.map_height = 500;
   assert.equal(card.mapHeight, 500);
   card.config.map_height = null;
@@ -312,7 +328,11 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     bottom: 100,
   });
   card.setConfig({ ...card.config, map_height: 600 });
-  assert.equal(card.autoHeight, false, "Explicit height disables host stretching");
+  assert.equal(
+    card.autoHeight,
+    false,
+    "Explicit height disables host stretching",
+  );
   assert.equal(
     card.network,
     originalNetwork,
@@ -331,7 +351,11 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   for (const mode of ["dark", "light", "auto"]) {
     card.setConfig({ ...card.config, theme_mode: mode });
     assert.equal(card.themeMode, mode);
-    assert.equal(card.network, originalNetwork, "Changing theme preserves the graph and dragged positions");
+    assert.equal(
+      card.network,
+      originalNetwork,
+      "Changing theme preserves the graph and dragged positions",
+    );
   }
   card.zoomReturnView = undefined;
   card.touchZoomStart({ touches: [{}] });
@@ -420,7 +444,11 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   const beforeTidyFits = resizeCalls.length;
   card.tidyLayout();
   assert.notDeepEqual(view, beforeTidy, "Tidy fits the arranged map");
-  assert.equal(card.zoomReturnView, undefined, "Tidy resets the old zoom destination");
+  assert.equal(
+    card.zoomReturnView,
+    undefined,
+    "Tidy resets the old zoom destination",
+  );
   assert.ok(resizeCalls.length > beforeTidyFits, "Tidy triggers Fit view");
   card.config.group_by = "area";
   card.zigbeeData = {
@@ -553,14 +581,20 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   });
   const measuredLabels = [];
   const measure = {
-    save() {}, restore() {},
-    measureText(text) { measuredLabels.push(text); return { width: 300 }; },
+    save() {},
+    restore() {},
+    measureText(text) {
+      measuredLabels.push(text);
+      return { width: 300 };
+    },
   };
   const boxes = card.areaBounds(measure);
   assert.ok(boxes.length > 0);
   assert.ok(measuredLabels.some((label) => /[▸▾]/.test(label)));
-  assert.ok(boxes.every((box) => box.right - box.left >= 336),
-    "Area boxes reserve measured label width plus padding");
+  assert.ok(
+    boxes.every((box) => box.right - box.left >= 336),
+    "Area boxes reserve measured label width plus padding",
+  );
   card.areaDrag = undefined;
   card.collapsedAreas.clear();
   allPositions[2] = { x: 420, y: 200 };
@@ -571,17 +605,32 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   card.config.orientation = "vertical";
   const deviceBeforeCenter = { ...allPositions[2] };
   card.areaBounds(measure);
-  assert.equal(allPositions[kitchenArea.id].x, 420,
-    "Area marker is centred over its member bounds");
-  assert.deepEqual(allPositions[2], deviceBeforeCenter,
-    "Centring the marker does not move individual devices");
+  assert.equal(
+    allPositions[kitchenArea.id].x,
+    420,
+    "Area marker is centred over its member bounds",
+  );
+  assert.deepEqual(
+    allPositions[2],
+    deviceBeforeCenter,
+    "Centring the marker does not move individual devices",
+  );
   card.areaBounds(measure);
-  assert.equal(allPositions[kitchenArea.id].x, 420, "Centring is stable across frames");
-  global.getComputedStyle = () => ({ getPropertyValue: (key) =>
-    key === "--success-color" ? "#00ff00" : "#888888" });
+  assert.equal(
+    allPositions[kitchenArea.id].x,
+    420,
+    "Centring is stable across frames",
+  );
+  global.getComputedStyle = () => ({
+    getPropertyValue: (key) =>
+      key === "--success-color" ? "#00ff00" : "#888888",
+  });
   card.config = { hub: "test", group_by: "none" };
   card.zigbeeData = {
-    nodes: [{ id: 0, group: "Controller", label: "Hub" }, { id: 1, group: "RoomStat", label: "Sensor" }],
+    nodes: [
+      { id: 0, group: "Controller", label: "Hub" },
+      { id: 1, group: "RoomStat", label: "Sensor" },
+    ],
     edges: [{ from: 1, to: 0, label: "Good (80%)" }],
   };
   card.mapData = card.zigbeeData;
@@ -590,10 +639,17 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     for (const labels of [true, false]) {
       card.showLabels = labels;
       card.drawNetwork();
-      assert.equal(graphData.edges[0].color.color,
-        ["links", "both"].includes(mode) ? "#00ff00" : "#888888");
-      const artwork = decodeURIComponent(graphData.nodes.find((node) => node.id === 1).image);
-      assert.equal(artwork.includes('flood-color="#00ff00"'), ["icons", "both"].includes(mode));
+      assert.equal(
+        graphData.edges[0].color.color,
+        ["links", "both"].includes(mode) ? "#00ff00" : "#888888",
+      );
+      const artwork = decodeURIComponent(
+        graphData.nodes.find((node) => node.id === 1).image,
+      );
+      assert.equal(
+        artwork.includes('flood-color="#00ff00"'),
+        ["icons", "both"].includes(mode),
+      );
     }
   }
   card.mapData = card.zigbeeData = {
@@ -604,18 +660,27 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     ],
   };
   let redraws = 0;
-  card.network.redraw = () => { redraws++; };
+  card.network.redraw = () => {
+    redraws++;
+  };
   card.network.getScale = () => 1;
   card.network.getPositions = () => ({
-    0: { x: 400, y: 100 }, 1: { x: 100, y: 500 }, 2: { x: 700, y: 500 },
+    0: { x: 400, y: 100 },
+    1: { x: 100, y: 500 },
+    2: { x: 700, y: 500 },
   });
   card.network.canvasToDOM = card.network.DOMtoCanvas = (point) => point;
-  card.shadowRoot = { getElementById: () => ({ clientWidth: 800, clientHeight: 600 }) };
+  card.shadowRoot = {
+    getElementById: () => ({ clientWidth: 800, clientHeight: 600 }),
+  };
   const drawn = [];
-  const ctx = new Proxy({
-    measureText: () => ({ width: 30 }),
-    fillText: (text) => drawn.push(text),
-  }, { get: (target, key) => target[key] ?? (() => {}) });
+  const ctx = new Proxy(
+    {
+      measureText: () => ({ width: 30 }),
+      fillText: (text) => drawn.push(text),
+    },
+    { get: (target, key) => target[key] ?? (() => {}) },
+  );
   card.showLabels = false;
   card.hoverLink("first");
   card.drawLinkLabels(ctx);
@@ -635,7 +700,11 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   preview = false;
   global.localStorage = { getItem: () => null, setItem: () => {} };
   const savingCard = new WiserZigbeeCard();
-  savingCard.setConfig({ type: "custom:wiser-zigbee-card", show_labels: false, map_only: false });
+  savingCard.setConfig({
+    type: "custom:wiser-zigbee-card",
+    show_labels: false,
+    map_only: false,
+  });
   savingCard.currentPositions = () => ({ 1: { x: 10, y: 20 } });
   savingCard.showLabels = true;
   savingCard.config.map_only = true;
@@ -657,77 +726,157 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   assert.equal(menu.open, true);
   assert.equal(menu.anchorElement, anchorButton);
   let toggles = 0;
-  const buttonTemplate = savingCard.layoutIcon("editor.magnifier", "", () => toggles++, false, false);
-  const clickIndex = buttonTemplate.strings.findIndex((part) => part.endsWith("@click="));
+  const buttonTemplate = savingCard.layoutIcon(
+    "editor.magnifier",
+    "",
+    () => toggles++,
+    false,
+    false,
+  );
+  const clickIndex = buttonTemplate.strings.findIndex((part) =>
+    part.endsWith("@click="),
+  );
   buttonTemplate.values[clickIndex]();
-  assert.equal(toggles, 0, "Release after long press must not toggle the magnifier");
+  assert.equal(
+    toggles,
+    0,
+    "Release after long press must not toggle the magnifier",
+  );
   buttonTemplate.values[clickIndex]();
   assert.equal(toggles, 1, "Subsequent normal click still toggles");
   for (const localX of [999, -500]) {
     const shared = new WiserZigbeeCard();
     shared.hass = { language: "en-GB" };
     shared.setConfig({
-      type: "custom:wiser-zigbee-card", hub: "shared",
-      orientation: "vertical", layout_data: { 1: { x: 100, y: 200 } },
+      type: "custom:wiser-zigbee-card",
+      hub: "shared",
+      orientation: "vertical",
+      layout_data: { 1: { x: 100, y: 200 } },
     });
     shared.drawNetwork = () => {};
-    global.localStorage = { getItem: () => JSON.stringify({ 1: { x: localX, y: 777 } }) };
+    global.localStorage = {
+      getItem: () => JSON.stringify({ 1: { x: localX, y: 777 } }),
+    };
     let pendingLoad = shared.loadData();
-    resolveFetch({ nodes: [{ id: 1, label: "Sensor", group: "RoomStat", x: 0, y: 0 }], edges: [] });
+    resolveFetch({
+      nodes: [{ id: 1, label: "Sensor", group: "RoomStat", x: 0, y: 0 }],
+      edges: [],
+    });
     await pendingLoad;
-    assert.equal(shared.mapData.nodes[0].x, 100, "Shared config wins over each browser's older layout");
+    assert.equal(
+      shared.mapData.nodes[0].x,
+      100,
+      "Shared config wins over each browser's older layout",
+    );
     assert.equal(shared.mapData.nodes[0].y, 200);
     shared.config.layout_data = undefined;
     pendingLoad = shared.loadData();
-    resolveFetch({ nodes: [{ id: 1, label: "Sensor", group: "RoomStat", x: 0, y: 0 }], edges: [] });
+    resolveFetch({
+      nodes: [{ id: 1, label: "Sensor", group: "RoomStat", x: 0, y: 0 }],
+      edges: [],
+    });
     await pendingLoad;
-    assert.equal(shared.mapData.nodes[0].x, localX, "Local-only layouts remain supported");
+    assert.equal(
+      shared.mapData.nodes[0].x,
+      localX,
+      "Local-only layouts remain supported",
+    );
     shared.config.layout_data = {};
     pendingLoad = shared.loadData();
-    resolveFetch({ nodes: [{ id: 1, label: "Sensor", group: "RoomStat", x: 0, y: 0 }], edges: [] });
+    resolveFetch({
+      nodes: [{ id: 1, label: "Sensor", group: "RoomStat", x: 0, y: 0 }],
+      edges: [],
+    });
     await pendingLoad;
-    assert.equal(shared.mapData.nodes[0].x, 0, "Empty configured layout does not revive stale browser positions");
+    assert.equal(
+      shared.mapData.nodes[0].x,
+      0,
+      "Empty configured layout does not revive stale browser positions",
+    );
   }
   const appRoot = {};
-  savingCard.ownerDocument = { querySelector: (selector) => {
-    assert.equal(selector, "home-assistant");
-    return appRoot;
-  } };
-  savingCard.hass = { localize: (key) => key === "ui.common.copied" ? "Copied" : "Successfully saved" };
+  savingCard.ownerDocument = {
+    querySelector: (selector) => {
+      assert.equal(selector, "home-assistant");
+      return appRoot;
+    },
+  };
+  savingCard.hass = {
+    localize: (key) =>
+      key === "ui.common.copied" ? "Copied" : "Successfully saved",
+  };
   await savingCard.copyLayout();
   assert.ok(clipboardText.includes("\nlayout_data:\n"));
-  assert.deepEqual(load("src/settings-transfer.ts").pasteSettings(clipboardText).layout_data[1], {x: 10, y: 20});
+  assert.deepEqual(
+    load("src/settings-transfer.ts").pasteSettings(clipboardText)
+      .layout_data[1],
+    { x: 10, y: 20 },
+  );
   assert.equal(confirmations.at(-1), "Copied");
   await savingCard.saveLayoutClick();
   assert.equal(confirmations.at(-1), "Successfully saved");
   const count = confirmations.length;
   await savingCard.saveLayoutClick(true);
-  assert.equal(confirmations.length, count, "No confirmation for automatic preference persistence");
+  assert.equal(
+    confirmations.length,
+    count,
+    "No confirmation for automatic preference persistence",
+  );
   failCopy = true;
   await savingCard.copyLayout();
   assert.equal(savingCard.layoutStatus, "layout.copy_error");
   assert.equal(confirmations.length, count, "No confirmation on failure");
   const { copySettings } = load("src/settings-transfer.ts");
   const pasted = {
-    name: "Imported map", auto_update: false, map_only: true,
-    show_device_list: false, show_labels: true, magnifier: true,
-    map_height: 600, orientation: "pie", group_by: "area", link_status: "both",
+    name: "Imported map",
+    auto_update: false,
+    map_only: true,
+    show_device_list: false,
+    show_labels: true,
+    magnifier: true,
+    map_height: 600,
+    orientation: "pie",
+    group_by: "area",
+    link_status: "both",
     layout_data: { 1: { x: 123, y: -456 } },
   };
   const pasteCard = new WiserZigbeeCard();
-  pasteCard.setConfig({ type: "custom:wiser-zigbee-card", hub: "destination", layout_id: "keep-me" });
-  Object.defineProperty(global, "navigator", { configurable: true, value: {clipboard: {
-    readText: async () => { throw Error("Denied"); },
-  }} });
+  pasteCard.setConfig({
+    type: "custom:wiser-zigbee-card",
+    hub: "destination",
+    layout_id: "keep-me",
+  });
+  Object.defineProperty(global, "navigator", {
+    configurable: true,
+    value: {
+      clipboard: {
+        readText: async () => {
+          throw Error("Denied");
+        },
+      },
+    },
+  });
   await pasteCard.pasteLayout();
-  assert.equal(pasteCard.pasteDialogOpen, true, "Denied clipboard access offers manual paste");
+  assert.equal(
+    pasteCard.pasteDialogOpen,
+    true,
+    "Denied clipboard access offers manual paste",
+  );
   const original = pasteCard.config;
   await pasteCard.pasteLayout("not YAML");
-  assert.equal(pasteCard.config, original, "Invalid clipboard text cannot change settings");
+  assert.equal(
+    pasteCard.config,
+    original,
+    "Invalid clipboard text cannot change settings",
+  );
   assert.equal(pasteCard.layoutStatus, "layout.paste_error");
   failSave = true;
   await pasteCard.pasteLayout(copySettings(pasted));
-  assert.equal(pasteCard.config, original, "Failed persistence cannot change settings");
+  assert.equal(
+    pasteCard.config,
+    original,
+    "Failed persistence cannot change settings",
+  );
   assert.equal(pasteCard.layoutStatus, "layout.paste_save_error");
   failSave = false;
   const valid = copySettings(pasted);
@@ -735,7 +884,8 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   await pasteCard.pasteLayout();
   assert.equal(pasteCard.config.hub, "destination");
   assert.equal(pasteCard.config.layout_id, "keep-me");
-  for (const [key, value] of Object.entries(pasted)) assert.deepEqual(pasteCard.config[key], value);
+  for (const [key, value] of Object.entries(pasted))
+    assert.deepEqual(pasteCard.config[key], value);
   assert.equal(pasteCard.layoutStatus, "common.saved");
   assert.equal(pasteCard.pastingSettings, false);
   console.log(

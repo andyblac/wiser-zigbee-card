@@ -25,7 +25,8 @@ export function arrangeNetwork(
       }
     }
   }
-  if (orientation === "pie") return arrangePie(data, groupBy === "area", levels, positions);
+  if (orientation === "pie")
+    return arrangePie(data, groupBy === "area", levels, positions);
   const columns = new Map<number, typeof data.nodes>();
   const lastLevel = Math.max(0, ...levels.values()) + 1;
   for (const node of data.nodes) {
@@ -53,8 +54,14 @@ export function arrangeNetwork(
       let slot = index - (column.length - 1) / 2;
       nodes.push({
         ...node,
-        x: orientation === "vertical" ? slot * (groupBy === "area" ? 230 : 170) : level * (groupBy === "area" ? 300 : 270),
-        y: orientation === "vertical" ? level * (groupBy === "area" ? 300 : 150) : slot * (groupBy === "area" ? 260 : 110),
+        x:
+          orientation === "vertical"
+            ? slot * (groupBy === "area" ? 230 : 170)
+            : level * (groupBy === "area" ? 300 : 270),
+        y:
+          orientation === "vertical"
+            ? level * (groupBy === "area" ? 300 : 150)
+            : slot * (groupBy === "area" ? 260 : 110),
       });
     });
   }
@@ -66,7 +73,11 @@ export function arrangeNetwork(
     );
     nodes.push({
       ...header,
-      x: members.length ? (Math.min(...members.map((node) => node.x)) + Math.max(...members.map((node) => node.x))) / 2 : 0,
+      x: members.length
+        ? (Math.min(...members.map((node) => node.x)) +
+            Math.max(...members.map((node) => node.x))) /
+          2
+        : 0,
       y: members.length ? Math.min(...members.map((node) => node.y)) - 110 : 0,
     });
   }

@@ -6,18 +6,38 @@ const vm = require("node:vm");
 
 function setup() {
   class Element {
-    constructor() { this.listeners = {}; }
-    addEventListener(name, callback) { this.listeners[name] = callback; }
-    setAttribute(name, value) { (this.attributes ||= {})[name] = value; }
+    constructor() {
+      this.listeners = {};
+    }
+    addEventListener(name, callback) {
+      this.listeners[name] = callback;
+    }
+    setAttribute(name, value) {
+      (this.attributes ||= {})[name] = value;
+    }
     removeAttribute() {}
-    append(child) { (this.children ||= []).push(child); }
-    showModal() { this.open = true; }
-    close() { this.open = false; }
+    append(child) {
+      (this.children ||= []).push(child);
+    }
+    showModal() {
+      this.open = true;
+    }
+    close() {
+      this.open = false;
+    }
     static panelApiVersion = 1;
-    static async getConfigElement() { return new Element(); }
-    replaceChildren(...children) { this.children = children; }
-    setConfig(config) { this.config = config; }
-    dispatchEvent(event) { this.event = event; }
+    static async getConfigElement() {
+      return new Element();
+    }
+    replaceChildren(...children) {
+      this.children = children;
+    }
+    setConfig(config) {
+      this.config = config;
+    }
+    dispatchEvent(event) {
+      this.event = event;
+    }
     attachShadow() {
       const main = new Element();
       const elements = new Map();
@@ -32,17 +52,33 @@ function setup() {
   }
   const registry = new Map([["wiser-zigbee-card", Element]]);
   const context = vm.createContext({
-    requiredTranslationFragments: require("./load-ts.cjs")("src/localize/localize.ts").requiredTranslationFragments,
-    localize: (key) => ({"panel.retry": "Retry", "panel.save_error": "Unable to save"}[key] || key),
+    requiredTranslationFragments: require("./load-ts.cjs")(
+      "src/localize/localize.ts",
+    ).requiredTranslationFragments,
+    localize: (key) =>
+      ({ "panel.retry": "Retry", "panel.save_error": "Unable to save" })[key] ||
+      key,
     HTMLElement: Element,
     window: { loadCardHelpers: async () => ({}) },
-    CustomEvent: class { constructor(type, options) { Object.assign(this, { type }, options); } },
-    customElements: { get: (key) => registry.get(key), define: (key, value) => registry.set(key, value) },
+    CustomEvent: class {
+      constructor(type, options) {
+        Object.assign(this, { type }, options);
+      }
+    },
+    customElements: {
+      get: (key) => registry.get(key),
+      define: (key, value) => registry.set(key, value),
+    },
     document: { createElement: () => new Element() },
     console: { error() {} },
   });
-  vm.runInContext(readFileSync(resolve(__dirname,
-    "../src/wiser-zigbee-panel.js"), "utf8").replace(/^import .*;\n/gm, ""), context);
+  vm.runInContext(
+    readFileSync(
+      resolve(__dirname, "../src/wiser-zigbee-panel.js"),
+      "utf8",
+    ).replace(/^import .*;\n/gm, ""),
+    context,
+  );
   return new (registry.get("wiser-zigbee-panel"))();
 }
 
@@ -87,7 +123,9 @@ test("menu button dispatches Home Assistant's sidebar event", () => {
 test("panel overrides saved fixed map heights and hides the height editor", async () => {
   const panel = setup();
   panel.hass = { user: { is_admin: true } };
-  panel.panel = { config: { hubs: ["hub"], card_configs: { hub: { map_height: 340 } } } };
+  panel.panel = {
+    config: { hubs: ["hub"], card_configs: { hub: { map_height: 340 } } },
+  };
   assert.equal(panel._cards[0].config.map_height, null);
   await panel._openEditor();
   assert.equal(panel._editors[0].hideMapHeight, true);
@@ -102,19 +140,25 @@ test("load errors display a retry action", async () => {
   assert.equal(children[1].textContent, "Retry");
   panel._config = { hubs: ["recovered"] };
   await children[1].listeners.click();
-  assert.equal(panel.shadowRoot.querySelector("main").children[0].config.hub, "recovered");
+  assert.equal(
+    panel.shadowRoot.querySelector("main").children[0].config.hub,
+    "recovered",
+  );
 });
-
 
 test("cog saves shared integration config over websocket", async () => {
   const panel = setup();
   const calls = [];
-  panel.hass = { user: { is_admin: true }, callWS: async (msg) => calls.push(msg) };
+  panel.hass = {
+    user: { is_admin: true },
+    callWS: async (msg) => calls.push(msg),
+  };
   panel.panel = { config: { hubs: ["hub"] } };
   await panel.shadowRoot.getElementById("settings").listeners.click();
   assert.equal(panel.shadowRoot.getElementById("editor-dialog").open, true);
   panel._editors[0].listeners["config-changed"]({
-    stopPropagation() {}, detail: { config: { name: "My network", show_labels: true } },
+    stopPropagation() {},
+    detail: { config: { name: "My network", show_labels: true } },
   });
   await panel.shadowRoot.getElementById("save").listeners.click();
   assert.equal(calls[0].type, "wiser/zigbee_panel/configure");
@@ -122,31 +166,50 @@ test("cog saves shared integration config over websocket", async () => {
   assert.equal(panel.shadowRoot.getElementById("editor-dialog").open, false);
   assert.equal(panel._cards[0].config.show_labels, true);
   const reloaded = setup();
-  reloaded.panel = { config: { hubs: ["hub"], card_configs: calls[0].configs } };
+  reloaded.panel = {
+    config: { hubs: ["hub"], card_configs: calls[0].configs },
+  };
   assert.equal(reloaded._cards[0].config.name, "My network");
 });
 
 test("failed save keeps editor open and offers retry", async () => {
   const panel = setup();
-  panel.hass = { user: { is_admin: true }, callWS: async () => { throw Error("Offline"); } };
+  panel.hass = {
+    user: { is_admin: true },
+    callWS: async () => {
+      throw Error("Offline");
+    },
+  };
   panel.panel = { config: { hubs: ["hub"] } };
   await panel._openEditor();
   await panel._saveEditor();
   assert.equal(panel.shadowRoot.getElementById("editor-dialog").open, true);
-  assert.match(panel.shadowRoot.getElementById("editor-error").textContent, /Unable to save/);
+  assert.match(
+    panel.shadowRoot.getElementById("editor-error").textContent,
+    /Unable to save/,
+  );
   assert.equal(panel.shadowRoot.getElementById("save").disabled, false);
 });
 
 test("save shows backend validation details without discarding the draft", async () => {
   const panel = setup();
-  panel.hass = { user: { is_admin: true }, callWS: async () => {
-    throw { code: "invalid_config", message: "Invalid Zigbee card setting: theme_mode" };
-  } };
+  panel.hass = {
+    user: { is_admin: true },
+    callWS: async () => {
+      throw {
+        code: "invalid_config",
+        message: "Invalid Zigbee card setting: theme_mode",
+      };
+    },
+  };
   panel.panel = { config: { hubs: ["hub"] } };
   await panel._openEditor();
   panel._drafts.hub.theme_mode = "light";
   await panel._saveEditor();
-  assert.match(panel.shadowRoot.getElementById("editor-error").textContent, /Invalid Zigbee card setting: theme_mode/);
+  assert.match(
+    panel.shadowRoot.getElementById("editor-error").textContent,
+    /Invalid Zigbee card setting: theme_mode/,
+  );
   assert.equal(panel._drafts.hub.theme_mode, "light");
   assert.equal(panel.shadowRoot.getElementById("editor-dialog").open, true);
   assert.equal(panel.shadowRoot.getElementById("save").disabled, false);
@@ -158,12 +221,15 @@ test("panel waits for native Lovelace translations before rendering the editor",
   const nativeLocalize = () => "Senkrecht";
   const fragments = [];
   panel.hass = {
-    user: { is_admin: true }, language: "de",
+    user: { is_admin: true },
+    language: "de",
     localize: () => "",
     loadFragmentTranslation: (fragment) => {
       fragments.push(fragment);
       if (fragment === "config") return Promise.resolve(nativeLocalize);
-      return new Promise(resolve => { finish = resolve; });
+      return new Promise((resolve) => {
+        finish = resolve;
+      });
     },
   };
   panel.panel = { config: { hubs: ["hub"] } };
@@ -182,10 +248,14 @@ test("panel waits for native Lovelace translations before rendering the editor",
 test("translation failure shows an error instead of a blank editor and supports retry", async () => {
   const panel = setup();
   let fail = true;
-  panel.hass = { user: { is_admin: true }, language: "fr", loadFragmentTranslation: async () => {
-    if (fail) throw Error("Offline");
-    return () => "Vertical";
-  } };
+  panel.hass = {
+    user: { is_admin: true },
+    language: "fr",
+    loadFragmentTranslation: async () => {
+      if (fail) throw Error("Offline");
+      return () => "Vertical";
+    },
+  };
   panel.panel = { config: { hubs: ["hub"] } };
   await panel._openEditor();
   assert.equal(panel._editors.length, 0);
@@ -200,8 +270,10 @@ test("translation failure shows an error instead of a blank editor and supports 
 test("translations are reused for state updates and reloaded when language changes", async () => {
   const panel = setup();
   const calls = [];
-  const makeHass = language => ({ user: { is_admin: true }, language,
-    loadFragmentTranslation: async fragment => {
+  const makeHass = (language) => ({
+    user: { is_admin: true },
+    language,
+    loadFragmentTranslation: async (fragment) => {
       calls.push(`${language}:${fragment}`);
       return () => language;
     },
@@ -214,7 +286,12 @@ test("translations are reused for state updates and reloaded when language chang
   assert.deepEqual(calls, ["de:lovelace", "de:config"]);
   panel.hass = makeHass("fr");
   await panel._loadTranslations();
-  assert.deepEqual(calls, ["de:lovelace", "de:config", "fr:lovelace", "fr:config"]);
+  assert.deepEqual(calls, [
+    "de:lovelace",
+    "de:config",
+    "fr:lovelace",
+    "fr:config",
+  ]);
   assert.equal(panel._editors[0].hass.localize("example"), "fr");
   assert.equal(panel._cards[0].hass.localize("example"), "fr");
 });
@@ -222,13 +299,23 @@ test("translations are reused for state updates and reloaded when language chang
 test("a delayed request cannot overwrite translations after switching language away and back", async () => {
   const panel = setup();
   let finishOldRequest;
-  panel.hass = { language: "de", loadFragmentTranslation: () =>
-    new Promise(resolve => { finishOldRequest = resolve; }),
+  panel.hass = {
+    language: "de",
+    loadFragmentTranslation: () =>
+      new Promise((resolve) => {
+        finishOldRequest = resolve;
+      }),
   };
   const oldLoad = panel._loadTranslations();
-  panel.hass = { language: "fr", loadFragmentTranslation: async () => () => "French" };
+  panel.hass = {
+    language: "fr",
+    loadFragmentTranslation: async () => () => "French",
+  };
   await panel._loadTranslations();
-  panel.hass = { language: "de", loadFragmentTranslation: async () => () => "Current German" };
+  panel.hass = {
+    language: "de",
+    loadFragmentTranslation: async () => () => "Current German",
+  };
   await panel._loadTranslations();
   finishOldRequest(() => "Stale German");
   await oldLoad;
@@ -241,7 +328,8 @@ test("Cancel leaves the card unchanged", async () => {
   panel.panel = { config: { hubs: ["hub"] } };
   await panel._openEditor();
   panel._editors[0].listeners["config-changed"]({
-    stopPropagation() {}, detail: { config: { name: "Discard me" } },
+    stopPropagation() {},
+    detail: { config: { name: "Discard me" } },
   });
   panel.shadowRoot.getElementById("cancel").listeners.click();
   assert.equal(panel._cards[0].config.name, undefined);
@@ -256,7 +344,12 @@ test("hub tabs preserve selection across settings updates", () => {
   panel._tabs[1].listeners.click();
   assert.equal(panel._cards[0].hidden, true);
   assert.equal(panel._cards[1].hidden, false);
-  panel.panel = { config: { hubs: ["first", "second"], card_configs: { second: { show_labels: true } } } };
+  panel.panel = {
+    config: {
+      hubs: ["first", "second"],
+      card_configs: { second: { show_labels: true } },
+    },
+  };
   assert.equal(panel._cards[1].hidden, false);
   assert.equal(panel._cards[1].config.show_labels, true);
 });
@@ -264,9 +357,15 @@ test("hub tabs preserve selection across settings updates", () => {
 test("panel preserves Home Assistant theme while forwarding map theme settings", async () => {
   const panel = setup();
   panel.hass = { user: { is_admin: true }, callWS: async () => {} };
-  panel.panel = { config: { hubs: ["first", "second"], card_configs: {
-    first: { theme_mode: "dark" }, second: { theme_mode: "light" },
-  } } };
+  panel.panel = {
+    config: {
+      hubs: ["first", "second"],
+      card_configs: {
+        first: { theme_mode: "dark" },
+        second: { theme_mode: "light" },
+      },
+    },
+  };
   assert.equal(panel.attributes?.["theme-mode"], undefined);
   assert.equal(panel._cards[0].config.theme_mode, "dark");
   panel._selectHub("second");
@@ -275,20 +374,42 @@ test("panel preserves Home Assistant theme while forwarding map theme settings",
   await panel.saveZigbeeCardConfig(panel._cards[1], { theme_mode: "auto" });
   assert.equal(panel.attributes?.["theme-mode"], undefined);
   assert.equal(panel._cardConfig("second").theme_mode, "auto");
-  assert.doesNotMatch(panel.shadowRoot.innerHTML, /color-scheme:|:host\(\[theme-mode/);
+  assert.doesNotMatch(
+    panel.shadowRoot.innerHTML,
+    /color-scheme:|:host\(\[theme-mode/,
+  );
 });
 
 test("layout save only updates its own hub and requires an administrator", async () => {
   const panel = setup();
   const calls = [];
-  panel.hass = { user: { is_admin: true }, callWS: async (msg) => calls.push(msg) };
-  panel.panel = { config: { hubs: ["first", "second"], card_configs: { second: { map_only: true } } } };
-  const result = await panel.saveZigbeeCardConfig(panel._cards[0], { show_labels: true, hub: "second", map_height: 500 });
+  panel.hass = {
+    user: { is_admin: true },
+    callWS: async (msg) => calls.push(msg),
+  };
+  panel.panel = {
+    config: {
+      hubs: ["first", "second"],
+      card_configs: { second: { map_only: true } },
+    },
+  };
+  const result = await panel.saveZigbeeCardConfig(panel._cards[0], {
+    show_labels: true,
+    hub: "second",
+    map_height: 500,
+  });
   assert.equal(result.hub, "first");
-  assert.equal(result.map_height, null, "Imported fixed heights cannot constrain the panel");
+  assert.equal(
+    result.map_height,
+    null,
+    "Imported fixed heights cannot constrain the panel",
+  );
   assert.deepEqual(Object.keys(calls[0].configs), ["first"]);
   assert.equal(panel._config.card_configs.second.map_only, true);
   panel.hass = { user: { is_admin: false } };
-  await assert.rejects(panel.saveZigbeeCardConfig(panel._cards[0], {}), /administrators/);
+  await assert.rejects(
+    panel.saveZigbeeCardConfig(panel._cards[0], {}),
+    /administrators/,
+  );
   assert.equal(panel.shadowRoot.getElementById("settings").hidden, true);
 });

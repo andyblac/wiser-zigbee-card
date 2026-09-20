@@ -27,9 +27,12 @@ const nativeKeys: Record<string, string> = {
   "editor.theme_light": "ui.panel.lovelace.editor.card.map.theme_modes.light",
   "common.copied": "ui.common.copied",
   "common.saved": "ui.common.successfully_saved",
-  "editor.icons": "ui.panel.lovelace.editor.features.types.climate-preset-modes.style_list.icons",
-  "editor.pie": "ui.panel.lovelace.editor.card.energy-devices-graph.mode_options.pie",
-  "common.invalid_configuration": "ui.panel.lovelace.editor.condition-editor.visibility_status.invalid.headline",
+  "editor.icons":
+    "ui.panel.lovelace.editor.features.types.climate-preset-modes.style_list.icons",
+  "editor.pie":
+    "ui.panel.lovelace.editor.card.energy-devices-graph.mode_options.pie",
+  "common.invalid_configuration":
+    "ui.panel.lovelace.editor.condition-editor.visibility_status.invalid.headline",
   "editor.none": "ui.common.none",
   "editor.area": "ui.panel.lovelace.editor.card.area.name",
   "common.refresh": "ui.common.refresh",
@@ -58,11 +61,13 @@ const optionalNativeKeys: Record<string, string> = {
   "signal.offline": "ui.panel.config.zha.configuration_page.status_offline",
 };
 // Keep fragment loading aligned with every native key used by the card/editor.
-export const requiredTranslationFragments = [...new Set(
-  Object.values({ ...nativeKeys, ...optionalNativeKeys })
-    .map((key) => /^ui\.panel\.([^.]+)\./.exec(key)?.[1])
-    .filter((fragment): fragment is string => !!fragment),
-)];
+export const requiredTranslationFragments = [
+  ...new Set(
+    Object.values({ ...nativeKeys, ...optionalNativeKeys })
+      .map((key) => /^ui\.panel\.([^.]+)\./.exec(key)?.[1])
+      .filter((fragment): fragment is string => !!fragment),
+  ),
+];
 
 export function languageFor(hass?: TranslationContext): SupportedLanguage {
   const language = (

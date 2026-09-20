@@ -8,7 +8,17 @@ const compiled = ts.transpileModule(readFileSync("src/layout.ts", "utf8"), {
   },
 }).outputText;
 const result = { exports: {} };
-new Function("module", "exports", "require", compiled)(result, result.exports, () => require("./load-ts.cjs")("src/pie-layout.ts", { "./device-appearance": require("./load-ts.cjs")("src/device-appearance.ts"), "./area-spacing": require("./load-ts.cjs")("src/area-spacing.ts") }));
+new Function("module", "exports", "require", compiled)(
+  result,
+  result.exports,
+  () =>
+    require("./load-ts.cjs")("src/pie-layout.ts", {
+      "./device-appearance": require("./load-ts.cjs")(
+        "src/device-appearance.ts",
+      ),
+      "./area-spacing": require("./load-ts.cjs")("src/area-spacing.ts"),
+    }),
+);
 const { arrangeNetwork } = result.exports;
 const nodes = [0, 1, 2, 3, 4].map((id) => ({
   id,
@@ -148,8 +158,15 @@ for (const orientation of ["horizontal", "vertical"]) {
   const pos = (id) => grouped.nodes.find((n) => n.id === id)[axis];
   const depth = orientation === "vertical" ? "y" : "x";
   const along = (id) => grouped.nodes.find((n) => n.id === id)[depth];
-  assert.ok(along(0) < along(1) && along(1) < along(2), "Parent chain determines depth even within one area");
-  assert.equal(along(2), along(3), "Same-hop devices share a level regardless of area");
+  assert.ok(
+    along(0) < along(1) && along(1) < along(2),
+    "Parent chain determines depth even within one area",
+  );
+  assert.equal(
+    along(2),
+    along(3),
+    "Same-hop devices share a level regardless of area",
+  );
   assert.deepEqual(
     grouped.edges,
     groupedInput.edges,
@@ -162,97 +179,200 @@ for (const grouped of ["none", "area"]) {
   assert.equal(pie.nodes.find((node) => node.id === 0).x, 0);
   assert.equal(pie.nodes.find((node) => node.id === 0).y, 0);
   assert.deepEqual(pie.edges, groupedInput.edges);
-  assert.equal(new Set(pie.nodes.map((node) => `${node.x},${node.y}`)).size, pie.nodes.length);
-  assert.deepEqual(arrangeNetwork(pie, "pie", Object.fromEntries(pie.nodes.map((node) => [node.id, node])), grouped), pie);
+  assert.equal(
+    new Set(pie.nodes.map((node) => `${node.x},${node.y}`)).size,
+    pie.nodes.length,
+  );
+  assert.deepEqual(
+    arrangeNetwork(
+      pie,
+      "pie",
+      Object.fromEntries(pie.nodes.map((node) => [node.id, node])),
+      grouped,
+    ),
+    pie,
+  );
 }
-console.log("Pie layout keeps hub central, routes intact and repeated tidy stable.");
+console.log(
+  "Pie layout keeps hub central, routes intact and repeated tidy stable.",
+);
 
-const withHeaders = { ...groupedInput, nodes: [...groupedInput.nodes,
-  { id: -1, group: "Area", area_id: "a", label: "Kitchen" },
-  { id: -2, group: "Area", area_id: "b", label: "Office" },
-] };
+const withHeaders = {
+  ...groupedInput,
+  nodes: [
+    ...groupedInput.nodes,
+    { id: -1, group: "Area", area_id: "a", label: "Kitchen" },
+    { id: -2, group: "Area", area_id: "b", label: "Office" },
+  ],
+};
 
-const chain = { nodes: [
-  { id: 0, group: "Controller", label: "Hub" },
-  { id: 1, group: "SmartPlug", label: "Repeater 1", area_id: "a" },
-  { id: 2, group: "SmartPlug", label: "Repeater 2", area_id: "a" },
-  { id: 3, group: "RoomStat", label: "End device", area_id: "b" },
-  { id: -1, group: "Area", label: "Area A", area_id: "a" },
-  { id: -2, group: "Area", label: "Area B", area_id: "b" },
-], edges: [{ from: 1, to: 0 }, { from: 2, to: 1 }, { from: 3, to: 2 }] };
+const chain = {
+  nodes: [
+    { id: 0, group: "Controller", label: "Hub" },
+    { id: 1, group: "SmartPlug", label: "Repeater 1", area_id: "a" },
+    { id: 2, group: "SmartPlug", label: "Repeater 2", area_id: "a" },
+    { id: 3, group: "RoomStat", label: "End device", area_id: "b" },
+    { id: -1, group: "Area", label: "Area A", area_id: "a" },
+    { id: -2, group: "Area", label: "Area B", area_id: "b" },
+  ],
+  edges: [
+    { from: 1, to: 0 },
+    { from: 2, to: 1 },
+    { from: 3, to: 2 },
+  ],
+};
 for (const orientation of ["vertical", "horizontal", "pie"]) {
   for (const grouping of ["none", "area"]) {
     const result = arrangeNetwork(chain, orientation, undefined, grouping);
     const depth = (id) => {
       const node = result.nodes.find((node) => node.id === id);
-      return orientation === "pie" ? Math.hypot(node.x, node.y) : node[orientation === "vertical" ? "y" : "x"];
+      return orientation === "pie"
+        ? Math.hypot(node.x, node.y)
+        : node[orientation === "vertical" ? "y" : "x"];
     };
-    assert.ok(depth(0) < depth(1) && depth(1) < depth(2) && depth(2) < depth(3),
-      "Every repeater hop advances, including devices sharing an area");
-    assert.deepEqual(result.edges, chain.edges, "Area grouping adds no artificial links");
+    assert.ok(
+      depth(0) < depth(1) && depth(1) < depth(2) && depth(2) < depth(3),
+      "Every repeater hop advances, including devices sharing an area",
+    );
+    assert.deepEqual(
+      result.edges,
+      chain.edges,
+      "Area grouping adds no artificial links",
+    );
   }
 }
-console.log("Multi-repeater chains preserved across every layout and grouping mode.");
+console.log(
+  "Multi-repeater chains preserved across every layout and grouping mode.",
+);
 
 const repeaterFan = {
-  nodes: [0, 1, 2, 3, 4, 5].map((id) => ({ id, label: `Device ${id}`,
-    group: id === 0 ? "Controller" : id === 1 ? "SmartPlug" : "RoomStat" })),
+  nodes: [0, 1, 2, 3, 4, 5].map((id) => ({
+    id,
+    label: `Device ${id}`,
+    group: id === 0 ? "Controller" : id === 1 ? "SmartPlug" : "RoomStat",
+  })),
   edges: [1, 2, 3, 4, 5].map((id) => ({ from: id, to: id === 1 ? 0 : 1 })),
 };
 const fan = arrangeNetwork(repeaterFan, "pie");
 const repeater = fan.nodes.find((node) => node.id === 1);
 const fanChildren = fan.nodes.filter((node) => node.id > 1);
-const radii = fanChildren.map((node) => Math.hypot(node.x - repeater.x, node.y - repeater.y));
+const radii = fanChildren.map((node) =>
+  Math.hypot(node.x - repeater.x, node.y - repeater.y),
+);
 assert.ok(radii.every((radius) => Math.abs(radius - radii[0]) < 1e-6));
-assert.ok(Math.abs(fanChildren.reduce((sum, node) => sum + node.x, 0) / 4 - repeater.x) < 1e-6);
-assert.ok(Math.abs(fanChildren.reduce((sum, node) => sum + node.y, 0) / 4 - repeater.y) < 1e-6);
+assert.ok(
+  Math.abs(
+    fanChildren.reduce((sum, node) => sum + node.x, 0) / 4 - repeater.x,
+  ) < 1e-6,
+);
+assert.ok(
+  Math.abs(
+    fanChildren.reduce((sum, node) => sum + node.y, 0) / 4 - repeater.y,
+  ) < 1e-6,
+);
 assert.deepEqual(fan.edges, repeaterFan.edges);
 console.log("Repeater is the centre of its own child circle.");
 
-const rightStart = arrangeNetwork({ ...repeaterFan,
-  nodes: [...repeaterFan.nodes, { id: 6, group: "RoomStat", label: "A direct sensor" }],
-  edges: [...repeaterFan.edges, { from: 6, to: 0 }],
-}, "pie");
+const rightStart = arrangeNetwork(
+  {
+    ...repeaterFan,
+    nodes: [
+      ...repeaterFan.nodes,
+      { id: 6, group: "RoomStat", label: "A direct sensor" },
+    ],
+    edges: [...repeaterFan.edges, { from: 6, to: 0 }],
+  },
+  "pie",
+);
 const firstRepeater = rightStart.nodes.find((node) => node.id === 1);
 assert.ok(firstRepeater.x > 0);
-assert.equal(firstRepeater.y, 0, "First repeater starts directly right of the hub");
+assert.equal(
+  firstRepeater.y,
+  0,
+  "First repeater starts directly right of the hub",
+);
 
-const kitchen = { nodes: [
-  { id: 0, group: "Controller", label: "Hub" },
-  { id: 1, group: "SmartPlug", label: "Kitchen plug", area_id: "k" },
-  { id: 2, group: "RoomStat", label: "Kitchen sensor", area_id: "k" },
-  { id: 3, group: "RoomStat", label: "Bedroom", area_id: "b" },
-  { id: -1, group: "Area", label: "Kitchen", area_id: "k" },
-], edges: [{ from: 1, to: 0 }, { from: 2, to: 0 }, { from: 3, to: 1 }] };
+const kitchen = {
+  nodes: [
+    { id: 0, group: "Controller", label: "Hub" },
+    { id: 1, group: "SmartPlug", label: "Kitchen plug", area_id: "k" },
+    { id: 2, group: "RoomStat", label: "Kitchen sensor", area_id: "k" },
+    { id: 3, group: "RoomStat", label: "Bedroom", area_id: "b" },
+    { id: -1, group: "Area", label: "Kitchen", area_id: "k" },
+  ],
+  edges: [
+    { from: 1, to: 0 },
+    { from: 2, to: 0 },
+    { from: 3, to: 1 },
+  ],
+};
 const kitchenPie = arrangeNetwork(kitchen, "pie", undefined, "area");
 const kitchenNodes = kitchenPie.nodes.filter((node) => node.area_id === "k");
-assert.ok(Math.min(...kitchenNodes.map((node) => node.x)) > 50,
-  "Kitchen sensor joins the plug to the right, leaving the central hub outside their box");
-assert.deepEqual(kitchenPie.edges, kitchen.edges, "Sensor still connects directly to hub");
+assert.ok(
+  Math.min(...kitchenNodes.map((node) => node.x)) > 50,
+  "Kitchen sensor joins the plug to the right, leaving the central hub outside their box",
+);
+assert.deepEqual(
+  kitchenPie.edges,
+  kitchen.edges,
+  "Sensor still connects directly to hub",
+);
 
 const plugPosition = kitchenPie.nodes.find((node) => node.id === 1);
 const sensorPosition = kitchenPie.nodes.find((node) => node.id === 2);
-assert.ok(Math.hypot(plugPosition.x - sensorPosition.x, plugPosition.y - sensorPosition.y) < 180,
-  "Same-area direct sensor stays close beside the repeater sibling");
-assert.ok(sensorPosition.y > plugPosition.y, "First companion sits slightly below the repeater");
+assert.ok(
+  Math.hypot(
+    plugPosition.x - sensorPosition.x,
+    plugPosition.y - sensorPosition.y,
+  ) < 180,
+  "Same-area direct sensor stays close beside the repeater sibling",
+);
+assert.ok(
+  sensorPosition.y > plugPosition.y,
+  "First companion sits slightly below the repeater",
+);
 
 // Several repeaters, multiple direct sensors per area, a nested repeater,
 // unassigned devices, and long room names: no household-specific identifiers.
-const varied = { nodes: [{ id: 0, group: "Controller", label: "Hub" }], edges: [] };
+const varied = {
+  nodes: [{ id: 0, group: "Controller", label: "Hub" }],
+  edges: [],
+};
 let nextId = 1;
 for (const area of ["east", "west", "upper"]) {
   const router = nextId++;
-  varied.nodes.push({ id: router, group: "SmartPlug", label: `Router ${area}`, area_id: area });
+  varied.nodes.push({
+    id: router,
+    group: "SmartPlug",
+    label: `Router ${area}`,
+    area_id: area,
+  });
   varied.edges.push({ from: router, to: 0 });
   for (let i = 0; i < 6; i++) {
     const id = nextId++;
-    varied.nodes.push({ id, group: "RoomStat", label: i === 5 ? "Long name for a temperature sensor" : `Sensor ${area} ${i}`, area_id: area });
+    varied.nodes.push({
+      id,
+      group: "RoomStat",
+      label:
+        i === 5 ? "Long name for a temperature sensor" : `Sensor ${area} ${i}`,
+      area_id: area,
+    });
     varied.edges.push({ from: id, to: i < 3 ? 0 : router });
   }
 }
-varied.nodes.push({ id: nextId, group: "SmartPlug", label: "Nested repeater", area_id: "other" });
+varied.nodes.push({
+  id: nextId,
+  group: "SmartPlug",
+  label: "Nested repeater",
+  area_id: "other",
+});
 varied.edges.push({ from: nextId, to: 1 });
-varied.nodes.push({ id: nextId + 1, group: "RoomStat", label: "Nested child", area_id: "other" });
+varied.nodes.push({
+  id: nextId + 1,
+  group: "RoomStat",
+  label: "Nested child",
+  area_id: "other",
+});
 varied.edges.push({ from: nextId + 1, to: nextId });
 varied.nodes.push({ id: nextId + 2, group: "RoomStat", label: "Unassigned" });
 varied.edges.push({ from: nextId + 2, to: 0 });
@@ -260,16 +380,28 @@ const variedOriginal = structuredClone(varied);
 const variedPie = arrangeNetwork(varied, "pie", undefined, "area");
 assert.deepEqual(varied, variedOriginal);
 assert.deepEqual(variedPie.edges, varied.edges);
-assert.ok(variedPie.nodes.every((node) => Number.isFinite(node.x) && Number.isFinite(node.y)));
+assert.ok(
+  variedPie.nodes.every(
+    (node) => Number.isFinite(node.x) && Number.isFinite(node.y),
+  ),
+);
 for (let i = 0; i < variedPie.nodes.length; i++) {
   for (const other of variedPie.nodes.slice(i + 1)) {
     const node = variedPie.nodes[i];
     const halfWidth = (label) => Math.max(40, label.length * 4.5 + 12);
-    assert.ok(Math.abs(node.x - other.x) >= halfWidth(node.label) + halfWidth(other.label) ||
-      Math.abs(node.y - other.y) >= 114, `Devices ${node.id} and ${other.id} retain room for labels`);
+    assert.ok(
+      Math.abs(node.x - other.x) >=
+        halfWidth(node.label) + halfWidth(other.label) ||
+        Math.abs(node.y - other.y) >= 114,
+      `Devices ${node.id} and ${other.id} retain room for labels`,
+    );
   }
 }
-console.log("Varied multi-repeater network keeps labels separated and real links unchanged.");
+console.log(
+  "Varied multi-repeater network keeps labels separated and real links unchanged.",
+);
 
-assert.ok(Math.abs(sensorPosition.y - plugPosition.y) <= 65,
-  "Companion sensor stays beside the repeater instead of stretching the area downward");
+assert.ok(
+  Math.abs(sensorPosition.y - plugPosition.y) <= 65,
+  "Companion sensor stays beside the repeater instead of stretching the area downward",
+);

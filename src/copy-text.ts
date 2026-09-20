@@ -27,7 +27,8 @@ export async function copyText(text: string): Promise<void> {
   const field = document.createElement("textarea");
   field.value = text;
   field.readOnly = true;
-  field.style.cssText = "position:fixed;top:0;left:0;opacity:0;pointer-events:none";
+  field.style.cssText =
+    "position:fixed;top:0;left:0;opacity:0;pointer-events:none";
   const focused = document.activeElement as HTMLElement | null;
   try {
     document.body.appendChild(field);
@@ -52,7 +53,8 @@ export async function readCopiedText(): Promise<string> {
       storageAvailable = true;
       if (stored !== null) return stored;
     } catch {}
-    if (!storageAvailable && lastCopiedText !== undefined) return lastCopiedText;
+    if (!storageAvailable && lastCopiedText !== undefined)
+      return lastCopiedText;
     throw error;
   }
 }

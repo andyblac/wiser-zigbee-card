@@ -144,9 +144,11 @@ export class WiserZigbeeCardEditor
     return html` <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${fields.filter((field) =>
-          !(this.hideHubSelector && field.name === "hub") &&
-          !(this.hideMapHeight && field.name === "map_height"))}
+        .schema=${fields.filter(
+          (field) =>
+            !(this.hideHubSelector && field.name === "hub") &&
+            !(this.hideMapHeight && field.name === "map_height"),
+        )}
         .computeLabel=${this.computeLabel}
         @value-changed=${this.valueChanged}
       ></ha-form>
@@ -194,12 +196,19 @@ export class WiserZigbeeCardEditor
         class="orientation-control"
         .hass=${this.hass}
         .data=${{ link_status: this._config.link_status ?? "links" }}
-        .schema=${[{
-          name: "link_status",
-          selector: { button_toggle: { options: ["links", "icons", "both", "none"].map((value) => ({
-            value, label: this.t(`editor.${value}`),
-          })) } },
-        }]}
+        .schema=${[
+          {
+            name: "link_status",
+            selector: {
+              button_toggle: {
+                options: ["links", "icons", "both", "none"].map((value) => ({
+                  value,
+                  label: this.t(`editor.${value}`),
+                })),
+              },
+            },
+          },
+        ]}
         .computeLabel=${this.computeLabel}
         @value-changed=${this.valueChanged}
       ></ha-form>
@@ -207,12 +216,19 @@ export class WiserZigbeeCardEditor
         class="orientation-control"
         .hass=${this.hass}
         .data=${{ theme_mode: this._config.theme_mode ?? "auto" }}
-        .schema=${[{
-          name: "theme_mode",
-          selector: { button_toggle: { options: ["auto", "dark", "light"].map(value => ({
-            value, label: this.t(`editor.theme_${value}`),
-          })) } },
-        }]}
+        .schema=${[
+          {
+            name: "theme_mode",
+            selector: {
+              button_toggle: {
+                options: ["auto", "dark", "light"].map((value) => ({
+                  value,
+                  label: this.t(`editor.theme_${value}`),
+                })),
+              },
+            },
+          },
+        ]}
         .computeLabel=${this.computeLabel}
         @value-changed=${this.valueChanged}
       ></ha-form>
@@ -260,7 +276,8 @@ export class WiserZigbeeCardEditor
     if (
       (next.hub || this._hubs[0]) !== (this._config.hub || this._hubs[0]) ||
       (next.group_by ?? "none") !== (this._config.group_by ?? "none") ||
-      (next.orientation ?? "vertical") !== (this._config.orientation ?? "vertical")
+      (next.orientation ?? "vertical") !==
+        (this._config.orientation ?? "vertical")
     ) {
       delete next.layout_data;
       delete next.layout_orientation;
@@ -286,16 +303,24 @@ export class WiserZigbeeCardEditor
       return;
     this._config = sanitizeConfig({
       ...this._config,
-      ...(typeof ev.detail.magnifier === "boolean" ? { magnifier: ev.detail.magnifier } : {}),
-      ...(typeof ev.detail.map_only === "boolean" ? { map_only: ev.detail.map_only } : {}),
-      ...(typeof ev.detail.show_labels === "boolean" ? { show_labels: ev.detail.show_labels } : {}),
-      ...(!ev.detail.preferences_only ? {
-        layout_data: ev.detail.layout_data,
-        orientation: ev.detail.orientation ?? "vertical",
-        group_by: ev.detail.group_by ?? "none",
-        layout_orientation: undefined,
-        layout_group_by: undefined,
-      } : {}),
+      ...(typeof ev.detail.magnifier === "boolean"
+        ? { magnifier: ev.detail.magnifier }
+        : {}),
+      ...(typeof ev.detail.map_only === "boolean"
+        ? { map_only: ev.detail.map_only }
+        : {}),
+      ...(typeof ev.detail.show_labels === "boolean"
+        ? { show_labels: ev.detail.show_labels }
+        : {}),
+      ...(!ev.detail.preferences_only
+        ? {
+            layout_data: ev.detail.layout_data,
+            orientation: ev.detail.orientation ?? "vertical",
+            group_by: ev.detail.group_by ?? "none",
+            layout_orientation: undefined,
+            layout_group_by: undefined,
+          }
+        : {}),
     });
     fireEvent(this, "config-changed", { config: this._config });
   }

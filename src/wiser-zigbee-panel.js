@@ -59,21 +59,36 @@ class WiserZigbeePanel extends HTMLElement {
       </ha-dialog>
       <main><p role="status">Loading Wiser Zigbee network…</p></main>`;
     this.shadowRoot.getElementById("menu").addEventListener("click", () => {
-      this.dispatchEvent(new CustomEvent("hass-toggle-menu", {
-        bubbles: true, composed: true,
-      }));
+      this.dispatchEvent(
+        new CustomEvent("hass-toggle-menu", {
+          bubbles: true,
+          composed: true,
+        }),
+      );
     });
-    this.shadowRoot.getElementById("settings").addEventListener("click", () => this._openEditor());
-    this.shadowRoot.getElementById("cancel").addEventListener("click", () => this._closeEditor());
-    this.shadowRoot.getElementById("save").addEventListener("click", () => this._saveEditor());
-    this.shadowRoot.getElementById("editor-dialog").addEventListener("closed", () => this._closeEditor());
-    this.shadowRoot.getElementById("editor-dialog").addEventListener("close-dialog", () => this._closeEditor());
+    this.shadowRoot
+      .getElementById("settings")
+      .addEventListener("click", () => this._openEditor());
+    this.shadowRoot
+      .getElementById("cancel")
+      .addEventListener("click", () => this._closeEditor());
+    this.shadowRoot
+      .getElementById("save")
+      .addEventListener("click", () => this._saveEditor());
+    this.shadowRoot
+      .getElementById("editor-dialog")
+      .addEventListener("closed", () => this._closeEditor());
+    this.shadowRoot
+      .getElementById("editor-dialog")
+      .addEventListener("close-dialog", () => this._closeEditor());
     this._editors = [];
     this._cards = [];
     this._generation = 0;
   }
 
-  _t(key) { return localize(key, this._hass); }
+  _t(key) {
+    return localize(key, this._hass);
+  }
 
   set hass(hass) {
     const previousHass = this._hass;
@@ -85,7 +100,8 @@ class WiserZigbeePanel extends HTMLElement {
     if (hass && (!previousHass || previousHass.language !== hass.language)) {
       void this._loadTranslations().catch((error) => {
         if (this.shadowRoot.getElementById("editor-dialog").open)
-          this.shadowRoot.getElementById("editor-error").textContent = this._t("panel.editor_error");
+          this.shadowRoot.getElementById("editor-error").textContent =
+            this._t("panel.editor_error");
         console.error("Unable to load Wiser editor translations", error);
       });
     }
@@ -102,7 +118,7 @@ class WiserZigbeePanel extends HTMLElement {
       // Sequential loads ensure the returned localizer includes every fragment.
       let localize;
       for (const fragment of requiredTranslationFragments) {
-        localize = await hass.loadFragmentTranslation(fragment) || localize;
+        localize = (await hass.loadFragmentTranslation(fragment)) || localize;
         if (this._translationLoad !== load) return this._loadTranslations();
       }
       if (localize) this.hass = { ...this._hass, localize };
@@ -115,13 +131,17 @@ class WiserZigbeePanel extends HTMLElement {
 
   _localizeControls() {
     const root = this.shadowRoot;
-    for (const [id, key] of [["menu", "panel.menu"], ["settings", "panel.settings"]]) {
+    for (const [id, key] of [
+      ["menu", "panel.menu"],
+      ["settings", "panel.settings"],
+    ]) {
       root.getElementById(id).setAttribute("aria-label", this._t(key));
       root.getElementById(id).title = this._t(key);
     }
     root.getElementById("cancel").textContent = this._t("panel.cancel");
     root.getElementById("save").textContent = this._t("common.save");
-    root.getElementById("editor-description").textContent = this._t("panel.description");
+    root.getElementById("editor-description").textContent =
+      this._t("panel.description");
     const dialog = root.getElementById("editor-dialog");
     dialog.setAttribute("header-title", this._t("panel.settings"));
     dialog.heading = this._t("panel.settings");
@@ -138,7 +158,9 @@ class WiserZigbeePanel extends HTMLElement {
     return {
       layout_id: `wiser-zigbee-panel:${hub}`,
       ...this._config.card_configs?.[hub],
-      type: "custom:wiser-zigbee-card", hub, map_height: null,
+      type: "custom:wiser-zigbee-card",
+      hub,
+      map_height: null,
     };
   }
 
@@ -147,9 +169,20 @@ class WiserZigbeePanel extends HTMLElement {
       throw new Error("Only administrators can save panel settings");
     }
     const hub = this._config.hubs[this._cards.indexOf(card)];
-    const settings = { ...config, type: "custom:wiser-zigbee-card", hub, map_height: null };
-    await this._hass.callWS({ type: "wiser/zigbee_panel/configure", configs: { [hub]: settings } });
-    this._config = { ...this._config, card_configs: { ...this._config.card_configs, [hub]: settings } };
+    const settings = {
+      ...config,
+      type: "custom:wiser-zigbee-card",
+      hub,
+      map_height: null,
+    };
+    await this._hass.callWS({
+      type: "wiser/zigbee_panel/configure",
+      configs: { [hub]: settings },
+    });
+    this._config = {
+      ...this._config,
+      card_configs: { ...this._config.card_configs, [hub]: settings },
+    };
     return settings;
   }
 
@@ -179,7 +212,8 @@ class WiserZigbeePanel extends HTMLElement {
       tab.addEventListener("keydown", (event) => {
         let next;
         if (event.key === "ArrowRight") next = (index + 1) % hubs.length;
-        else if (event.key === "ArrowLeft") next = (index + hubs.length - 1) % hubs.length;
+        else if (event.key === "ArrowLeft")
+          next = (index + hubs.length - 1) % hubs.length;
         else if (event.key === "Home") next = 0;
         else if (event.key === "End") next = hubs.length - 1;
         else return;
@@ -205,7 +239,8 @@ class WiserZigbeePanel extends HTMLElement {
 
   async _openEditor() {
     const dialog = this.shadowRoot.getElementById("editor-dialog");
-    if (dialog.open || !this._cards.length || !this._hass?.user?.is_admin) return;
+    if (dialog.open || !this._cards.length || !this._hass?.user?.is_admin)
+      return;
     const container = this.shadowRoot.getElementById("editors");
     const error = this.shadowRoot.getElementById("editor-error");
     const save = this.shadowRoot.getElementById("save");
@@ -215,7 +250,9 @@ class WiserZigbeePanel extends HTMLElement {
     container.replaceChildren();
     save.disabled = true;
     dialog.heading = this._t("panel.settings");
-    if (!("headerTitle" in (customElements.get("ha-dialog")?.prototype || {}))) {
+    if (
+      !("headerTitle" in (customElements.get("ha-dialog")?.prototype || {}))
+    ) {
       this.shadowRoot.getElementById("editor-actions").removeAttribute("slot");
     }
     dialog.open = true;
@@ -240,16 +277,22 @@ class WiserZigbeePanel extends HTMLElement {
         editor.hass = this._hass;
         editor.hideHubSelector = true;
         editor.hideMapHeight = true;
-        
+
         editor.setConfig({ ...config });
         editor.addEventListener("config-changed", (event) => {
           event.stopPropagation();
-          this._drafts[hub] = { ...event.detail.config, type: "custom:wiser-zigbee-card", hub };
+          this._drafts[hub] = {
+            ...event.detail.config,
+            type: "custom:wiser-zigbee-card",
+            hub,
+          };
         });
         const section = document.createElement("section");
         const title = document.createElement("h3");
         title.textContent = hub;
-        section.replaceChildren(...(this._config.hubs.length > 1 ? [title, editor] : [editor]));
+        section.replaceChildren(
+          ...(this._config.hubs.length > 1 ? [title, editor] : [editor]),
+        );
         container.append(section);
         this._editors.push(editor);
       }
@@ -265,17 +308,24 @@ class WiserZigbeePanel extends HTMLElement {
     save.disabled = true;
     try {
       await this._hass.callWS({
-        type: "wiser/zigbee_panel/configure", configs: this._drafts,
+        type: "wiser/zigbee_panel/configure",
+        configs: this._drafts,
       });
-      this._config = { ...this._config, card_configs: {
-        ...this._config.card_configs, ...this._drafts,
-      } };
+      this._config = {
+        ...this._config,
+        card_configs: {
+          ...this._config.card_configs,
+          ...this._drafts,
+        },
+      };
       this._closeEditor();
       this._editors = [];
       this._loadCards();
     } catch (error) {
-      const detail = error?.code === "invalid_config" && typeof error.message === "string"
-        ? ` ${error.message}` : "";
+      const detail =
+        error?.code === "invalid_config" && typeof error.message === "string"
+          ? ` ${error.message}`
+          : "";
       this.shadowRoot.getElementById("editor-error").textContent =
         this._t("panel.save_error") + detail;
       console.error("Unable to save Wiser panel settings", error);
@@ -291,7 +341,9 @@ class WiserZigbeePanel extends HTMLElement {
     try {
       const Card = customElements.get("wiser-zigbee-card");
       if (Card?.panelApiVersion !== 1) {
-        throw new Error("Wiser Zigbee needs its matching Zigbee card build. Update the card resource and refresh the browser.");
+        throw new Error(
+          "Wiser Zigbee needs its matching Zigbee card build. Update the card resource and refresh the browser.",
+        );
       }
       if (generation !== this._generation) return;
       const cards = config.hubs.map((hub) => {
@@ -311,7 +363,9 @@ class WiserZigbeePanel extends HTMLElement {
       this.shadowRoot.getElementById("settings").disabled = true;
       const message = document.createElement("p");
       message.setAttribute("role", "alert");
-      message.textContent = error.message || "Unable to load Wiser Zigbee network. Please try again.";
+      message.textContent =
+        error.message ||
+        "Unable to load Wiser Zigbee network. Please try again.";
       const retry = document.createElement("ha-button");
       retry.textContent = this._t("panel.retry");
       retry.addEventListener("click", () => this._loadCards());

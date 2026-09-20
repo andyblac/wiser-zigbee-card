@@ -20,8 +20,10 @@ export function containedView(
   const top = Math.min(...valid.map((box) => box.top));
   const bottom = Math.max(...valid.map((box) => box.bottom));
   const position = { x: (left + right) / 2, y: (top + bottom) / 2 };
-  const spanX = 2 * Math.max(Math.abs(left - position.x), Math.abs(right - position.x));
-  const spanY = 2 * Math.max(Math.abs(top - position.y), Math.abs(bottom - position.y));
+  const spanX =
+    2 * Math.max(Math.abs(left - position.x), Math.abs(right - position.x));
+  const spanY =
+    2 * Math.max(Math.abs(top - position.y), Math.abs(bottom - position.y));
   return {
     position,
     scale: Math.min(

@@ -4,7 +4,7 @@ const ts = require("typescript");
 const events = [];
 const registered = new Map();
 global.customElements = {
-  get: (name) => name === "ha-form" ? class {} : registered.get(name),
+  get: (name) => (name === "ha-form" ? class {} : registered.get(name)),
   define: (name, constructor) => {
     assert.ok(!registered.has(name), "Duplicate registration must be skipped");
     registered.set(name, constructor);
@@ -20,7 +20,8 @@ const source = ts.transpileModule(fs.readFileSync("src/editor.ts", "utf8"), {
 const output = { exports: {} };
 const decorator = () => () => {};
 const requireMock = (id) => {
-  if (id === "./sanitize-config") return require("./load-ts.cjs")("src/sanitize-config.ts");
+  if (id === "./sanitize-config")
+    return require("./load-ts.cjs")("src/sanitize-config.ts");
   if (id === "lit")
     return {
       LitElement: class {},
@@ -56,9 +57,15 @@ editor.setConfig({
 });
 editor.hass = {};
 let template = editor.render();
-const themeField = template.values.filter(Array.isArray).flat().find(field => field?.name === "theme_mode");
-assert.deepEqual(themeField.selector.button_toggle.options.map(option => option.value), ["auto", "dark", "light"]);
-assert.ok(template.values.some(value => value?.theme_mode === "auto"));
+const themeField = template.values
+  .filter(Array.isArray)
+  .flat()
+  .find((field) => field?.name === "theme_mode");
+assert.deepEqual(
+  themeField.selector.button_toggle.options.map((option) => option.value),
+  ["auto", "dark", "light"],
+);
+assert.ok(template.values.some((value) => value?.theme_mode === "auto"));
 function switchFields(template) {
   return template.values
     .filter(Array.isArray)
@@ -90,9 +97,7 @@ template = editor.render();
 const disabled = switchFields(template);
 assert.ok(
   disabled
-    .filter((field) =>
-      ["show_device_list"].includes(field.name),
-    )
+    .filter((field) => ["show_device_list"].includes(field.name))
     .every((field) => field.disabled),
 );
 assert.equal(change({ show_device_list: false }).show_device_list, false);
@@ -108,7 +113,10 @@ assert.equal(
   "",
 );
 editor.setConfig({ type: "custom:wiser-zigbee-card" });
-assert.ok(editor.render().values.some((value) => value?.orientation === "vertical"), "Default is vertical rows");
+assert.ok(
+  editor.render().values.some((value) => value?.orientation === "vertical"),
+  "Default is vertical rows",
+);
 editor.hass = { language: "de" };
 assert.ok(
   editor.render().values.some((value) => value?.name === "Zigbee-Netzwerk"),
@@ -214,31 +222,64 @@ assert.equal(change({ group_by: "none" }).group_by, "none");
 
 const initialEditor = registered.get("wiser-zigbee-card-editor");
 const reloaded = { exports: {} };
-new Function("require", "exports", "module", source)(requireMock, reloaded.exports, reloaded);
+new Function("require", "exports", "module", source)(
+  requireMock,
+  reloaded.exports,
+  reloaded,
+);
 assert.equal(registered.get("wiser-zigbee-card-editor"), initialEditor);
 console.log("Loading the editor twice preserves its existing registration.");
 
-editor.setConfig({ type: "custom:wiser-zigbee-card", orientation: "vertical", layout_data: layout });
-editor.save_layout({ detail: { orientation: "vertical", show_labels: true, map_only: true, preferences_only: true } });
+editor.setConfig({
+  type: "custom:wiser-zigbee-card",
+  orientation: "vertical",
+  layout_data: layout,
+});
+editor.save_layout({
+  detail: {
+    orientation: "vertical",
+    show_labels: true,
+    map_only: true,
+    preferences_only: true,
+  },
+});
 assert.equal(events.at(-1).detail.config.show_labels, true);
 assert.equal(events.at(-1).detail.config.map_only, true);
 assert.deepEqual(events.at(-1).detail.config.layout_data, layout);
-editor.save_layout({ detail: { orientation: "vertical", show_labels: false, map_only: false, preferences_only: true } });
+editor.save_layout({
+  detail: {
+    orientation: "vertical",
+    show_labels: false,
+    map_only: false,
+    preferences_only: true,
+  },
+});
 assert.equal(events.at(-1).detail.config.show_labels, false);
 assert.equal(events.at(-1).detail.config.map_only, false);
 
 editor.setConfig({ type: "custom:wiser-zigbee-card" });
-const statusField = editor.render().values.filter(Array.isArray).flat()
+const statusField = editor
+  .render()
+  .values.filter(Array.isArray)
+  .flat()
   .find((field) => field?.name === "link_status");
-assert.deepEqual(statusField.selector.button_toggle.options.map((option) => option.value),
-  ["links", "icons", "both", "none"]);
-assert.ok(editor.render().values.some((value) => value?.link_status === "links"));
+assert.deepEqual(
+  statusField.selector.button_toggle.options.map((option) => option.value),
+  ["links", "icons", "both", "none"],
+);
+assert.ok(
+  editor.render().values.some((value) => value?.link_status === "links"),
+);
 for (const mode of ["links", "icons", "both", "none"]) {
   assert.equal(change({ link_status: mode }).link_status, mode);
 }
 editor.setConfig({
-  type: "custom:wiser-zigbee-card", orientation: "vertical",
-  layout_orientation: "vertical", group_by: "area", layout_group_by: "area", layout_data: layout,
+  type: "custom:wiser-zigbee-card",
+  orientation: "vertical",
+  layout_orientation: "vertical",
+  group_by: "area",
+  layout_group_by: "area",
+  layout_data: layout,
 });
 const cleaned = change({ show_labels: true });
 assert.equal("layout_orientation" in cleaned, false);
@@ -247,5 +288,7 @@ assert.deepEqual(cleaned.layout_data, layout);
 assert.equal(change({ orientation: "pie" }).layout_data, undefined);
 editor.setConfig({ type: "custom:wiser-zigbee-card" });
 assert.equal(change({ magnifier: true }).magnifier, true);
-editor.save_layout({ detail: { orientation: "vertical", magnifier: false, preferences_only: true } });
+editor.save_layout({
+  detail: { orientation: "vertical", magnifier: false, preferences_only: true },
+});
 assert.equal(events.at(-1).detail.config.magnifier, false);
