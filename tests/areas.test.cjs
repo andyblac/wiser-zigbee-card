@@ -11,8 +11,21 @@ const entities = ["a", "b"].map((id) => ({
 const devices = [
   { id: "hub-a", identifiers: [["wiser", "A"]] },
   { id: "hub-b", identifiers: [["wiser", "B"]] },
-  { id: "a", via_device_id: "hub-a", identifiers: [], area_id: "kitchen" },
-  { id: "b", via_device_id: "hub-b", identifiers: [], area_id: "office" },
+  {
+    id: "a",
+    via_device_id: "hub-a",
+    identifiers: [],
+    area_id: "kitchen",
+    name: "Wiser Thermostat",
+  },
+  {
+    id: "b",
+    via_device_id: "hub-b",
+    identifiers: [],
+    area_id: "office",
+    name: "Wiser Thermostat",
+    name_by_user: "Office Thermostat",
+  },
 ];
 let calls = 0;
 const hass = {
@@ -56,6 +69,7 @@ const hass = {
   const a = await withDeviceAreas(hass, data, "A");
   assert.equal(a.nodes[0].area_id, "kitchen");
   assert.equal(a.nodes[0].area_icon, "mdi:silverware-fork-knife");
+  assert.equal(a.nodes[0].device_name, "Wiser Thermostat");
   assert.equal(a.nodes[1].area_id, undefined);
   assert.equal(data.nodes[0].area_id, undefined);
   assert.equal(calls, 3, "Registries fetched once, not per node");
@@ -65,6 +79,7 @@ const hass = {
     "office",
     "Duplicate node IDs are scoped to their hub",
   );
+  assert.equal(b.nodes[0].device_name, "Office Thermostat");
   console.log("HA area assignment and hub isolation passed.");
 })().catch((error) => {
   console.error(error);

@@ -39,6 +39,7 @@ export async function withDeviceAreas(
           area_id: area?.area_id,
           area_name: area?.name,
           area_icon: area?.icon,
+          device_name: device?.name_by_user || device?.name,
         };
       }),
     ),

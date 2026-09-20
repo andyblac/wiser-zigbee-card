@@ -38,6 +38,7 @@ export interface node {
   area_id?: string;
   area_name?: string;
   area_icon?: string;
+  device_name?: string;
   id: number;
   label: string;
   group: string;

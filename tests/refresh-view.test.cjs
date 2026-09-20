@@ -457,7 +457,8 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
       {
         id: 1,
         group: "RoomStat",
-        label: "Office",
+        label: "RoomStat-16\n(Office)",
+        device_name: "Wiser Thermostat",
         area_id: "office",
         area_name: "Office",
         x: 123,
@@ -473,6 +474,11 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   card.areaPositions = {};
   card.collapsedAreas.clear();
   card.drawNetwork();
+  assert.equal(
+    graphData.nodes.find((node) => node.id === 1).label,
+    "Thermostat",
+    "Area grouping uses the Home Assistant device name",
+  );
   card.network.getPositions = () =>
     Object.fromEntries(graphData.nodes.map((n) => [n.id, { x: n.x, y: n.y }]));
   const areaNode = graphData.nodes.find((n) => n.group === "Area");

@@ -1,4 +1,8 @@
-import { deviceMapLabel } from "./device-appearance";
+import {
+  areaDeviceMapLabel,
+  sharedAreaDeviceIds,
+  ungroupedDeviceMapLabel,
+} from "./device-appearance";
 import { separateAreas } from "./area-spacing";
 import type { zigbeeData } from "./types";
 
@@ -11,6 +15,19 @@ export function arrangePie(
   positions?: Record<string, { x: number; y: number }>,
 ): zigbeeData {
   const devices = data.nodes.filter((node) => node.group !== "Area");
+  const sharedAreaDevices = grouped
+    ? new Set<number>()
+    : sharedAreaDeviceIds(devices);
+  const mapLabel = (node: (typeof devices)[number]) =>
+    grouped
+      ? areaDeviceMapLabel(node)
+      : ungroupedDeviceMapLabel(node, sharedAreaDevices.has(node.id));
+  const labelLength = (node: (typeof devices)[number]) =>
+    Math.max(
+      ...mapLabel(node)
+        .split("\n")
+        .map((line) => line.length),
+    );
   const byId = new Map(devices.map((node) => [node.id, node]));
   const children = new Map<number, number[]>();
   const parents = new Map<number, number>();
@@ -35,7 +52,7 @@ export function arrangePie(
     const descendants = children.get(id) ?? [];
     const own = Math.max(
       grouped ? 115 : 65,
-      deviceMapLabel(byId.get(id)!.label).length * 4 + 30,
+      labelLength(byId.get(id)!) * 4 + 30,
     );
     const childRadius = Math.max(
       0,
@@ -113,8 +130,7 @@ export function arrangePie(
     for (const [parentId, siblings] of children) {
       const parent = nodes.find((node) => node.id === parentId)!;
       const bounds = (node: (typeof nodes)[number], x = node.x, y = node.y) => {
-        const label = deviceMapLabel(node.label);
-        const half = Math.max(40, label.length * 4.5 + 12);
+        const half = Math.max(40, labelLength(node) * 4.5 + 12);
         return { left: x - half, right: x + half, top: y - 42, bottom: y + 72 };
       };
       const overlaps = (

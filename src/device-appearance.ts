@@ -48,10 +48,85 @@ export function ghostImage(source: string): string {
 
 // The integration sends "device name\n(room name)"; "No Room" is a
 // protocol placeholder, not a user-visible room or an HA area assignment.
-export function deviceMapLabel(label: string): string {
+// Passing an area name means the map already displays the room as a group, so
+// use the device name and remove a redundant area prefix/suffix from it.
+function labelParts(label: string): { name: string; room?: string } {
   const match = label.match(/^([\s\S]*?)\n\s*\(([\s\S]*)\)\s*$/);
-  if (!match) return label.replace(/\n/g, " ").trim();
-  const name = match[1].trim();
-  const room = match[2].trim();
-  return !room || /^no room$/i.test(room) ? name : room;
+  const name = (match ? match[1] : label.replace(/\n/g, " ")).trim();
+  const room = match?.[2].trim();
+  return { name, ...(!room || /^no room$/i.test(room) ? {} : { room }) };
+}
+
+function withoutAreaName(name: string, areaName: string): string {
+  const area = areaName.trim();
+  if (!area) return name;
+  const escaped = area.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const separators = "[\\s\\-_:|/()[\\]{}–—]";
+  const withoutArea = name
+    .replace(
+      new RegExp(`(^|${separators})${escaped}(?=$|${separators})`, "gi"),
+      "$1",
+    )
+    .replace(new RegExp(`^${separators}+|${separators}+$`, "g"), "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return withoutArea || name;
+}
+
+function deviceAreaName(device: node): string | undefined {
+  return device.area_name?.trim() || labelParts(device.label).room;
+}
+
+function deviceDisplayName(device: node): string {
+  const registryName = device.device_name?.trim();
+  return registryName
+    ? registryName.replace(/^wiser\s+/i, "").trim() || registryName
+    : labelParts(device.label).name;
+}
+
+export function sharedAreaDeviceIds(nodes: node[]): Set<number> {
+  const areas = new Map<number, string>();
+  const counts = new Map<string, number>();
+  for (const device of nodes) {
+    if (device.group === "Controller" || device.group === "Area") continue;
+    const area = device.area_id
+      ? `id:${device.area_id}`
+      : deviceAreaName(device)?.toLowerCase();
+    if (!area) continue;
+    areas.set(device.id, area);
+    counts.set(area, (counts.get(area) ?? 0) + 1);
+  }
+  return new Set(
+    [...areas]
+      .filter(([, area]) => (counts.get(area) ?? 0) > 1)
+      .map(([id]) => id),
+  );
+}
+
+export function deviceMapLabel(
+  label: string,
+  areaName?: string,
+  showDeviceAndRoom = false,
+): string {
+  const { name, room } = labelParts(label);
+  if (areaName !== undefined) {
+    return withoutAreaName(name, areaName);
+  }
+  if (showDeviceAndRoom && room)
+    return `${withoutAreaName(name, room)}\n${room}`;
+  return room ?? name;
+}
+
+export function areaDeviceMapLabel(device: node): string {
+  return withoutAreaName(deviceDisplayName(device), device.area_name ?? "");
+}
+
+export function ungroupedDeviceMapLabel(
+  device: node,
+  sharedArea: boolean,
+): string {
+  const area = deviceAreaName(device);
+  if (!area) return deviceDisplayName(device);
+  if (!sharedArea) return area;
+  return `${withoutAreaName(deviceDisplayName(device), area)}\n${area}`;
 }

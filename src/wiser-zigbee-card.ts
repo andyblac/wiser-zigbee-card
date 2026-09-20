@@ -6,7 +6,9 @@ import { saveCardConfig } from "./save-config";
 import {
   disconnectedDevice,
   statusImage,
-  deviceMapLabel,
+  areaDeviceMapLabel,
+  sharedAreaDeviceIds,
+  ungroupedDeviceMapLabel,
 } from "./device-appearance";
 import { separateAreas } from "./area-spacing";
 import { signalColor, signalPalette } from "./signal-color";
@@ -309,8 +311,7 @@ export class WiserZigbeeCard
     this.error = "";
     try {
       let source = await fetchZigbeeData(this.hass, this.config.hub);
-      if (this.config.group_by === "area")
-        source = await withDeviceAreas(this.hass, source, this.config.hub);
+      source = await withDeviceAreas(this.hass, source, this.config.hub);
       const data = arrangeNetwork(
         this.config.group_by === "area"
           ? areaGraph(source, this.t("card.unassigned_area"))
@@ -379,6 +380,10 @@ export class WiserZigbeeCard
     const colorLinks = mode === "links" || mode === "both";
     const colorIcons = mode === "icons" || mode === "both";
     this.displayLanguage = languageFor(this.hass);
+    const sharedAreaDevices =
+      this.config?.group_by === "area"
+        ? new Set<number>()
+        : sharedAreaDeviceIds(visible.nodes);
     const data = {
       nodes: visible.nodes.map((node) => {
         const offline = disconnectedDevice(node, this.zigbeeData!);
@@ -405,7 +410,12 @@ export class WiserZigbeeCard
               ? `${node.label} ${this.collapsedAreas.has(node.area_id ?? "") ? "▸" : "▾"}`
               : node.group === "Controller"
                 ? this.deviceName(node)
-                : deviceMapLabel(node.label),
+                : this.config?.group_by === "area"
+                  ? areaDeviceMapLabel(node)
+                  : ungroupedDeviceMapLabel(
+                      node,
+                      sharedAreaDevices.has(node.id),
+                    ),
           font: { color: textColor },
         };
       }),
@@ -561,7 +571,7 @@ export class WiserZigbeeCard
         const label =
           node.group === "Area"
             ? `${node.label} ${this.collapsedAreas.has(node.area_id ?? "") ? "▸" : "▾"}`
-            : deviceMapLabel(node.label);
+            : areaDeviceMapLabel(node);
         // Image bounds can omit labels before vis has drawn them. Measure
         // explicitly so the first frame, dragging and fit include the text.
         measure.save();
