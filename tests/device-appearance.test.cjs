@@ -32,6 +32,7 @@ console.log(
 
 const {
   areaDeviceMapLabel,
+  deviceDetailsLabel,
   deviceMapLabel,
   sharedAreaDeviceIds,
   ungroupedDeviceMapLabel,
@@ -74,12 +75,20 @@ assert.equal(
   "Thermostat",
 );
 assert.equal(
+  deviceDetailsLabel({
+    label: "RoomStat-16\n(Office)",
+    device_name: "Office Wiser Thermostat",
+    area_name: "Office",
+  }),
+  "Thermostat (Office)",
+);
+assert.equal(
   areaDeviceMapLabel({
     label: "RoomStat-16\n(Office)",
     device_name: "Office Wiser Thermostat",
     area_name: "Office",
   }),
-  "Wiser Thermostat",
+  "Thermostat",
 );
 assert.deepEqual(
   [

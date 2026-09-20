@@ -92,6 +92,17 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   const card = new WiserZigbeeCard();
   card.hass = { language: "en-GB" };
   card.config = { hub: "test" };
+  assert.equal(
+    card.deviceName({
+      id: 1,
+      group: "RoomStat",
+      label: "RoomStat-2\n(Office)",
+      device_name: "Office Wiser Thermostat",
+      area_name: "Office",
+    }),
+    "Thermostat (Office)",
+    "Device details and the expanded list use the Home Assistant device name",
+  );
   let view = { position: { x: 50, y: -20 }, scale: 2 };
   let graphData;
   let setDataCalls = 0;

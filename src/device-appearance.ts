@@ -118,7 +118,17 @@ export function deviceMapLabel(
 }
 
 export function areaDeviceMapLabel(device: node): string {
-  return withoutAreaName(deviceDisplayName(device), device.area_name ?? "");
+  const name = withoutAreaName(
+    deviceDisplayName(device),
+    deviceAreaName(device) ?? "",
+  );
+  return name.replace(/^wiser\s+/i, "").trim() || name;
+}
+
+export function deviceDetailsLabel(device: node): string {
+  const name = areaDeviceMapLabel(device);
+  const area = deviceAreaName(device);
+  return area ? `${name} (${area})` : name;
 }
 
 export function ungroupedDeviceMapLabel(

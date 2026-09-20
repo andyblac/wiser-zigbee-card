@@ -7,6 +7,7 @@ import {
   disconnectedDevice,
   statusImage,
   areaDeviceMapLabel,
+  deviceDetailsLabel,
   sharedAreaDeviceIds,
   ungroupedDeviceMapLabel,
 } from "./device-appearance";
@@ -129,7 +130,7 @@ export class WiserZigbeeCard
     if (!node) return this.t("card.unknown_device");
     return node.group === "Controller" && node.label === "Wiser Hub"
       ? this.t("card.hub")
-      : node.label.replace(/\n/g, " ");
+      : deviceDetailsLabel(node);
   }
   private appearanceSignature(): string {
     const themes = this.hass?.themes as
