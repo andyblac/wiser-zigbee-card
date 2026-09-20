@@ -94,7 +94,9 @@ class WiserZigbeePanel extends HTMLElement {
     const previousHass = this._hass;
     this._hass = hass;
     this._localizeControls();
-    for (const card of this._cards) card.hass = hass;
+    for (const card of this._cards) {
+      if (!card.hidden) card.hass = hass;
+    }
     for (const editor of this._editors) editor.hass = hass;
     this.shadowRoot.getElementById("settings").hidden = !hass?.user?.is_admin;
     if (hass && (!previousHass || previousHass.language !== hass.language)) {
@@ -191,6 +193,7 @@ class WiserZigbeePanel extends HTMLElement {
     this._cards.forEach((card, index) => {
       const selected = this._config.hubs[index] === hub;
       card.hidden = !selected;
+      if (selected) card.hass = this._hass;
       this._tabs[index].setAttribute("aria-selected", String(selected));
       this._tabs[index].tabIndex = selected ? 0 : -1;
     });
@@ -346,10 +349,14 @@ class WiserZigbeePanel extends HTMLElement {
         );
       }
       if (generation !== this._generation) return;
+      const activeHub = config.hubs.includes(this._activeHub)
+        ? this._activeHub
+        : config.hubs[0];
       const cards = config.hubs.map((hub) => {
         const card = document.createElement("wiser-zigbee-card");
         card.setConfig(this._cardConfig(hub));
-        card.hass = this._hass;
+        card.hidden = hub !== activeHub;
+        if (!card.hidden) card.hass = this._hass;
         return card;
       });
       this._cards = cards;

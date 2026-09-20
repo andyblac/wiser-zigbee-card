@@ -118,6 +118,10 @@ export class WiserZigbeeCard
   private textColor = "";
   private statusPalette = "";
   private displayLanguage = "";
+  private appearanceState = "";
+  private tooltipBackground = "#fff";
+  private tooltipForeground = "#273448";
+  private tooltipRadius = 4;
   private t(key: string): string {
     return localize(key, this.hass);
   }
@@ -126,6 +130,31 @@ export class WiserZigbeeCard
     return node.group === "Controller" && node.label === "Wiser Hub"
       ? this.t("card.hub")
       : node.label.replace(/\n/g, " ");
+  }
+  private appearanceSignature(): string {
+    const themes = this.hass?.themes as
+      | { default_theme?: string; darkMode?: boolean }
+      | undefined;
+    return JSON.stringify([
+      languageFor(this.hass),
+      this.themeMode,
+      this.hass?.selectedTheme ?? "",
+      themes?.default_theme ?? "",
+      themes?.darkMode ?? "",
+      this.themeMode === "auto" &&
+      typeof window !== "undefined" &&
+      window.matchMedia
+        ? window.matchMedia("(prefers-color-scheme: dark)").matches
+        : false,
+    ]);
+  }
+  private imageFingerprint(image: string): number {
+    let fingerprint = this.imageFingerprints.get(image);
+    if (fingerprint === undefined) {
+      fingerprint = this.nextImageFingerprint++;
+      this.imageFingerprints.set(image, fingerprint);
+    }
+    return fingerprint;
   }
   private infoReturnView?: {
     position: { x: number; y: number };
@@ -140,6 +169,10 @@ export class WiserZigbeeCard
   private mapData?: zigbeeData;
   private collapsedAreas = new Set<string>();
   private areaPositions: Record<string, { x: number; y: number }> = {};
+  private areaBoundsCache?: {
+    key: string;
+    bounds: Array<{ left: number; right: number; top: number; bottom: number }>;
+  };
   private get visibleData(): zigbeeData | undefined {
     const data = this.mapData ?? this.zigbeeData;
     return data && this.config?.group_by === "area"
@@ -158,6 +191,12 @@ export class WiserZigbeeCard
   private fitAfterHeightChange = false;
   private requestId = 0;
   private pendingLoad = true;
+  private refreshTimer?: ReturnType<typeof setTimeout>;
+  private refreshInProgress = false;
+  private refreshQueued = false;
+  private renderFingerprint = "";
+  private imageFingerprints = new Map<string, number>();
+  private nextImageFingerprint = 1;
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     return document.createElement("wiser-zigbee-card-editor");
@@ -208,6 +247,7 @@ export class WiserZigbeeCard
     this.fitAfterHeightChange = false;
     this.network?.destroy();
     this.network = undefined;
+    this.renderFingerprint = "";
     this.infoReturnView = undefined;
     this.zoomReturnView = undefined;
     this.layoutStatus = "";
@@ -244,9 +284,10 @@ export class WiserZigbeeCard
           if (
             ev.event === "wiser_updated" &&
             this.config?.auto_update &&
+            !this.hidden &&
             !is_preview(this)
           )
-            void this.loadData();
+            this.queueRefresh();
         },
         { type: "wiser_updated" },
       ),
@@ -262,20 +303,30 @@ export class WiserZigbeeCard
     clearTimeout(this.magnifierHoldTimer);
     this.magnifier.hide();
     clearTimeout(this.activeIconTimer);
+    clearTimeout(this.refreshTimer);
+    this.refreshTimer = undefined;
+    this.refreshQueued = false;
     this.activeIcon = undefined;
     this.cancelDeviceInfo();
     super.disconnectedCallback();
     this.requestId++;
     this.network?.destroy();
     this.network = undefined;
+    this.renderFingerprint = "";
     this.areaDrag = undefined;
     this.infoReturnView = undefined;
     this.zoomReturnView = undefined;
   }
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
-    this.positionAreaIcons();
-    if ((changed.has("hass") || changed.has("themeMode")) && this.network) {
+    if (changed.has("zigbeeData") || changed.has("config"))
+      this.positionAreaIcons();
+    const appearance = this.appearanceSignature();
+    if (
+      (changed.has("hass") || changed.has("themeMode")) &&
+      this.network &&
+      appearance !== this.appearanceState
+    ) {
       const color =
         getComputedStyle(this)
           .getPropertyValue("--primary-text-color")
@@ -286,6 +337,7 @@ export class WiserZigbeeCard
         languageFor(this.hass) !== this.displayLanguage
       )
         this.drawNetwork(true);
+      else this.appearanceState = appearance;
     }
     if (this.fitAfterHeightChange && this.network) {
       this.fitAfterHeightChange = false;
@@ -304,10 +356,34 @@ export class WiserZigbeeCard
       void this.loadData();
     }
   }
+  private queueRefresh(): void {
+    clearTimeout(this.refreshTimer);
+    this.refreshTimer = setTimeout(() => {
+      this.refreshTimer = undefined;
+      if (this.isConnected && !this.hidden) void this.loadData();
+    }, 250);
+  }
   private async loadData(): Promise<void> {
     if (!this.hass || !this.config) return;
-    const request = ++this.requestId;
+    if (this.refreshInProgress) {
+      this.refreshQueued = true;
+      return;
+    }
+    this.refreshInProgress = true;
     this.loading = true;
+    try {
+      do {
+        this.refreshQueued = false;
+        await this.loadDataOnce();
+      } while (this.refreshQueued && this.isConnected && !this.hidden);
+    } finally {
+      this.refreshInProgress = false;
+      this.loading = false;
+    }
+  }
+  private async loadDataOnce(): Promise<void> {
+    if (!this.hass || !this.config) return;
+    const request = ++this.requestId;
     this.error = "";
     try {
       let source = await fetchZigbeeData(this.hass, this.config.hub);
@@ -358,8 +434,6 @@ export class WiserZigbeeCard
       this.drawNetwork();
     } catch (error) {
       if (request === this.requestId) this.error = "card.load_error";
-    } finally {
-      if (request === this.requestId) this.loading = false;
     }
   }
   private drawNetwork(preservePositions = false): void {
@@ -376,10 +450,23 @@ export class WiserZigbeeCard
     this.textColor = textColor;
     const theme = getComputedStyle(this);
     this.statusPalette = signalPalette(theme);
+    const themeColor = (name: string) => theme.getPropertyValue(name).trim();
+    this.tooltipBackground =
+      themeColor("--ha-tooltip-background-color") ||
+      themeColor("--ha-color-surface-default") ||
+      themeColor("--card-background-color") ||
+      "#fff";
+    this.tooltipForeground = themeColor("--ha-tooltip-text-color") || textColor;
+    this.tooltipRadius =
+      parseFloat(
+        themeColor("--ha-tooltip-border-radius") ||
+          themeColor("--ha-border-radius-md"),
+      ) || 4;
     const mode = this.config?.link_status ?? "links";
     const colorLinks = mode === "links" || mode === "both";
     const colorIcons = mode === "icons" || mode === "both";
     this.displayLanguage = languageFor(this.hass);
+    this.appearanceState = this.appearanceSignature();
     const sharedAreaDevices =
       this.config?.group_by === "area"
         ? new Set<number>()
@@ -428,7 +515,25 @@ export class WiserZigbeeCard
         };
       }),
     };
+    const fingerprint = JSON.stringify([
+      data.nodes.map((node) => [
+        node.id,
+        node.group,
+        node.x,
+        node.y,
+        node.label,
+        node.font.color,
+        this.imageFingerprint(node.image),
+        this.imageFingerprint(node.brokenImage),
+      ]),
+      data.edges.map((edge) => [edge.id, edge.from, edge.to, edge.color.color]),
+      this.showLabels ? visible.edges.map((edge) => edge.label) : undefined,
+      this.tooltipBackground,
+      this.tooltipForeground,
+      this.tooltipRadius,
+    ]);
     if (this.network) {
+      if (fingerprint === this.renderFingerprint) return;
       // setData triggers vis-network's initial fit even with physics disabled.
       // Capture at redraw time so interactions during the fetch are preserved.
       const view = {
@@ -490,6 +595,7 @@ export class WiserZigbeeCard
       this.fitNetwork();
       this.requestUpdate();
     }
+    this.renderFingerprint = fingerprint;
   }
   private startAreaDrag(nodeId?: number): void {
     this.closeDeviceInfo(false);
@@ -552,10 +658,26 @@ export class WiserZigbeeCard
         .filter((node) => node.group === "Area")
         .map((node) => node.area_id ?? ""),
     );
-    return [...keys].map((key) => {
-      const members = nodes.filter(
-        (node) => node.group !== "Controller" && (node.area_id ?? "") === key,
-      );
+    const grouped = new Map([...keys].map((key) => [key, [] as ZigbeeNode[]]));
+    for (const node of nodes) {
+      if (node.group === "Controller") continue;
+      grouped.get(node.area_id ?? "")?.push(node);
+    }
+    const label = (node: ZigbeeNode) =>
+      node.group === "Area"
+        ? `${node.label} ${this.collapsedAreas.has(node.area_id ?? "") ? "▸" : "▾"}`
+        : areaDeviceMapLabel(node);
+    const cacheKey = [
+      this.orientation,
+      this.areaDrag ? "drag" : "idle",
+      ...nodes.map((node) => {
+        const position = positions[node.id];
+        return `${node.id}:${node.group}:${node.area_id ?? ""}:${position?.x ?? ""}:${position?.y ?? ""}:${label(node)}`;
+      }),
+    ].join("|");
+    if (this.areaBoundsCache?.key === cacheKey)
+      return this.areaBoundsCache.bounds;
+    const bounds = [...grouped.values()].map((members) => {
       const boxes = members.map((node) => {
         const position = positions[node.id];
         if (!position) return this.network!.getBoundingBox(node.id);
@@ -568,15 +690,12 @@ export class WiserZigbeeCard
           bottom: position.y + 60,
         };
         if (!measure) return box;
-        const label =
-          node.group === "Area"
-            ? `${node.label} ${this.collapsedAreas.has(node.area_id ?? "") ? "▸" : "▾"}`
-            : areaDeviceMapLabel(node);
+        const text = label(node);
         // Image bounds can omit labels before vis has drawn them. Measure
         // explicitly so the first frame, dragging and fit include the text.
         measure.save();
         measure.font = "bold 14px system-ui, sans-serif";
-        const lines = label.split("\n");
+        const lines = text.split("\n");
         const halfWidth =
           Math.max(...lines.map((line) => measure.measureText(line).width)) / 2;
         measure.restore();
@@ -598,10 +717,14 @@ export class WiserZigbeeCard
         !this.areaDrag &&
         this.orientation === "vertical"
       ) {
-        const center =
+        // vis-network rounds values returned by getPositions(). Keep the
+        // target integral or a fractional centre requests another redraw on
+        // every frame without ever appearing to reach its destination.
+        const center = Math.round(
           (Math.min(...deviceBoxes.map((box) => box.left)) +
             Math.max(...deviceBoxes.map((box) => box.right))) /
-          2;
+            2,
+        );
         const dx = center - position.x;
         if (Math.abs(dx) > 0.01) {
           // Move the actual node so its label and drag target follow the icon.
@@ -618,13 +741,13 @@ export class WiserZigbeeCard
         bottom: Math.max(...boxes.map((box) => box.bottom)) + 18,
       };
     });
+    this.areaBoundsCache = { key: cacheKey, bounds };
+    return bounds;
   }
   private drawAreaGroups(ctx: CanvasRenderingContext2D): void {
     const bounds = this.areaBounds(ctx);
     if (!bounds.length || !this.network) return;
-    const theme = getComputedStyle(this);
-    const color =
-      theme.getPropertyValue("--primary-text-color").trim() || this.textColor;
+    const color = this.textColor;
     ctx.save();
     for (const box of bounds) {
       ctx.beginPath();
@@ -655,12 +778,17 @@ export class WiserZigbeeCard
         const position = positions[Number(icon.dataset.node)];
         if (!position) return;
         const point = this.network!.canvasToDOM(position);
-        icon.style.left = `${point.x}px`;
-        icon.style.top = `${point.y}px`;
-        icon.style.width = `${size}px`;
-        icon.style.height = `${size}px`;
-        icon.style.setProperty("--mdc-icon-size", `${size}px`);
-        icon.style.setProperty("--ha-icon-size", `${size}px`);
+        const left = `${point.x}px`,
+          top = `${point.y}px`,
+          dimension = `${size}px`;
+        if (icon.style.left !== left) icon.style.left = left;
+        if (icon.style.top !== top) icon.style.top = top;
+        if (icon.style.width !== dimension) icon.style.width = dimension;
+        if (icon.style.height !== dimension) icon.style.height = dimension;
+        if (icon.style.getPropertyValue("--mdc-icon-size") !== dimension)
+          icon.style.setProperty("--mdc-icon-size", dimension);
+        if (icon.style.getPropertyValue("--ha-icon-size") !== dimension)
+          icon.style.setProperty("--ha-icon-size", dimension);
       });
   }
   private cancelDeviceInfo(): void {
@@ -950,22 +1078,11 @@ export class WiserZigbeeCard
       map.clientHeight,
       this.orientation === "vertical",
     );
-    const theme = getComputedStyle(this);
-    const color = (name: string) => theme.getPropertyValue(name).trim();
-    // Use the same theme tokens as HA's native tooltip for canvas labels.
-    const background =
-      color("--ha-tooltip-background-color") ||
-      color("--ha-color-surface-default") ||
-      color("--card-background-color") ||
-      "#fff";
-    const foreground =
-      color("--ha-tooltip-text-color") ||
-      color("--primary-text-color") ||
-      this.textColor;
-    const radius =
-      parseFloat(
-        color("--ha-tooltip-border-radius") || color("--ha-border-radius-md"),
-      ) || 4;
+    // Theme-dependent values are cached when the network data is prepared;
+    // reading computed styles in every animation frame forces browser layout.
+    const background = this.tooltipBackground;
+    const foreground = this.tooltipForeground;
+    const radius = this.tooltipRadius;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (const label of placed) {

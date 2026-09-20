@@ -80,6 +80,7 @@ const hass = {
     "Duplicate node IDs are scoped to their hub",
   );
   assert.equal(b.nodes[0].device_name, "Office Thermostat");
+  assert.equal(calls, 3, "Registry data is shared across hub refreshes");
   console.log("HA area assignment and hub isolation passed.");
 })().catch((error) => {
   console.error(error);

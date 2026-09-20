@@ -52,6 +52,7 @@ export class MapMagnifier {
   private map?: HTMLElement;
   private point?: { x: number; y: number };
   private frame?: number;
+  private iconSignature = "";
 
   show(map: HTMLElement, event: PointerEvent): void {
     if (event.pointerType === "touch" || event.buttons) {
@@ -83,6 +84,7 @@ export class MapMagnifier {
     this.point = undefined;
     this.lens?.remove();
     this.lens = undefined;
+    this.iconSignature = "";
   }
   private draw(): void {
     const map = this.map,
@@ -119,12 +121,19 @@ export class MapMagnifier {
     this.lens.style.cssText = `left:${g.left}px;top:${g.top}px;width:${g.size}px;height:${g.size}px`;
     const canvas = this.lens.firstElementChild as HTMLCanvasElement;
     const ratio = map.ownerDocument.defaultView?.devicePixelRatio || 1;
-    canvas.width = Math.round(g.size * ratio);
-    canvas.height = Math.round(g.size * ratio);
-    canvas.style.width = canvas.style.height = `${g.size}px`;
+    const backingSize = Math.round(g.size * ratio);
+    if (canvas.width !== backingSize) canvas.width = backingSize;
+    if (canvas.height !== backingSize) canvas.height = backingSize;
+    const displaySize = `${g.size}px`;
+    if (canvas.style.width !== displaySize) canvas.style.width = displaySize;
+    if (canvas.style.height !== displaySize) canvas.style.height = displaySize;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.scale(ratio, ratio);
+    // The canvas is reused between pointer frames. Reset the transform before
+    // clearing and applying the Retina scale so it cannot compound each draw.
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     // drawImage uses the full backing canvas, so retina displays and map zoom
     // need no special crop conversion. The underlying graph remains untouched.
     ctx.drawImage(
@@ -139,15 +148,27 @@ export class MapMagnifier {
     const icons = this.lens.lastElementChild as HTMLDivElement;
     icons.className = "magnifier-area-icons";
     icons.style.transform = `translate(${g.imageX}px, ${g.imageY}px) scale(${this.zoom})`;
-    icons.replaceChildren();
-    map
-      .parentElement!.querySelectorAll(".area-icons ha-icon")
-      .forEach((original) => {
+    const originals = [
+      ...map.parentElement!.querySelectorAll<HTMLElement>(
+        ".area-icons ha-icon",
+      ),
+    ];
+    const signature = originals
+      .map(
+        (original) =>
+          `${original.dataset?.node ?? ""}:${(original as HTMLElement & { icon?: string }).icon ?? ""}`,
+      )
+      .join("|");
+    if (signature !== this.iconSignature) {
+      this.iconSignature = signature;
+      icons.replaceChildren();
+      originals.forEach((original) => {
         const copy = original.cloneNode(false) as HTMLElement & {
           icon: string;
         };
         copy.icon = (original as HTMLElement & { icon: string }).icon;
         icons.append(copy);
       });
+    }
   }
 }

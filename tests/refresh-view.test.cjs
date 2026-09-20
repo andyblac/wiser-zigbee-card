@@ -6,6 +6,7 @@ global.location = { pathname: "/test" };
 global.localStorage = { getItem: () => null };
 global.getComputedStyle = () => ({ getPropertyValue: () => "#ffffff" });
 let resolveFetch;
+let fetchCalls = 0;
 let preview = true;
 let savedChanges;
 let failSave = false;
@@ -57,10 +58,12 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   "./signal-color": load("src/signal-color.ts"),
   "./layout": { arrangeNetwork: (data) => data },
   "./data/websockets": {
-    fetchZigbeeData: () =>
-      new Promise((resolve) => {
+    fetchZigbeeData: () => {
+      fetchCalls++;
+      return new Promise((resolve) => {
         resolveFetch = resolve;
-      }),
+      });
+    },
   },
   "./components/subscribe-mixin": { SubscribeMixin: (Base) => Base },
   "./localize/localize": load("src/localize/localize.ts"),
@@ -91,6 +94,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   card.config = { hub: "test" };
   let view = { position: { x: 50, y: -20 }, scale: 2 };
   let graphData;
+  let setDataCalls = 0;
   let labelOptions;
   const overview = { position: { x: 0, y: 0 }, scale: 0.5 };
   card.zoomReturnView = overview;
@@ -100,6 +104,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     getPositions: () => ({ 1: { x: 123, y: 456 } }),
     // Reproduce vis-network's automatic fit when replacing data.
     setData: (data) => {
+      setDataCalls++;
       graphData = data;
       view = overview;
     },
@@ -122,6 +127,41 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   assert.deepEqual(view, { position: { x: 90, y: 120 }, scale: 3 });
   assert.equal(graphData.nodes[0].x, 123);
   assert.equal(graphData.nodes[0].y, 456);
+  const beforeIdenticalRefresh = setDataCalls;
+  const identicalRefresh = card.loadData();
+  resolveFetch({
+    nodes: [{ id: 1, label: "Office", group: "RoomStat" }],
+    edges: [{ id: "link", from: 1, to: 0, label: "Very Good (92%)" }],
+  });
+  await identicalRefresh;
+  assert.equal(
+    setDataCalls,
+    beforeIdenticalRefresh,
+    "An identical refresh does not replace the canvas dataset",
+  );
+  const burst = new WiserZigbeeCard();
+  burst.hass = { language: "en-GB" };
+  burst.config = { hub: "test" };
+  burst.drawNetwork = () => {};
+  const beforeBurst = fetchCalls;
+  const burstLoad = burst.loadData();
+  void burst.loadData();
+  void burst.loadData();
+  assert.equal(
+    fetchCalls,
+    beforeBurst + 1,
+    "Concurrent refreshes share one load",
+  );
+  resolveFetch({ nodes: [], edges: [] });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(
+    fetchCalls,
+    beforeBurst + 2,
+    "A refresh burst schedules only one follow-up load",
+  );
+  resolveFetch({ nodes: [], edges: [] });
+  await burstLoad;
+  assert.equal(burst.refreshInProgress, false);
   assert.deepEqual(card.zoomReturnView, overview);
   card.toggleDeviceZoom(1);
   assert.deepEqual(
@@ -348,6 +388,24 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   assert.equal(card.fitAfterHeightChange, false);
   card.updated(new Map());
   assert.equal(resizeCalls.length, 2, "Ordinary updates must not refit");
+  const originalDrawNetwork = card.drawNetwork;
+  const originalHass = card.hass;
+  let appearanceDraws = 0;
+  card.drawNetwork = () => appearanceDraws++;
+  card.hass = { ...originalHass, states: {} };
+  card.updated(new Map([["hass", originalHass]]));
+  assert.equal(
+    appearanceDraws,
+    0,
+    "Unrelated Home Assistant state updates do not redraw the network",
+  );
+  const sameLanguageHass = card.hass;
+  card.hass = { ...sameLanguageHass, language: "fr" };
+  card.updated(new Map([["hass", sameLanguageHass]]));
+  assert.equal(appearanceDraws, 1, "Language changes still redraw labels");
+  card.hass = originalHass;
+  card.drawNetwork = originalDrawNetwork;
+  card.appearanceState = card.appearanceSignature();
   for (const mode of ["dark", "light", "auto"]) {
     card.setConfig({ ...card.config, theme_mode: mode });
     assert.equal(card.themeMode, mode);
@@ -627,6 +685,45 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     420,
     "Centring is stable across frames",
   );
+  const measurementsAfterCentre = measuredLabels.length;
+  card.areaBounds(measure);
+  assert.equal(
+    measuredLabels.length,
+    measurementsAfterCentre,
+    "Unchanged area bounds are reused across redraws",
+  );
+  card.mapData.nodes.push({
+    id: 3,
+    group: "TemperatureHumiditySensor",
+    label: "Sensor\n(Kitchen)",
+    area_id: "kitchen",
+    area_name: "Kitchen",
+    x: 301,
+    y: 200,
+  });
+  allPositions[2] = { x: 100, y: 200 };
+  allPositions[3] = { x: 301, y: 200 };
+  allPositions[kitchenArea.id] = { x: 0, y: 90 };
+  card.network.getPositions = () =>
+    Object.fromEntries(
+      Object.entries(allPositions).map(([id, position]) => [
+        id,
+        { x: Math.round(position.x), y: Math.round(position.y) },
+      ]),
+    );
+  let kitchenHeaderMoves = 0;
+  card.network.moveNode = (id, x, y) => {
+    allPositions[id] = { x, y };
+    if (id === kitchenArea.id) kitchenHeaderMoves++;
+  };
+  card.areaBounds(measure);
+  card.areaBounds(measure);
+  assert.equal(
+    kitchenHeaderMoves,
+    1,
+    "Fractional multi-device centres do not create a redraw loop",
+  );
+  assert.equal(allPositions[kitchenArea.id].x, 201);
   global.getComputedStyle = () => ({
     getPropertyValue: (key) =>
       key === "--success-color" ? "#00ff00" : "#888888",

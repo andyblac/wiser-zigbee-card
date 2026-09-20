@@ -27,7 +27,8 @@ for (const [x, y] of [
 assert.equal(lensGeometry(20, 20, 100, 90).size, 90);
 let frame,
   draws = [],
-  scale;
+  transforms = [],
+  clears = [];
 global.requestAnimationFrame = (fn) => {
   frame = fn;
   return 1;
@@ -56,19 +57,22 @@ function element() {
       this.removed = true;
     },
     getContext: () => ({
-      scale: (...args) => {
-        scale = args;
-      },
+      setTransform: (...args) => transforms.push(args),
+      clearRect: (...args) => clears.push(args),
       drawImage: (...args) => draws.push(args),
     }),
   };
 }
 const source = {};
 const parent = element();
+let iconClones = 0;
 parent.querySelectorAll = () => [
   {
     icon: "mdi:bed",
-    cloneNode: () => element(),
+    cloneNode: () => {
+      iconClones++;
+      return element();
+    },
   },
 ];
 const map = {
@@ -95,9 +99,32 @@ frame = undefined;
 runFrame();
 const overlay = parent.children[0];
 assert.deepEqual(draws[0], [source, -510, -310, 1600, 1200]);
-assert.deepEqual(scale, [2, 2]);
+assert.deepEqual(transforms.slice(0, 2), [
+  [1, 0, 0, 1, 0, 0],
+  [2, 0, 0, 2, 0, 0],
+]);
+assert.deepEqual(clears[0], [0, 0, 360, 360]);
 assert.equal(overlay.firstElementChild.width, 360);
 assert.equal(overlay.lastElementChild.children[0].icon, "mdi:bed");
+assert.equal(iconClones, 1);
+lens.show(map, {
+  clientX: 320,
+  clientY: 230,
+  pointerType: "mouse",
+  buttons: 0,
+});
+const nextFrame = frame;
+frame = undefined;
+nextFrame();
+assert.equal(iconClones, 1, "Unchanged area icons are reused between frames");
+assert.deepEqual(
+  transforms.slice(2, 4),
+  [
+    [1, 0, 0, 1, 0, 0],
+    [2, 0, 0, 2, 0, 0],
+  ],
+  "Retina scaling is reset rather than compounded between frames",
+);
 lens.show(map, { pointerType: "mouse", buttons: 1 });
 assert.equal(overlay.removed, true);
 assert.equal(frame, undefined);

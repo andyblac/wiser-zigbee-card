@@ -82,7 +82,7 @@ function setup() {
   return new (registry.get("wiser-zigbee-panel"))();
 }
 
-test("panel creates a Zigbee card per enabled hub and forwards hass updates", () => {
+test("panel creates a Zigbee card per enabled hub and updates only the visible card", () => {
   const panel = setup();
   const hass = { states: {} };
   panel.hass = hass;
@@ -94,7 +94,11 @@ test("panel creates a Zigbee card per enabled hub and forwards hass updates", ()
   assert.equal(cards[0].hass, hass);
   const updated = { states: { example: {} } };
   panel.hass = updated;
+  assert.equal(cards[0].hass, updated);
+  assert.equal(cards[1].hass, undefined);
+  panel._selectHub("second");
   assert.equal(cards[1].hass, updated);
+  assert.equal(cards[0].hidden, true);
   panel.panel = { config: { hubs: ["first", "second"] } };
   assert.equal(panel.shadowRoot.querySelector("main").children[0], cards[0]);
 });
