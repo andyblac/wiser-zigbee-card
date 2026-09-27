@@ -18,10 +18,13 @@ export default function buildVersion({ dev = false, root = process.cwd() } = {})
       version = baseVersion;
       if (dev) {
         const release = /^(\d+)\.(\d+)\.(\d+)$/.exec(baseVersion);
+        const prerelease = /^(\d+)\.(\d+)\.(\d+)-[0-9A-Za-z.-]+(?:\+[0-9A-Za-z.-]+)?$/.exec(baseVersion);
         const development = /^(\d+\.\d+\.\d+-dev)\.\d+$/.exec(baseVersion);
         const developmentBase = release
           ? `${release[1]}.${release[2]}.${BigInt(release[3]) + 1n}-dev`
-          : development?.[1];
+          : prerelease
+            ? `${prerelease[1]}.${prerelease[2]}.${BigInt(prerelease[3]) + 1n}-dev`
+            : development?.[1];
         if (!developmentBase)
           throw new Error(`Cannot create a dev build from version ${baseVersion}`);
         let previous;

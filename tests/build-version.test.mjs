@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import buildVersion from "../scripts/build-version.mjs";
 
-test("dev versions increment on successful builds and reset for a new release", () => {
+test("dev versions increment on successful builds and continue after a prerelease", () => {
   const root = mkdtempSync(join(tmpdir(), "wiser-zigbee-version-"));
   const packagePath = join(root, "package.json");
   const setRelease = (version) =>
@@ -47,6 +47,8 @@ test("dev versions increment on successful builds and reset for a new release", 
     );
     setRelease("3.1.0");
     assert.equal(run(true), "3.1.1-dev.1");
+    setRelease("3.1.1-beta.1");
+    assert.equal(run(true), "3.1.2-dev.1");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
