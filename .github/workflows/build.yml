@@ -25,4 +25,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run rollup
-      - run: node --check dist/wiser-zigbee-card.js
+      - name: Check bundle version
+        run: |
+          node --check dist/wiser-zigbee-card.js
+          node -e 'const fs = require("node:fs"); const v = require("./package.json").version; const info = require("./dist/build-info.json"); if (!fs.readFileSync("dist/wiser-zigbee-card.js", "utf8").startsWith(`/*! WISER-CARD-VERSION wiser-zigbee-card ${v} */`)) throw new Error("Bundle version mismatch"); if (info.version !== v) throw new Error("Build info version mismatch");'

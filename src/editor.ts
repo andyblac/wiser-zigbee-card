@@ -244,7 +244,7 @@ export class WiserZigbeeCardEditor
             ></ha-form>`,
         )}
       </div>
-      <div class="version">${this.t("common.version")}: ${CARD_VERSION}</div>`;
+      <div class="version">Wiser Zigbee Card · ${CARD_VERSION}</div>`;
   }
 
   private setOrientation(orientation: NetworkOrientation): void {
@@ -340,6 +340,7 @@ export class WiserZigbeeCardEditor
       margin-top: 24px;
       color: var(--secondary-text-color);
       font-size: 12px;
+      text-align: right;
     }
   `;
 }

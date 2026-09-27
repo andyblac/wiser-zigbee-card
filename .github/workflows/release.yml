@@ -29,11 +29,11 @@ jobs:
       - run: npm test
       - run: npm run rollup
         env:
-          WISER_SKIP_VERSION_BUMP: "1"
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
       - name: Check bundle
         run: |
           node --check dist/wiser-zigbee-card.js
-          node -e 'const fs = require("node:fs"); const v = require("./package.json").version; if (!fs.readFileSync("dist/wiser-zigbee-card.js", "utf8").startsWith(`/*! WISER-CARD-VERSION wiser-zigbee-card ${v} */`)) throw new Error("Bundle version mismatch");'
+          node -e 'const fs = require("node:fs"); const v = require("./package.json").version; const info = require("./dist/build-info.json"); if (!fs.readFileSync("dist/wiser-zigbee-card.js", "utf8").startsWith(`/*! WISER-CARD-VERSION wiser-zigbee-card ${v} */`)) throw new Error("Bundle version mismatch"); if (info.version !== v) throw new Error("Build info version mismatch");'
       - name: Upload card bundle
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,4 +1,4 @@
-import cardVersion from "./scripts/card-version.mjs";
+import buildVersion from "./scripts/build-version.mjs";
 import nodeResolve from "@rollup/plugin-node-resolve";
 import typescript from "@rollup/plugin-typescript";
 import babel from "@rollup/plugin-babel";
@@ -9,8 +9,8 @@ import { ignoreTextfieldFiles } from "./elements/ignore/textfield";
 import { ignoreSelectFiles } from "./elements/ignore/select";
 import { ignoreSwitchFiles } from "./elements/ignore/switch";
 
-const plugins = [
-  cardVersion(),
+const plugins = (dev = false) => [
+  buildVersion({ dev }),
   nodeResolve(),
   typescript(),
   json(),
@@ -29,7 +29,7 @@ const plugins = [
   }),
 ];
 
-export default [
+export default (args) => [
   {
     input: "src/wiser-zigbee-card.ts",
     output: {
@@ -38,7 +38,7 @@ export default [
       name: "wiserzigbeecard",
       sourcemap: false,
     },
-    plugins: [...plugins],
+    plugins: plugins(Boolean(args.configDev)),
     context: "window",
   },
 ];
