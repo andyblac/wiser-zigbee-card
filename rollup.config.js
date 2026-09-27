@@ -9,8 +9,8 @@ import { ignoreTextfieldFiles } from "./elements/ignore/textfield";
 import { ignoreSelectFiles } from "./elements/ignore/select";
 import { ignoreSwitchFiles } from "./elements/ignore/switch";
 
-const plugins = (dev = false) => [
-  buildVersion({ dev }),
+const plugins = (dev = false, final = false) => [
+  buildVersion({ dev, final }),
   nodeResolve(),
   typescript(),
   json(),
@@ -38,7 +38,7 @@ export default (args) => [
       name: "wiserzigbeecard",
       sourcemap: false,
     },
-    plugins: plugins(Boolean(args.configDev)),
+    plugins: plugins(Boolean(args.configDev), Boolean(args.configRelease)),
     context: "window",
   },
 ];

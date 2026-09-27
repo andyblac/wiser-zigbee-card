@@ -1,54 +1,56 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-// Keep the release version in package.json and the local dev counter outside dist,
-// so cleaning build output does not reuse a cache-busting version.
-export default function buildVersion({ dev = false, root = process.cwd() } = {}) {
+const RELEASE = /^(\d+)\.(\d+)\.(\d+)$/;
+const BETA = /^(\d+\.\d+\.\d+-beta)\.(\d+)$/;
+const DEVELOPMENT = /^(\d+\.\d+\.\d+)-dev\.(\d+)$/;
+const BETA_DEVELOPMENT = /^(\d+\.\d+\.\d+-beta\.\d+)-dev\.(\d+)$/;
+const SEMVER = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+
+export default function buildVersion({
+  dev = false,
+  final = false,
+  root = process.cwd(),
+} = {}) {
   const packagePath = resolve(root, "package.json");
-  const counterPath = resolve(root, ".dev-build.json");
+  let packageData;
+  let packageVersion;
   let version;
-  let baseVersion;
-  let build;
   let resourceUrl;
 
   return {
     name: "build-version",
     buildStart() {
-      baseVersion = JSON.parse(readFileSync(packagePath, "utf8")).version;
-      version = baseVersion;
+      packageData = JSON.parse(readFileSync(packagePath, "utf8"));
+      packageVersion = packageData.version;
+      version = packageVersion;
       if (dev) {
-        const release = /^(\d+)\.(\d+)\.(\d+)$/.exec(baseVersion);
-        const prerelease = /^(\d+)\.(\d+)\.(\d+)-[0-9A-Za-z.-]+(?:\+[0-9A-Za-z.-]+)?$/.exec(baseVersion);
-        const development = /^(\d+\.\d+\.\d+-dev)\.\d+$/.exec(baseVersion);
-        const developmentBase = release
-          ? `${release[1]}.${release[2]}.${BigInt(release[3]) + 1n}-dev`
-          : prerelease
-            ? `${prerelease[1]}.${prerelease[2]}.${BigInt(prerelease[3]) + 1n}-dev`
-            : development?.[1];
-        if (!developmentBase)
-          throw new Error(`Cannot create a dev build from version ${baseVersion}`);
-        let previous;
-        try {
-          previous = JSON.parse(readFileSync(counterPath, "utf8"));
-        } catch (error) {
-          if (error.code !== "ENOENT") throw error;
-        }
-        if (
-          previous &&
-          (!Number.isSafeInteger(previous.build) || previous.build < 0)
-        ) {
-          throw new Error("Invalid dev build counter in .dev-build.json");
-        }
-        build =
-          previous?.baseVersion === developmentBase ? previous.build + 1 : 1;
-        version = `${developmentBase}.${build}`;
-        baseVersion = developmentBase;
+        const release = RELEASE.exec(packageVersion);
+        const beta = BETA.exec(packageVersion);
+        const development = DEVELOPMENT.exec(packageVersion);
+        const betaDevelopment = BETA_DEVELOPMENT.exec(packageVersion);
+        if (betaDevelopment)
+          version = `${betaDevelopment[1]}-dev.${BigInt(betaDevelopment[2]) + 1n}`;
+        else if (development)
+          version = `${development[1]}-dev.${BigInt(development[2]) + 1n}`;
+        else if (beta) version = `${beta[1]}.${BigInt(beta[2]) + 1n}-dev.1`;
+        else if (release)
+          version = `${release[1]}.${release[2]}.${BigInt(release[3]) + 1n}-dev.1`;
+        else
+          throw new Error(
+            `Cannot create a dev build from version ${packageVersion}`,
+          );
+      } else {
+        const development = DEVELOPMENT.exec(packageVersion);
+        const betaDevelopment = BETA_DEVELOPMENT.exec(packageVersion);
+        const beta = BETA.exec(packageVersion);
+        if (final && betaDevelopment)
+          version = betaDevelopment[1].replace(/-beta\.\d+$/, "");
+        else if (final && beta) version = beta[1].replace(/-beta$/, "");
+        else if (betaDevelopment) version = betaDevelopment[1];
+        else if (development) version = development[1];
       }
-      if (
-        !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(
-          version,
-        )
-      ) {
+      if (!SEMVER.test(version)) {
         throw new Error(
           `Build requires a semantic package version, received ${version}`,
         );
@@ -87,11 +89,10 @@ export default function buildVersion({ dev = false, root = process.cwd() } = {})
       });
     },
     writeBundle() {
-      if (dev)
-        writeFileSync(
-          counterPath,
-          `${JSON.stringify({ baseVersion, build }, null, 2)}\n`,
-        );
+      if (version !== packageVersion) {
+        packageData.version = version;
+        writeFileSync(packagePath, `${JSON.stringify(packageData, null, 2)}\n`);
+      }
       console.info(`\nBuilt ${version}\nDashboard resource: ${resourceUrl}\n`);
     },
   };

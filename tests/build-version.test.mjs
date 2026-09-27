@@ -1,22 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  mkdtempSync,
-  readFileSync,
-  writeFileSync,
-  rmSync,
-} from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import buildVersion from "../scripts/build-version.mjs";
 
-test("dev versions increment on successful builds and continue after a prerelease", () => {
+test("successful builds advance package versions through stable and beta development cycles", () => {
   const root = mkdtempSync(join(tmpdir(), "wiser-zigbee-version-"));
   const packagePath = join(root, "package.json");
   const setRelease = (version) =>
     writeFileSync(packagePath, JSON.stringify({ version }));
-  const run = (dev, success = true) => {
-    const plugin = buildVersion({ dev, root });
+  const run = (dev, success = true, final = false) => {
+    const plugin = buildVersion({ dev, final, root });
     plugin.buildStart();
     const version = JSON.parse(
       plugin.transform(readFileSync(packagePath, "utf8"), packagePath).code,
@@ -36,19 +31,20 @@ test("dev versions increment on successful builds and continue after a prereleas
   };
   try {
     setRelease("3.0.2");
-    assert.equal(run(true), "3.0.3-dev.1");
-    assert.equal(run(true), "3.0.3-dev.2");
-    assert.equal(run(false), "3.0.2");
-    assert.equal(run(true, false), "3.0.3-dev.3");
-    assert.equal(run(true), "3.0.3-dev.3");
+    assert.equal(run(true, false), "3.0.3-dev.1");
     assert.equal(
       JSON.parse(readFileSync(packagePath, "utf8")).version,
       "3.0.2",
     );
-    setRelease("3.1.0");
-    assert.equal(run(true), "3.1.1-dev.1");
+    assert.equal(run(true), "3.0.3-dev.1");
+    assert.equal(run(true), "3.0.3-dev.2");
+    assert.equal(run(false), "3.0.3");
+    assert.equal(run(true), "3.0.4-dev.1");
     setRelease("3.1.1-beta.1");
-    assert.equal(run(true), "3.1.2-dev.1");
+    assert.equal(run(true), "3.1.1-beta.2-dev.1");
+    assert.equal(run(true), "3.1.1-beta.2-dev.2");
+    assert.equal(run(false, false, true), "3.1.1");
+    assert.equal(run(false), "3.1.1-beta.2");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -58,7 +54,10 @@ test("cached Rollup rebuilds stamp the next version into the JavaScript", async 
   const { rollup } = await import("rollup");
   const { default: json } = await import("@rollup/plugin-json");
   const root = mkdtempSync(join(tmpdir(), "wiser-zigbee-version-cache-"));
-  writeFileSync(join(root, "package.json"), JSON.stringify({ version: "3.0.2" }));
+  writeFileSync(
+    join(root, "package.json"),
+    JSON.stringify({ version: "3.0.2" }),
+  );
   writeFileSync(
     join(root, "entry.js"),
     "import {version} from './package.json'; console.log(version);",
@@ -105,6 +104,14 @@ test("release tags must match the semantic package version", () => {
     buildVersion({ root }).buildStart();
     process.env.RELEASE_TAG = "v3.1.0";
     assert.throws(() => buildVersion({ root }).buildStart(), /does not match/);
+    writeFileSync(
+      join(root, "package.json"),
+      JSON.stringify({ version: "3.1.0-beta.2-dev.7" }),
+    );
+    process.env.RELEASE_TAG = "v3.1.0-beta.2";
+    buildVersion({ root }).buildStart();
+    process.env.RELEASE_TAG = "v3.1.0";
+    buildVersion({ root, final: true }).buildStart();
   } finally {
     if (previousTag === undefined) delete process.env.RELEASE_TAG;
     else process.env.RELEASE_TAG = previousTag;
