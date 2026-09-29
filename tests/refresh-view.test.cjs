@@ -87,6 +87,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   "./fit": load("src/fit.ts"),
   "./link-labels": load("src/link-labels.ts"),
   "./device-info": { deviceInfoEntity: async () => "sensor.office_signal" },
+  "./home-assistant-link": load("src/home-assistant-link.ts"),
 });
 (async () => {
   const card = new WiserZigbeeCard();

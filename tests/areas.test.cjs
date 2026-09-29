@@ -8,6 +8,11 @@ const entities = ["a", "b"].map((id) => ({
   device_id: id,
   platform: "wiser",
 }));
+entities.push({
+  entity_id: "sensor.hub_a",
+  device_id: "hub-a",
+  platform: "wiser",
+});
 const devices = [
   { id: "hub-a", identifiers: [["wiser", "A"]] },
   { id: "hub-b", identifiers: [["wiser", "B"]] },
@@ -61,25 +66,35 @@ const hass = {
 (async () => {
   const data = {
     nodes: [
+      { id: 0, label: "Wiser Hub", group: "Controller" },
       { id: 12, label: "Room", group: "RoomStat" },
       { id: 99, label: "Unknown", group: "RoomStat" },
     ],
     edges: [],
   };
+  hass.states["sensor.hub_a"] = {
+    attributes: {
+      node_id: 0,
+      displayed_signal_strength: "VeryGood",
+      wifi_strength_percent: 92,
+    },
+  };
   const a = await withDeviceAreas(hass, data, "A");
-  assert.equal(a.nodes[0].area_id, "kitchen");
-  assert.equal(a.nodes[0].area_icon, "mdi:silverware-fork-knife");
-  assert.equal(a.nodes[0].device_name, "Wiser Thermostat");
-  assert.equal(a.nodes[1].area_id, undefined);
-  assert.equal(data.nodes[0].area_id, undefined);
+  assert.equal(a.nodes[0].entity_id, "sensor.hub_a");
+  assert.equal(a.nodes[0].connection_label, "VeryGood (92%)");
+  assert.equal(a.nodes[1].area_id, "kitchen");
+  assert.equal(a.nodes[1].area_icon, "mdi:silverware-fork-knife");
+  assert.equal(a.nodes[1].device_name, "Wiser Thermostat");
+  assert.equal(a.nodes[2].area_id, undefined);
+  assert.equal(data.nodes[1].area_id, undefined);
   assert.equal(calls, 3, "Registries fetched once, not per node");
   const b = await withDeviceAreas(hass, data, "B");
   assert.equal(
-    b.nodes[0].area_id,
+    b.nodes[1].area_id,
     "office",
     "Duplicate node IDs are scoped to their hub",
   );
-  assert.equal(b.nodes[0].device_name, "Office Thermostat");
+  assert.equal(b.nodes[1].device_name, "Office Thermostat");
   assert.equal(calls, 3, "Registry data is shared across hub refreshes");
   console.log("HA area assignment and hub isolation passed.");
 })().catch((error) => {

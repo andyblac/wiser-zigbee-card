@@ -94,6 +94,39 @@ assert.deepEqual(
 );
 console.log("Vertical and horizontal layouts passed.");
 
+const homeAssistantInput = {
+  nodes: [
+    { id: -1, group: "HomeAssistant", label: "Home Assistant" },
+    { id: 0, group: "Controller", label: "Wiser Hub" },
+    { id: 1, group: "RoomStat", label: "Thermostat" },
+  ],
+  edges: [
+    { from: 0, to: -1, label: "Good (80%)" },
+    { from: 1, to: 0, label: "VeryGood (90%)" },
+  ],
+};
+const homeAssistantLayout = arrangeNetwork(homeAssistantInput, "vertical");
+assert.equal(homeAssistantLayout.nodes.find((node) => node.id === -1).y, 0);
+assert.equal(homeAssistantLayout.nodes.find((node) => node.id === 0).y, 150);
+assert.equal(homeAssistantLayout.nodes.find((node) => node.id === 1).y, 300);
+const groupedHomeAssistantLayout = arrangeNetwork(
+  homeAssistantInput,
+  "vertical",
+  undefined,
+  "area",
+);
+assert.equal(
+  groupedHomeAssistantLayout.nodes.find((node) => node.id === 0).y,
+  150,
+  "The non-Zigbee Home Assistant hop stays compact when grouping by area",
+);
+assert.equal(
+  groupedHomeAssistantLayout.nodes.find((node) => node.id === 1).y,
+  450,
+  "Normal grouped Zigbee hop spacing is preserved below the hub",
+);
+console.log("Optional Home Assistant connection becomes the network root.");
+
 for (const orientation of ["horizontal", "vertical"]) {
   const axis = orientation === "vertical" ? "x" : "y";
   const dragged = {

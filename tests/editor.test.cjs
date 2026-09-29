@@ -76,7 +76,7 @@ function switchFields(template) {
     .filter((field) => field?.selector?.boolean);
 }
 const switches = switchFields(template);
-assert.equal(switches.length, 5);
+assert.equal(switches.length, 6);
 assert.ok(
   switches.every((field) => field.selector && "boolean" in field.selector),
   "All switches use native boolean selectors",
@@ -86,6 +86,9 @@ function change(value) {
   return events.at(-1).detail.config;
 }
 assert.ok(template.values.some((value) => value?.show_detailed_view === true));
+assert.ok(
+  template.values.some((value) => value?.show_home_assistant === false),
+);
 assert.equal(
   editor.computeLabel({ name: "show_detailed_view" }),
   "Show detailed view",
@@ -219,6 +222,12 @@ assert.deepEqual(
 );
 assert.equal(change({ group_by: "area" }).layout_data, undefined);
 assert.equal(change({ group_by: "none" }).group_by, "none");
+editor.setConfig({ type: "custom:wiser-zigbee-card", layout_data: layout });
+assert.equal(
+  change({ show_home_assistant: true }).layout_data,
+  undefined,
+  "Adding the Home Assistant root resets incompatible saved positions",
+);
 
 const initialEditor = registered.get("wiser-zigbee-card-editor");
 const reloaded = { exports: {} };

@@ -8,7 +8,9 @@ export function separateAreas(
   measuredBounds?: (members: MapNode[]) => Box,
 ): void {
   const groups = new Map<string, MapNode[]>();
-  for (const node of nodes.filter((node) => node.group !== "Controller")) {
+  for (const node of nodes.filter(
+    (node) => node.group !== "Controller" && node.group !== "HomeAssistant",
+  )) {
     const key = node.area_id ?? "";
     groups.set(key, [...(groups.get(key) ?? []), node]);
   }
@@ -104,7 +106,8 @@ export function separateAreas(
           if (
             nodes.some(
               (node) =>
-                node.group === "Controller" &&
+                (node.group === "Controller" ||
+                  node.group === "HomeAssistant") &&
                 overlap(shifted, boxes([node])) > 0,
             )
           )

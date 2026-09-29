@@ -9,7 +9,12 @@ export function arrangeNetwork(
   groupBy: "none" | "area" = "none",
 ): zigbeeData {
   const levels = new Map<number, number>();
-  const roots = data.nodes.filter((node) => node.group === "Controller");
+  const homeAssistant = data.nodes.filter(
+    (node) => node.group === "HomeAssistant",
+  );
+  const roots = homeAssistant.length
+    ? homeAssistant
+    : data.nodes.filter((node) => node.group === "Controller");
   const queue = (roots.length ? roots : data.nodes.slice(0, 1)).map(
     (node) => node.id,
   );
@@ -27,6 +32,20 @@ export function arrangeNetwork(
   }
   if (orientation === "pie")
     return arrangePie(data, groupBy === "area", levels, positions);
+  const hasHomeAssistantRoot = homeAssistant.length > 0;
+  const depthPosition = (level: number) => {
+    const normalGap =
+      orientation === "vertical"
+        ? groupBy === "area"
+          ? 300
+          : 150
+        : groupBy === "area"
+          ? 300
+          : 270;
+    if (!hasHomeAssistantRoot || level === 0) return level * normalGap;
+    const homeAssistantGap = orientation === "vertical" ? 150 : 180;
+    return homeAssistantGap + (level - 1) * normalGap;
+  };
   const columns = new Map<number, typeof data.nodes>();
   const lastLevel = Math.max(0, ...levels.values()) + 1;
   for (const node of data.nodes) {
@@ -57,10 +76,10 @@ export function arrangeNetwork(
         x:
           orientation === "vertical"
             ? slot * (groupBy === "area" ? 230 : 170)
-            : level * (groupBy === "area" ? 300 : 270),
+            : depthPosition(level),
         y:
           orientation === "vertical"
-            ? level * (groupBy === "area" ? 300 : 150)
+            ? depthPosition(level)
             : slot * (groupBy === "area" ? 260 : 110),
       });
     });
@@ -69,6 +88,7 @@ export function arrangeNetwork(
     const members = nodes.filter(
       (node) =>
         node.group !== "Controller" &&
+        node.group !== "HomeAssistant" &&
         (node.area_id ?? "") === (header.area_id ?? ""),
     );
     nodes.push({

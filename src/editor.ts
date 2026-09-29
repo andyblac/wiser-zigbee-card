@@ -106,6 +106,7 @@ export class WiserZigbeeCardEditor
       show_detailed_view: !(this._config.map_only ?? false),
       map_height: this._config.map_height ?? null,
       show_device_list: this._config.show_device_list ?? true,
+      show_home_assistant: this._config.show_home_assistant ?? false,
       show_labels: this._config.show_labels ?? false,
       magnifier: this._config.magnifier ?? false,
     };
@@ -131,6 +132,7 @@ export class WiserZigbeeCardEditor
       },
     ];
     const switches = [
+      { name: "show_home_assistant", selector: { boolean: {} } },
       { name: "show_labels", selector: { boolean: {} } },
       { name: "magnifier", selector: { boolean: {} } },
       { name: "auto_update", selector: { boolean: {} } },
@@ -276,6 +278,8 @@ export class WiserZigbeeCardEditor
     if (
       (next.hub || this._hubs[0]) !== (this._config.hub || this._hubs[0]) ||
       (next.group_by ?? "none") !== (this._config.group_by ?? "none") ||
+      (next.show_home_assistant ?? false) !==
+        (this._config.show_home_assistant ?? false) ||
       (next.orientation ?? "vertical") !==
         (this._config.orientation ?? "vertical")
     ) {

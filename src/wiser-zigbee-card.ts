@@ -58,6 +58,10 @@ import "./wiser-zigbee-panel.js";
 import { containedView } from "./fit";
 import { placeLinkLabels, LinkLabel } from "./link-labels";
 import { deviceInfoEntity, receptionMetrics } from "./device-info";
+import {
+  HOME_ASSISTANT_NODE_IMAGE,
+  withHomeAssistantLink,
+} from "./home-assistant-link";
 
 (window as any).customCards = (window as any).customCards || [];
 if (
@@ -130,7 +134,9 @@ export class WiserZigbeeCard
     if (!node) return this.t("card.unknown_device");
     return node.group === "Controller" && node.label === "Wiser Hub"
       ? this.t("card.hub")
-      : deviceDetailsLabel(node);
+      : node.group === "HomeAssistant"
+        ? this.t("card.home_assistant")
+        : deviceDetailsLabel(node);
   }
   private appearanceSignature(): string {
     const themes = this.hass?.themes as
@@ -389,6 +395,8 @@ export class WiserZigbeeCard
     try {
       let source = await fetchZigbeeData(this.hass, this.config.hub);
       source = await withDeviceAreas(this.hass, source, this.config.hub);
+      if (this.config.show_home_assistant)
+        source = withHomeAssistantLink(source, this.t("card.home_assistant"));
       const data = arrangeNetwork(
         this.config.group_by === "area"
           ? areaGraph(source, this.t("card.unassigned_area"))
@@ -479,24 +487,29 @@ export class WiserZigbeeCard
           ? "Offline"
           : this.zigbeeData!.edges.find((edge) => edge.from === node.id)?.label;
         const tint =
-          colorIcons && node.group !== "Area" && node.group !== "Controller"
+          colorIcons &&
+          node.group !== "Area" &&
+          node.group !== "Controller" &&
+          node.group !== "HomeAssistant"
             ? signalColor(status, true, theme)
             : undefined;
         const artwork =
           node.group === "Area"
             ? AREA_NODE_IMAGE
-            : (DEVICE_IMAGES[node.group] ?? FALLBACK_DEVICE_IMAGE);
+            : node.group === "HomeAssistant"
+              ? HOME_ASSISTANT_NODE_IMAGE
+              : (DEVICE_IMAGES[node.group] ?? FALLBACK_DEVICE_IMAGE);
         return {
           ...node,
           ...(positions?.[node.id] ?? {}),
           shape: "image",
           image: statusImage(artwork, tint, offline),
           brokenImage: statusImage(FALLBACK_DEVICE_IMAGE, tint, offline),
-          size: 32,
+          size: node.group === "HomeAssistant" ? 29 : 32,
           label:
             node.group === "Area"
               ? `${node.label} ${this.collapsedAreas.has(node.area_id ?? "") ? "▸" : "▾"}`
-              : node.group === "Controller"
+              : node.group === "Controller" || node.group === "HomeAssistant"
                 ? this.deviceName(node)
                 : this.config?.group_by === "area"
                   ? areaDeviceMapLabel(node)
@@ -612,6 +625,7 @@ export class WiserZigbeeCard
       if (
         node.group !== "Area" &&
         node.group !== "Controller" &&
+        node.group !== "HomeAssistant" &&
         (node.area_id ?? "") === (header.area_id ?? "") &&
         positions[node.id]
       )
@@ -661,7 +675,8 @@ export class WiserZigbeeCard
     );
     const grouped = new Map([...keys].map((key) => [key, [] as ZigbeeNode[]]));
     for (const node of nodes) {
-      if (node.group === "Controller") continue;
+      if (node.group === "Controller" || node.group === "HomeAssistant")
+        continue;
       grouped.get(node.area_id ?? "")?.push(node);
     }
     const label = (node: ZigbeeNode) =>
@@ -842,6 +857,10 @@ export class WiserZigbeeCard
     this.closeDeviceInfo();
     const node = this.zigbeeData?.nodes.find((item) => item.id === nodeId);
     if (!node || !this.hass) return;
+    if (node.entity_id) {
+      fireEvent(this, "hass-more-info", { entityId: node.entity_id });
+      return;
+    }
     const request = this.infoRequest;
     try {
       const entityId = await deviceInfoEntity(
@@ -875,6 +894,15 @@ export class WiserZigbeeCard
   private async openDeviceInfo(nodeId: number, request: number): Promise<void> {
     const node = this.zigbeeData?.nodes.find((item) => item.id === nodeId);
     if (!node || !this.hass) return;
+    if (node.entity_id) {
+      if (
+        request === this.infoRequest &&
+        this.isConnected &&
+        this.selected === nodeId
+      )
+        this.selectedEntity = node.entity_id;
+      return;
+    }
     try {
       const entityId = await deviceInfoEntity(
         this.hass,
@@ -1451,28 +1479,53 @@ export class WiserZigbeeCard
       attrs?.controller_reception_RSSI,
       attrs?.controller_reception_LQI,
     );
-    const rows: [string, unknown][] = [
-      ["zigbee.type", node.group],
-      ["zigbee.node", node.id],
-      ["zigbee.parent", parent],
-      ["zigbee.channel", attrs?.zigbee_channel],
+    const quality = attrs?.displayed_signal_strength
+      ? localizeSignal(attrs.displayed_signal_strength, this.hass)
+      : undefined;
+    const networkRows: [string, unknown][] = [
+      ["network.connection_quality", quality],
       [
-        "zigbee.signal",
-        attrs?.displayed_signal_strength
-          ? localizeSignal(attrs.displayed_signal_strength, this.hass)
-          : undefined,
+        "network.wifi_rssi",
+        attrs?.wifi_strength == null ? undefined : `${attrs.wifi_strength} dBm`,
       ],
       [
-        "zigbee.device_rssi",
-        deviceSignal.rssi == null ? undefined : `${deviceSignal.rssi} dBm`,
+        "network.wifi_quality",
+        attrs?.wifi_strength_percent == null
+          ? undefined
+          : `${attrs.wifi_strength_percent}%`,
       ],
-      ["zigbee.device_lqi", deviceSignal.lqi],
-      [
-        "zigbee.hub_rssi",
-        hubSignal.rssi == null ? undefined : `${hubSignal.rssi} dBm`,
-      ],
-      ["zigbee.hub_lqi", hubSignal.lqi],
+      ["network.ssid", attrs?.wifi_SSID],
+      ["network.ip", attrs?.wifi_IP],
     ];
+    const rows: [string, unknown][] =
+      node.group === "HomeAssistant"
+        ? networkRows
+        : node.group === "Controller"
+          ? [
+              ["zigbee.type", node.group],
+              ["zigbee.node", node.id],
+              ["zigbee.channel", attrs?.zigbee_channel],
+              ...networkRows,
+            ]
+          : [
+              ["zigbee.type", node.group],
+              ["zigbee.node", node.id],
+              ["zigbee.parent", parent],
+              ["zigbee.channel", attrs?.zigbee_channel],
+              ["zigbee.signal", quality],
+              [
+                "zigbee.device_rssi",
+                deviceSignal.rssi == null
+                  ? undefined
+                  : `${deviceSignal.rssi} dBm`,
+              ],
+              ["zigbee.device_lqi", deviceSignal.lqi],
+              [
+                "zigbee.hub_rssi",
+                hubSignal.rssi == null ? undefined : `${hubSignal.rssi} dBm`,
+              ],
+              ["zigbee.hub_lqi", hubSignal.lqi],
+            ];
     return html`<div class="zigbee-details" aria-live="polite">
       ${rows
         .filter(([, value]) => value !== undefined && value !== null)
@@ -1707,7 +1760,11 @@ export class WiserZigbeeCard
               ? ""
               : html`<h2>${this.config?.name ?? this.t("card.title")}</h2>`}
             <p>
-              ${localizeCount("devices", nodes.length, this.hass)}
+              ${localizeCount(
+                "devices",
+                nodes.filter((node) => node.group !== "HomeAssistant").length,
+                this.hass,
+              )}
               <span>·</span> ${localizeCount(
                 "connections",
                 edges.length,

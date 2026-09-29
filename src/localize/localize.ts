@@ -59,6 +59,8 @@ const optionalNativeKeys: Record<string, string> = {
   "signal.connected": "ui.panel.config.serial.connected",
   "signal.online": "ui.panel.config.zha.configuration_page.status_online",
   "signal.offline": "ui.panel.config.zha.configuration_page.status_offline",
+  "network.wifi_quality": "ui.panel.config.network.supervisor.signal_strength",
+  "network.ip": "ui.panel.config.network.supervisor.ip",
 };
 // Keep fragment loading aligned with every native key used by the card/editor.
 export const requiredTranslationFragments = [

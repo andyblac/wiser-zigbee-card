@@ -154,6 +154,8 @@ const auditedKeys = {
   "zigbee.type": "ui.panel.config.zha.visualization.device_type",
   "card.unassigned_area": "ui.panel.config.automation.editor.unassigned",
   "signal.medium": "ui.panel.config.matter.visualization.strength.medium",
+  "network.wifi_quality": "ui.panel.config.network.supervisor.signal_strength",
+  "network.ip": "ui.panel.config.network.supervisor.ip",
 };
 for (const [key, nativeKey] of Object.entries(auditedKeys)) {
   for (const language of ["en-US", "en-GB", "de", "fr"]) {

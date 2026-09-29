@@ -114,6 +114,8 @@ export function arrangePie(
     .filter((node) => !parents.has(node.id))
     .sort(
       (a, b) =>
+        Number(b.group === "HomeAssistant") -
+          Number(a.group === "HomeAssistant") ||
         Number(b.group === "Controller") - Number(a.group === "Controller") ||
         a.label.localeCompare(b.label),
     );
@@ -198,6 +200,7 @@ export function arrangePie(
                   (node) =>
                     node.id !== leaf.id &&
                     (node.group === "Controller" ||
+                      node.group === "HomeAssistant" ||
                       children.has(node.id) ||
                       node.area_id === leaf.area_id) &&
                     overlaps(candidate, bounds(node)),
@@ -228,6 +231,7 @@ export function arrangePie(
     const members = nodes.filter(
       (node) =>
         node.group !== "Controller" &&
+        node.group !== "HomeAssistant" &&
         (node.area_id ?? "") === (header.area_id ?? ""),
     );
     nodes.push({

@@ -9,6 +9,7 @@ const layout = {
   auto_update: true,
   map_only: true,
   show_device_list: false,
+  show_home_assistant: true,
   show_labels: true,
   magnifier: false,
   map_height: 500,

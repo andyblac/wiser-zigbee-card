@@ -25,6 +25,7 @@ export interface WiserZigbeeCardConfig extends LovelaceCardConfig {
   layout_group_by?: "none" | "area";
   map_height?: number | null | "";
   show_device_list?: boolean;
+  show_home_assistant?: boolean;
   show_labels?: boolean;
   magnifier?: boolean;
   link_status?: "links" | "icons" | "both" | "none";
@@ -39,6 +40,8 @@ export interface node {
   area_name?: string;
   area_icon?: string;
   device_name?: string;
+  entity_id?: string;
+  connection_label?: string;
   id: number;
   label: string;
   group: string;

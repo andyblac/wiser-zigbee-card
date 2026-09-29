@@ -126,6 +126,20 @@ export async function withDeviceAreas(
         area_name: area?.name,
         area_icon: area?.icon,
         device_name: device?.name_by_user || device?.name,
+        entity_id: entity?.entity_id,
+        ...(node.group === "Controller" && entity
+          ? {
+              connection_label: (() => {
+                const attrs = hass.states[entity.entity_id]?.attributes;
+                const quality = attrs?.displayed_signal_strength;
+                const percent = attrs?.wifi_strength_percent;
+                if (typeof quality !== "string" || !quality) return undefined;
+                return typeof percent === "number" && Number.isFinite(percent)
+                  ? `${quality} (${percent}%)`
+                  : quality;
+              })(),
+            }
+          : {}),
       };
     }),
   };

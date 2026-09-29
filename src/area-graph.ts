@@ -7,14 +7,20 @@ export function areaGraph(data: zigbeeData, unassigned: string): zigbeeData {
   const keys = [
     ...new Set(
       nodes
-        .filter((node) => node.group !== "Controller")
+        .filter(
+          (node) =>
+            node.group !== "Controller" && node.group !== "HomeAssistant",
+        )
         .map((node) => node.area_id ?? ""),
     ),
   ].sort();
   const edges = data.edges.map((edge) => ({ ...edge }));
   for (const key of keys) {
     const members = data.nodes.filter(
-      (node) => node.group !== "Controller" && (node.area_id ?? "") === key,
+      (node) =>
+        node.group !== "Controller" &&
+        node.group !== "HomeAssistant" &&
+        (node.area_id ?? "") === key,
     );
     let hash = 2166136261;
     for (const char of key || "__unassigned__")
@@ -42,6 +48,7 @@ export function visibleAreaGraph(
   const nodes = data.nodes.filter(
     (node) =>
       node.group === "Controller" ||
+      node.group === "HomeAssistant" ||
       node.group === "Area" ||
       !collapsed.has(node.area_id ?? ""),
   );

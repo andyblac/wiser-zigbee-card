@@ -1,7 +1,12 @@
 import type { node, zigbeeData } from "./types";
 
 export function disconnectedDevice(device: node, data: zigbeeData): boolean {
-  if (device.group === "Controller" || device.group === "Area") return false;
+  if (
+    device.group === "Controller" ||
+    device.group === "HomeAssistant" ||
+    device.group === "Area"
+  )
+    return false;
   const links = data.edges.filter((edge) => edge.from === device.id);
   if (!links.length) return true;
   return links.every((edge) => {
@@ -88,7 +93,12 @@ export function sharedAreaDeviceIds(nodes: node[]): Set<number> {
   const areas = new Map<number, string>();
   const counts = new Map<string, number>();
   for (const device of nodes) {
-    if (device.group === "Controller" || device.group === "Area") continue;
+    if (
+      device.group === "Controller" ||
+      device.group === "HomeAssistant" ||
+      device.group === "Area"
+    )
+      continue;
     const area = device.area_id
       ? `id:${device.area_id}`
       : deviceAreaName(device)?.toLowerCase();

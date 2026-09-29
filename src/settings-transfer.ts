@@ -17,6 +17,7 @@ function validateSettings(value: unknown): Settings {
     "auto_update",
     "map_only",
     "show_device_list",
+    "show_home_assistant",
     "show_labels",
     "magnifier",
   ]) {
