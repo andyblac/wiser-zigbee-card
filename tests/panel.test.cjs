@@ -86,7 +86,9 @@ test("panel creates a Zigbee card per enabled hub and updates only the visible c
   const panel = setup();
   const hass = { states: {} };
   panel.hass = hass;
-  panel.panel = { config: { panel_id: "registry-panel", hubs: ["first", "second"] } };
+  panel.panel = {
+    config: { panel_id: "registry-panel", hubs: ["first", "second"] },
+  };
   const cards = panel.shadowRoot.querySelector("main").children;
   assert.equal(cards.length, 2);
   assert.equal(cards[0].config.hub, "first");
@@ -99,7 +101,9 @@ test("panel creates a Zigbee card per enabled hub and updates only the visible c
   panel._selectHub("second");
   assert.equal(cards[1].hass, updated);
   assert.equal(cards[0].hidden, true);
-  panel.panel = { config: { panel_id: "registry-panel", hubs: ["first", "second"] } };
+  panel.panel = {
+    config: { panel_id: "registry-panel", hubs: ["first", "second"] },
+  };
   assert.equal(panel.shadowRoot.querySelector("main").children[0], cards[0]);
 });
 
@@ -145,7 +149,11 @@ test("panel overrides saved fixed map heights and hides the height editor", asyn
   const panel = setup();
   panel.hass = { user: { is_admin: true } };
   panel.panel = {
-    config: { panel_id: "registry-panel", hubs: ["hub"], card_configs: { hub: { map_height: 340 } } },
+    config: {
+      panel_id: "registry-panel",
+      hubs: ["hub"],
+      card_configs: { hub: { map_height: 340 } },
+    },
   };
   assert.equal(panel._cards[0].config.map_height, null);
   await panel._openEditor();
@@ -189,7 +197,11 @@ test("cog saves shared integration config over websocket", async () => {
   assert.equal(panel._cards[0].config.show_labels, true);
   const reloaded = setup();
   reloaded.panel = {
-    config: { panel_id: "registry-panel", hubs: ["hub"], card_configs: calls[0].configs },
+    config: {
+      panel_id: "registry-panel",
+      hubs: ["hub"],
+      card_configs: calls[0].configs,
+    },
   };
   assert.equal(reloaded._cards[0].config.name, "My network");
 });
@@ -362,7 +374,9 @@ test("Cancel leaves the card unchanged", async () => {
 test("hub tabs preserve selection across settings updates", () => {
   const panel = setup();
   panel.hass = {};
-  panel.panel = { config: { panel_id: "registry-panel", hubs: ["first", "second"] } };
+  panel.panel = {
+    config: { panel_id: "registry-panel", hubs: ["first", "second"] },
+  };
   panel._tabs[1].listeners.click();
   assert.equal(panel._cards[0].hidden, true);
   assert.equal(panel._cards[1].hidden, false);
