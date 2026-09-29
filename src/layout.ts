@@ -1,4 +1,5 @@
 import { arrangePie } from "./pie-layout";
+import { areaDeviceMapLabel } from "./device-appearance";
 import type { zigbeeData, NetworkOrientation } from "./types";
 
 // Place each hop in its own column; disconnected devices remain visible.
@@ -69,13 +70,46 @@ export function arrangeNetwork(
         return first! - second!;
       return a.label.localeCompare(b.label);
     });
+    const verticalSlots: number[] = [];
+    if (orientation === "vertical" && groupBy === "area") {
+      const labelHalfWidth = (node: (typeof column)[number]) =>
+        Math.max(
+          40,
+          ...areaDeviceMapLabel(node)
+            .split("\n")
+            .map((line) => line.length * 4 + 8),
+        );
+      column.forEach((node, index) => {
+        if (!index) {
+          verticalSlots.push(0);
+          return;
+        }
+        const previous = column[index - 1];
+        const sameArea = (previous.area_id ?? "") === (node.area_id ?? "");
+        verticalSlots.push(
+          verticalSlots[index - 1] +
+            (sameArea
+              ? Math.max(
+                  140,
+                  labelHalfWidth(previous) + labelHalfWidth(node) + 20,
+                )
+              : 230),
+        );
+      });
+      const center =
+        (verticalSlots[0] + verticalSlots[verticalSlots.length - 1]) / 2;
+      for (let index = 0; index < verticalSlots.length; index++)
+        verticalSlots[index] -= center;
+    }
     column.forEach((node, index) => {
-      let slot = index - (column.length - 1) / 2;
+      const slot = index - (column.length - 1) / 2;
       nodes.push({
         ...node,
         x:
           orientation === "vertical"
-            ? slot * (groupBy === "area" ? 230 : 170)
+            ? groupBy === "area"
+              ? verticalSlots[index]
+              : slot * 170
             : depthPosition(level),
         y:
           orientation === "vertical"

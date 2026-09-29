@@ -89,6 +89,22 @@ function deviceDisplayName(device: node): string {
     : labelParts(device.label).name;
 }
 
+function areaDeviceName(device: node): string {
+  const name = withoutAreaName(
+    deviceDisplayName(device),
+    deviceAreaName(device) ?? "",
+  );
+  return name.replace(/^wiser\s+/i, "").trim() || name;
+}
+
+function wrapMapName(name: string): string {
+  if (name.length <= 18 || name.includes("\n")) return name;
+  const slash = name.indexOf("/");
+  return slash > 0 && slash < name.length - 1
+    ? `${name.slice(0, slash + 1)}\n${name.slice(slash + 1).trim()}`
+    : name;
+}
+
 export function sharedAreaDeviceIds(nodes: node[]): Set<number> {
   const areas = new Map<number, string>();
   const counts = new Map<string, number>();
@@ -128,15 +144,11 @@ export function deviceMapLabel(
 }
 
 export function areaDeviceMapLabel(device: node): string {
-  const name = withoutAreaName(
-    deviceDisplayName(device),
-    deviceAreaName(device) ?? "",
-  );
-  return name.replace(/^wiser\s+/i, "").trim() || name;
+  return wrapMapName(areaDeviceName(device));
 }
 
 export function deviceDetailsLabel(device: node): string {
-  const name = areaDeviceMapLabel(device);
+  const name = areaDeviceName(device);
   const area = deviceAreaName(device);
   return area ? `${name} (${area})` : name;
 }

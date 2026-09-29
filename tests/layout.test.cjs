@@ -8,16 +8,17 @@ const compiled = ts.transpileModule(readFileSync("src/layout.ts", "utf8"), {
   },
 }).outputText;
 const result = { exports: {} };
+const appearance = require("./load-ts.cjs")("src/device-appearance.ts");
 new Function("module", "exports", "require", compiled)(
   result,
   result.exports,
-  () =>
-    require("./load-ts.cjs")("src/pie-layout.ts", {
-      "./device-appearance": require("./load-ts.cjs")(
-        "src/device-appearance.ts",
-      ),
+  (path) => {
+    if (path === "./device-appearance") return appearance;
+    return require("./load-ts.cjs")("src/pie-layout.ts", {
+      "./device-appearance": appearance,
       "./area-spacing": require("./load-ts.cjs")("src/area-spacing.ts"),
-    }),
+    });
+  },
 );
 const { arrangeNetwork } = result.exports;
 const nodes = [0, 1, 2, 3, 4].map((id) => ({
@@ -363,6 +364,37 @@ assert.ok(
 assert.ok(
   sensorPosition.y > plugPosition.y,
   "First companion sits slightly below the repeater",
+);
+
+const directKitchen = {
+  nodes: [
+    { id: 0, group: "Controller", label: "Hub" },
+    { id: 1, group: "SmartPlug", label: "Smart Plug", area_id: "k" },
+    {
+      id: 2,
+      group: "TemperatureHumiditySensor",
+      label: "Temperature/Humidity Sensor",
+      area_id: "k",
+    },
+    { id: -1, group: "Area", label: "Kitchen", area_id: "k" },
+  ],
+  edges: [
+    { from: 1, to: 0 },
+    { from: 2, to: 0 },
+  ],
+};
+const directKitchenVertical = arrangeNetwork(
+  directKitchen,
+  "vertical",
+  undefined,
+  "area",
+);
+const directPlug = directKitchenVertical.nodes.find((node) => node.id === 1);
+const directSensor = directKitchenVertical.nodes.find((node) => node.id === 2);
+assert.equal(
+  Math.abs(directPlug.x - directSensor.x),
+  140,
+  "Vertical layout compacts devices in the same area",
 );
 
 // Several repeaters, multiple direct sensors per area, a nested repeater,

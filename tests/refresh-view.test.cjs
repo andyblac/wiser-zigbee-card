@@ -765,14 +765,25 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     allPositions[id] = { x, y };
     if (id === kitchenArea.id) kitchenHeaderMoves++;
   };
-  card.areaBounds(measure);
-  card.areaBounds(measure);
+  const asymmetricMeasure = {
+    save() {},
+    restore() {},
+    measureText(text) {
+      return { width: text === "Sensor" ? 500 : 60 };
+    },
+  };
+  card.areaBounds(asymmetricMeasure);
+  card.areaBounds(asymmetricMeasure);
   assert.equal(
     kitchenHeaderMoves,
     1,
     "Fractional multi-device centres do not create a redraw loop",
   );
-  assert.equal(allPositions[kitchenArea.id].x, 201);
+  assert.equal(
+    allPositions[kitchenArea.id].x,
+    201,
+    "A long device label does not pull the area marker off-centre",
+  );
   global.getComputedStyle = () => ({
     getPropertyValue: (key) =>
       key === "--success-color" ? "#00ff00" : "#888888",

@@ -75,6 +75,22 @@ assert.equal(
   "Thermostat",
 );
 assert.equal(
+  areaDeviceMapLabel({
+    label: "Temperature Sensor\n(Kitchen)",
+    device_name: "Wiser Temperature/Humidity Sensor",
+    area_name: "Kitchen",
+  }),
+  "Temperature/\nHumidity Sensor",
+);
+assert.equal(
+  deviceDetailsLabel({
+    label: "Temperature Sensor\n(Kitchen)",
+    device_name: "Wiser Temperature/Humidity Sensor",
+    area_name: "Kitchen",
+  }),
+  "Temperature/Humidity Sensor (Kitchen)",
+);
+assert.equal(
   deviceDetailsLabel({
     label: "RoomStat-16\n(Office)",
     device_name: "Office Wiser Thermostat",

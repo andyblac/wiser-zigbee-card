@@ -726,20 +726,24 @@ export class WiserZigbeeCard
       const headerIndex = members.findIndex((node) => node.group === "Area");
       const header = members[headerIndex];
       const position = header && positions[header.id];
-      const deviceBoxes = boxes.filter((_, index) => index !== headerIndex);
+      const deviceCenters = members
+        .filter((_, index) => index !== headerIndex)
+        .map((node) => positions[node.id]?.x)
+        .filter((x): x is number => x !== undefined);
       if (
         position &&
-        deviceBoxes.length &&
+        deviceCenters.length &&
         !this.areaDrag &&
         this.orientation === "vertical"
       ) {
+        // Centre the room header over its devices, not their labels. A long
+        // device name still expands the outline but must not pull the icon
+        // away from the visual centre of the device row.
         // vis-network rounds values returned by getPositions(). Keep the
         // target integral or a fractional centre requests another redraw on
         // every frame without ever appearing to reach its destination.
         const center = Math.round(
-          (Math.min(...deviceBoxes.map((box) => box.left)) +
-            Math.max(...deviceBoxes.map((box) => box.right))) /
-            2,
+          (Math.min(...deviceCenters) + Math.max(...deviceCenters)) / 2,
         );
         const dx = center - position.x;
         if (Math.abs(dx) > 0.01) {
