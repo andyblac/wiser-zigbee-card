@@ -972,6 +972,22 @@ export class WiserZigbeeCard
       animation: false,
     });
   }
+  @eventOptions({ passive: false })
+  private scrollDeviceInfo(event: WheelEvent): void {
+    if (!this.config?.map_only) return;
+    const panel = event.currentTarget as HTMLElement;
+    event.stopPropagation();
+    event.preventDefault();
+    if (panel.scrollHeight > panel.clientHeight) {
+      const unit =
+        event.deltaMode === 1
+          ? 16
+          : event.deltaMode === 2
+            ? panel.clientHeight
+            : 1;
+      panel.scrollTop += event.deltaY * unit;
+    }
+  }
   private zoomStep(factor: number): void {
     if (!this.network) return;
     this.prepareGestureZoom();
@@ -1827,6 +1843,7 @@ export class WiserZigbeeCard
         <footer
           class=${this.config?.map_only ? "map-info" : ""}
           ?hidden=${this.config?.map_only && !selected}
+          @wheel=${this.scrollDeviceInfo}
           aria-label=${selected
             ? this.deviceName(selected)
             : this.t("card.controls")}
@@ -2126,9 +2143,11 @@ export class WiserZigbeeCard
       z-index: 1;
       inset: auto 12px 12px;
       box-sizing: border-box;
-      max-height: 60%;
+      max-height: min(420px, calc(100% - 24px));
       overflow-y: auto;
       overscroll-behavior: contain;
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
       padding: 16px;
       border: 1px solid var(--divider-color);
       border-radius: var(--ha-card-border-radius, 12px);
@@ -2157,6 +2176,9 @@ export class WiserZigbeeCard
     .connection {
       padding: 8px 0;
       color: var(--wiser-muted);
+    }
+    .map-info .connection {
+      padding: 4px 0;
     }
     .connection strong {
       font-weight: 500;

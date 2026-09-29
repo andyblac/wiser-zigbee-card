@@ -313,14 +313,15 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   };
   card.config.map_only = true;
   card.selected = 1;
+  const infoPanel = {
+    hidden: false,
+    getBoundingClientRect: () => ({ top: 232 }),
+  };
   card.shadowRoot = {
     getElementById: () => ({
       getBoundingClientRect: () => ({ top: 20, bottom: 420, height: 400 }),
     }),
-    querySelector: () => ({
-      hidden: false,
-      getBoundingClientRect: () => ({ top: 232 }),
-    }),
+    querySelector: () => infoPanel,
   };
   card.focusAboveInfo();
   assert.equal(focused.id, 1);
@@ -331,6 +332,42 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     "Info panel focus preserves current zoom",
   );
   assert.equal(focused.options.locked, false, "Map remains pannable");
+  let infoWheelStopped = false;
+  let infoWheelPrevented = false;
+  const scrollableInfo = {
+    clientHeight: 240,
+    scrollHeight: 420,
+    scrollTop: 0,
+  };
+  card.scrollDeviceInfo({
+    currentTarget: scrollableInfo,
+    deltaMode: 0,
+    deltaY: 35,
+    stopPropagation: () => {
+      infoWheelStopped = true;
+    },
+    preventDefault: () => {
+      infoWheelPrevented = true;
+    },
+  });
+  assert.equal(scrollableInfo.scrollTop, 35);
+  assert.equal(infoWheelStopped, true);
+  assert.equal(infoWheelPrevented, true);
+  infoWheelStopped = false;
+  infoWheelPrevented = false;
+  card.scrollDeviceInfo({
+    currentTarget: { clientHeight: 240, scrollHeight: 240, scrollTop: 0 },
+    deltaMode: 0,
+    deltaY: 35,
+    stopPropagation: () => {
+      infoWheelStopped = true;
+    },
+    preventDefault: () => {
+      infoWheelPrevented = true;
+    },
+  });
+  assert.equal(infoWheelStopped, true, "Info wheel never scrolls the page");
+  assert.equal(infoWheelPrevented, true, "Info wheel remains inside the card");
   focused = undefined;
   card.config.map_only = false;
   card.focusAboveInfo();

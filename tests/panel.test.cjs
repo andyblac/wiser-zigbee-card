@@ -103,6 +103,23 @@ test("panel creates a Zigbee card per enabled hub and updates only the visible c
   assert.equal(panel.shadowRoot.querySelector("main").children[0], cards[0]);
 });
 
+test("nested panel constrains the card to Home Assistant's available height", () => {
+  const panel = setup();
+  assert.match(
+    panel.shadowRoot.innerHTML,
+    /:host\(\[nested\]\) \{ height:100%; max-height:100%; \}/,
+  );
+  assert.match(panel.shadowRoot.innerHTML, /main \{ display:flex; flex: 1;/);
+  assert.match(
+    panel.shadowRoot.innerHTML,
+    /overflow: hidden; box-sizing:border-box;/,
+  );
+  assert.match(
+    panel.shadowRoot.innerHTML,
+    /wiser-zigbee-card \{[^}]*min-height:0;/,
+  );
+});
+
 test("panel accepts hass after configuration and replaces cards when hubs change", () => {
   const panel = setup();
   panel.panel = { config: { hubs: ["first"] } };
