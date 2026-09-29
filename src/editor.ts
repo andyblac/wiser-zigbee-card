@@ -284,6 +284,7 @@ export class WiserZigbeeCardEditor
         (this._config.orientation ?? "vertical")
     ) {
       delete next.layout_data;
+      delete next.layout_view;
       delete next.layout_orientation;
       delete next.layout_group_by;
     }
@@ -319,6 +320,7 @@ export class WiserZigbeeCardEditor
       ...(!ev.detail.preferences_only
         ? {
             layout_data: ev.detail.layout_data,
+            layout_view: ev.detail.layout_view,
             orientation: ev.detail.orientation ?? "vertical",
             group_by: ev.detail.group_by ?? "none",
             layout_orientation: undefined,

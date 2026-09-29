@@ -20,6 +20,7 @@ const layout = {
     1: { x: 12.5, y: -90 },
     "-123": { x: 40, y: 20 },
   },
+  layout_view: { position: { x: -120, y: 45 }, scale: 0.42 },
 };
 
 test("clipboard YAML round-trips display settings and positions without hub identity", () => {
@@ -58,6 +59,9 @@ test("invalid clipboard text is rejected before applying any layout", () => {
     { layout_data: { 1: { x: "10", y: 20 } } },
     { layout_data: { 1: { x: null, y: 20 } } },
     { layout_data: JSON.parse('{"__proto__":{"x":0,"y":0}}') },
+    { layout_view: [] },
+    { layout_view: { position: { x: "0", y: 0 }, scale: 1 } },
+    { layout_view: { position: { x: 0, y: 0 }, scale: 0 } },
   ])
     assert.throws(() =>
       pasteSettings(JSON.stringify({ ...layout, ...change })),

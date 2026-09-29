@@ -33,6 +33,10 @@ export interface WiserZigbeeCardConfig extends LovelaceCardConfig {
   layout_orientation?: NetworkOrientation;
   layout_id?: string;
   layout_data?: Record<string, { x: number; y: number }> | "";
+  layout_view?: {
+    position: { x: number; y: number };
+    scale: number;
+  };
 }
 
 export interface node {

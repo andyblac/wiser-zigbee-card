@@ -437,6 +437,14 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   assert.equal(card.fitAfterHeightChange, false);
   card.updated(new Map());
   assert.equal(resizeCalls.length, 2, "Ordinary updates must not refit");
+  const savedViewport = { position: { x: -75, y: 40 }, scale: 0.35 };
+  card.initialLayoutView = savedViewport;
+  card.fitNetwork();
+  assert.deepEqual(
+    view,
+    savedViewport,
+    "Initial layout restores the saved zoom and pan instead of fitting",
+  );
   const originalDrawNetwork = card.drawNetwork;
   const originalHass = card.hass;
   let appearanceDraws = 0;
@@ -861,7 +869,11 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   assert.deepEqual(drawn.splice(0), ["80%", "50%"]);
   assert.equal(redraws, 3, "Hover does not disturb always-visible labels");
   preview = false;
-  global.localStorage = { getItem: () => null, setItem: () => {} };
+  const localValues = new Map();
+  global.localStorage = {
+    getItem: (key) => localValues.get(key) ?? null,
+    setItem: (key, value) => localValues.set(key, value),
+  };
   const savingCard = new WiserZigbeeCard();
   savingCard.setConfig({
     type: "custom:wiser-zigbee-card",
@@ -869,12 +881,25 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     map_only: false,
   });
   savingCard.currentPositions = () => ({ 1: { x: 10, y: 20 } });
+  savingCard.network = {
+    getViewPosition: () => ({ x: -80, y: 35 }),
+    getScale: () => 0.4,
+  };
   savingCard.showLabels = true;
   savingCard.config.map_only = true;
   await savingCard.saveLayoutClick();
   assert.equal(savedChanges.show_labels, true);
   assert.equal(savedChanges.map_only, true);
   assert.deepEqual(savedChanges.layout_data, { 1: { x: 10, y: 20 } });
+  assert.deepEqual(savedChanges.layout_view, {
+    position: { x: -80, y: 35 },
+    scale: 0.4,
+  });
+  assert.deepEqual(
+    JSON.parse(localValues.get(`${savingCard.layoutKey}:view`)),
+    savedChanges.layout_view,
+    "Save stores the zoom and pan browser fallback",
+  );
   assert.equal(savingCard.config.show_labels, true);
   savingCard.showLabels = false;
   savingCard.config.map_only = false;
@@ -884,7 +909,6 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   const menu = { updateComplete: Promise.resolve(), open: false };
   const anchorButton = {};
   savingCard.shadowRoot = { querySelector: () => menu };
-  savingCard.network = {};
   await savingCard.openMagnifierMenu({ querySelector: () => anchorButton });
   assert.equal(menu.open, true);
   assert.equal(menu.anchorElement, anchorButton);
@@ -957,6 +981,27 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
       "Empty configured layout does not revive stale browser positions",
     );
   }
+  const restoredView = { position: { x: -140, y: 60 }, scale: 0.3 };
+  const restored = new WiserZigbeeCard();
+  restored.hass = { language: "en-GB" };
+  restored.setConfig({
+    type: "custom:wiser-zigbee-card",
+    hub: "restored",
+    layout_data: { 1: { x: 100, y: 200 } },
+    layout_view: restoredView,
+  });
+  restored.drawNetwork = () => {};
+  const restoredLoad = restored.loadData();
+  resolveFetch({
+    nodes: [{ id: 1, label: "Sensor", group: "RoomStat", x: 0, y: 0 }],
+    edges: [],
+  });
+  await restoredLoad;
+  assert.deepEqual(
+    restored.initialLayoutView,
+    restoredView,
+    "Configured zoom and pan are selected with the configured layout",
+  );
   const appRoot = {};
   savingCard.ownerDocument = {
     querySelector: (selector) => {

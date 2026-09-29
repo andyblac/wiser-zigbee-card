@@ -79,6 +79,10 @@ declare global {
   interface HASSDomEvents {
     "wiser-zigbee-save-layout": {
       layout_data: any;
+      layout_view?: {
+        position: { x: number; y: number };
+        scale: number;
+      };
       show_labels?: boolean;
       map_only?: boolean;
       preferences_only?: boolean;
@@ -172,6 +176,10 @@ export class WiserZigbeeCard
     position: { x: number; y: number };
     scale: number;
   };
+  private initialLayoutView?: {
+    position: { x: number; y: number };
+    scale: number;
+  };
   network?: Network;
   private mapData?: zigbeeData;
   private collapsedAreas = new Set<string>();
@@ -257,6 +265,7 @@ export class WiserZigbeeCard
     this.renderFingerprint = "";
     this.infoReturnView = undefined;
     this.zoomReturnView = undefined;
+    this.initialLayoutView = undefined;
     this.layoutStatus = "";
     this.pendingLoad = true;
     this.requestId++;
@@ -323,6 +332,7 @@ export class WiserZigbeeCard
     this.areaDrag = undefined;
     this.infoReturnView = undefined;
     this.zoomReturnView = undefined;
+    this.initialLayoutView = undefined;
   }
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
@@ -406,13 +416,15 @@ export class WiserZigbeeCard
         this.config.group_by,
       );
       if (request !== this.requestId || !this.isConnected) return;
-      let saved =
+      const compatibleLayout =
         (this.config.layout_orientation ?? this.orientation) ===
           this.orientation &&
         (this.config.layout_group_by ?? this.config.group_by ?? "none") ===
-          (this.config.group_by ?? "none")
-          ? this.config.layout_data
-          : undefined;
+          (this.config.group_by ?? "none");
+      let saved = compatibleLayout ? this.config.layout_data : undefined;
+      let savedView = compatibleLayout
+        ? this.validView(this.config.layout_view)
+        : undefined;
       // Dashboard configuration is shared across browsers. Local positions
       // are only a fallback for cards without a compatible configured layout.
       if (!saved || typeof saved !== "object" || Array.isArray(saved)) {
@@ -420,8 +432,14 @@ export class WiserZigbeeCard
           const stored = JSON.parse(
             localStorage.getItem(this.layoutKey) || "null",
           );
-          if (stored && typeof stored === "object" && !Array.isArray(stored))
+          if (stored && typeof stored === "object" && !Array.isArray(stored)) {
             saved = stored;
+            savedView = this.validView(
+              JSON.parse(
+                localStorage.getItem(`${this.layoutKey}:view`) || "null",
+              ),
+            );
+          }
         } catch {
           /* The automatic layout remains available. */
         }
@@ -439,6 +457,7 @@ export class WiserZigbeeCard
       }));
       this.zigbeeData = this.config.group_by === "area" ? source : data;
       this.mapData = data;
+      if (!this.network) this.initialLayoutView = savedView;
       await this.updateComplete;
       this.drawNetwork();
     } catch (error) {
@@ -1066,7 +1085,10 @@ export class WiserZigbeeCard
       map.clientWidth,
       map.clientHeight,
     );
-    if (view) this.network.moveTo({ ...view, animation: false });
+    const saved = this.initialLayoutView;
+    this.initialLayoutView = undefined;
+    if (saved || view)
+      this.network.moveTo({ ...(saved ?? view!), animation: false });
   }
   private hoverLink(edgeId?: string): void {
     if (this.hoveredEdge === edgeId) return;
@@ -1250,6 +1272,29 @@ export class WiserZigbeeCard
       ? { x: value.x, y: value.y }
       : undefined;
   }
+  private validView(
+    value: any,
+  ): { position: { x: number; y: number }; scale: number } | undefined {
+    return value &&
+      Number.isFinite(value.position?.x) &&
+      Number.isFinite(value.position?.y) &&
+      Number.isFinite(value.scale) &&
+      value.scale > 0
+      ? {
+          position: { x: value.position.x, y: value.position.y },
+          scale: value.scale,
+        }
+      : undefined;
+  }
+  private currentView():
+    | { position: { x: number; y: number }; scale: number }
+    | undefined {
+    if (!this.network) return undefined;
+    return this.validView({
+      position: this.network.getViewPosition(),
+      scale: this.network.getScale(),
+    });
+  }
   private currentPositions():
     | Record<string, { x: number; y: number }>
     | undefined {
@@ -1278,6 +1323,7 @@ export class WiserZigbeeCard
     const confirm = this.prepareConfirmation("common.copy", "common.copied");
     const layout = this.currentPositions();
     if (!layout) return;
+    const view = this.currentView();
     try {
       const text = copySettings({
         name: this.config?.name ?? this.t("card.title"),
@@ -1292,6 +1338,7 @@ export class WiserZigbeeCard
         orientation: this.orientation,
         group_by: this.config?.group_by ?? "none",
         layout_data: layout,
+        layout_view: view,
       });
       await copyText(text);
       this.layoutStatus = "";
@@ -1425,12 +1472,15 @@ export class WiserZigbeeCard
     if (this.pastingSettings) return;
     const layout = this.currentPositions();
     if (!layout || !this.config) return;
+    const view = this.currentView();
     const confirm = preferencesOnly
       ? () => {}
       : this.prepareConfirmation("card.save_layout", "common.saved");
     try {
       if (!preferencesOnly)
         localStorage.setItem(this.layoutKey, JSON.stringify(layout));
+      if (!preferencesOnly && view)
+        localStorage.setItem(`${this.layoutKey}:view`, JSON.stringify(view));
       localStorage.setItem(
         `${this.layoutKey}:labels`,
         JSON.stringify(this.showLabels),
@@ -1452,6 +1502,7 @@ export class WiserZigbeeCard
           magnifier: this.config.magnifier ?? false,
           map_only: this.config.map_only ?? false,
           layout_data: layout,
+          layout_view: view,
           orientation: this.orientation,
           group_by: this.config.group_by ?? "none",
           layout_orientation: undefined,
@@ -1472,6 +1523,7 @@ export class WiserZigbeeCard
     }
     fireEvent(this, "wiser-zigbee-save-layout", {
       layout_data: layout,
+      layout_view: view,
       show_labels: this.showLabels,
       map_only: this.config.map_only ?? false,
       magnifier: this.config.magnifier ?? false,

@@ -48,10 +48,12 @@ new Function("require", "exports", "module", source)(
 );
 const editor = new output.exports.WiserZigbeeCardEditor();
 const layout = { 0: { x: 12, y: 34 } };
+const layoutView = { position: { x: -25, y: 50 }, scale: 0.4 };
 editor.setConfig({
   type: "custom:wiser-zigbee-card",
   hub: "one",
   layout_data: layout,
+  layout_view: layoutView,
   layout_orientation: "horizontal",
   orientation: "horizontal",
 });
@@ -110,6 +112,7 @@ editor.setOrientation("vertical");
 assert.equal(events.at(-1).detail.config.orientation, "vertical");
 assert.deepEqual(events.at(-1).detail.config.layout_data, layout);
 assert.equal(change({ hub: "two" }).layout_data, undefined);
+assert.equal(events.at(-1).detail.config.layout_view, undefined);
 assert.equal(change({ name: "" }).name, "");
 assert.equal(
   editor.render().values.find((value) => value && value.name === "").name,
@@ -210,7 +213,11 @@ console.log(
   "Native hub picker covers single/multiple hubs and preserves layout isolation.",
 );
 
-editor.setConfig({ type: "custom:wiser-zigbee-card", layout_data: layout });
+editor.setConfig({
+  type: "custom:wiser-zigbee-card",
+  layout_data: layout,
+  layout_view: layoutView,
+});
 const groupField = editor
   .render()
   .values.filter(Array.isArray)
@@ -221,6 +228,7 @@ assert.deepEqual(
   ["none", "area"],
 );
 assert.equal(change({ group_by: "area" }).layout_data, undefined);
+assert.equal(events.at(-1).detail.config.layout_view, undefined);
 assert.equal(change({ group_by: "none" }).group_by, "none");
 editor.setConfig({ type: "custom:wiser-zigbee-card", layout_data: layout });
 assert.equal(
@@ -243,6 +251,7 @@ editor.setConfig({
   type: "custom:wiser-zigbee-card",
   orientation: "vertical",
   layout_data: layout,
+  layout_view: layoutView,
 });
 editor.save_layout({
   detail: {
@@ -250,11 +259,13 @@ editor.save_layout({
     show_labels: true,
     map_only: true,
     preferences_only: true,
+    layout_view: { position: { x: 99, y: 88 }, scale: 0.25 },
   },
 });
 assert.equal(events.at(-1).detail.config.show_labels, true);
 assert.equal(events.at(-1).detail.config.map_only, true);
 assert.deepEqual(events.at(-1).detail.config.layout_data, layout);
+assert.deepEqual(events.at(-1).detail.config.layout_view, layoutView);
 editor.save_layout({
   detail: {
     orientation: "vertical",
@@ -265,6 +276,16 @@ editor.save_layout({
 });
 assert.equal(events.at(-1).detail.config.show_labels, false);
 assert.equal(events.at(-1).detail.config.map_only, false);
+const replacementView = { position: { x: 99, y: 88 }, scale: 0.25 };
+editor.save_layout({
+  detail: {
+    orientation: "vertical",
+    layout_data: layout,
+    layout_view: replacementView,
+    preferences_only: false,
+  },
+});
+assert.deepEqual(events.at(-1).detail.config.layout_view, replacementView);
 
 editor.setConfig({ type: "custom:wiser-zigbee-card" });
 const statusField = editor

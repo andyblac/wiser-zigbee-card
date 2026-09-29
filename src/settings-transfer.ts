@@ -58,6 +58,22 @@ function validateSettings(value: unknown): Settings {
       throw new Error("Invalid position");
     result.layout_data[id] = { x: position.x, y: position.y };
   }
+  if ("layout_view" in value) {
+    const view = value.layout_view;
+    if (
+      !object(view) ||
+      !object(view.position) ||
+      !Number.isFinite(view.position.x) ||
+      !Number.isFinite(view.position.y) ||
+      !Number.isFinite(view.scale) ||
+      view.scale <= 0
+    )
+      throw new Error("Invalid layout view");
+    result.layout_view = {
+      position: { x: view.position.x, y: view.position.y },
+      scale: view.scale,
+    };
+  }
   return result;
 }
 

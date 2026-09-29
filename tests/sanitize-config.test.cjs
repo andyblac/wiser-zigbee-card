@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const { sanitizeConfig } = require("./load-ts.cjs")("src/sanitize-config.ts");
 const layout = { 0: { x: 1, y: 2 } };
+const view = { position: { x: 3, y: 4 }, scale: 0.5 };
 const original = {
   type: "custom:wiser-zigbee-card",
   orientation: "vertical",
@@ -8,6 +9,7 @@ const original = {
   group_by: "area",
   layout_group_by: "area",
   layout_data: layout,
+  layout_view: view,
   show_labels: true,
 };
 const clean = sanitizeConfig(original);
@@ -17,10 +19,15 @@ assert.equal(clean.orientation, "vertical");
 assert.equal(clean.group_by, "area");
 assert.equal(clean.show_labels, true);
 assert.deepEqual(clean.layout_data, layout);
+assert.deepEqual(clean.layout_view, view);
 assert.equal(original.layout_orientation, "vertical");
 assert.deepEqual(sanitizeConfig(clean), clean);
 assert.equal(
   sanitizeConfig({ ...original, orientation: "pie" }).layout_data,
+  undefined,
+);
+assert.equal(
+  sanitizeConfig({ ...original, orientation: "pie" }).layout_view,
   undefined,
 );
 assert.equal(
