@@ -86,7 +86,7 @@ test("panel creates a Zigbee card per enabled hub and updates only the visible c
   const panel = setup();
   const hass = { states: {} };
   panel.hass = hass;
-  panel.panel = { config: { hubs: ["first", "second"] } };
+  panel.panel = { config: { panel_id: "registry-panel", hubs: ["first", "second"] } };
   const cards = panel.shadowRoot.querySelector("main").children;
   assert.equal(cards.length, 2);
   assert.equal(cards[0].config.hub, "first");
@@ -99,7 +99,7 @@ test("panel creates a Zigbee card per enabled hub and updates only the visible c
   panel._selectHub("second");
   assert.equal(cards[1].hass, updated);
   assert.equal(cards[0].hidden, true);
-  panel.panel = { config: { hubs: ["first", "second"] } };
+  panel.panel = { config: { panel_id: "registry-panel", hubs: ["first", "second"] } };
   assert.equal(panel.shadowRoot.querySelector("main").children[0], cards[0]);
 });
 
@@ -122,11 +122,11 @@ test("nested panel constrains the card to Home Assistant's available height", ()
 
 test("panel accepts hass after configuration and replaces cards when hubs change", () => {
   const panel = setup();
-  panel.panel = { config: { hubs: ["first"] } };
+  panel.panel = { config: { panel_id: "registry-panel", hubs: ["first"] } };
   const hass = {};
   panel.hass = hass;
   assert.equal(panel.shadowRoot.querySelector("main").children[0].hass, hass);
-  panel.panel = { config: { hubs: ["second"] } };
+  panel.panel = { config: { panel_id: "registry-panel", hubs: ["second"] } };
   const cards = panel.shadowRoot.querySelector("main").children;
   assert.equal(cards.length, 1);
   assert.equal(cards[0].config.hub, "second");
@@ -145,7 +145,7 @@ test("panel overrides saved fixed map heights and hides the height editor", asyn
   const panel = setup();
   panel.hass = { user: { is_admin: true } };
   panel.panel = {
-    config: { hubs: ["hub"], card_configs: { hub: { map_height: 340 } } },
+    config: { panel_id: "registry-panel", hubs: ["hub"], card_configs: { hub: { map_height: 340 } } },
   };
   assert.equal(panel._cards[0].config.map_height, null);
   await panel._openEditor();
@@ -155,11 +155,11 @@ test("panel overrides saved fixed map heights and hides the height editor", asyn
 
 test("load errors display a retry action", async () => {
   const panel = setup();
-  panel.panel = { config: { hubs: null } };
+  panel.panel = { config: { panel_id: "registry-panel", hubs: null } };
   const children = panel.shadowRoot.querySelector("main").children;
   assert.ok(children[0].textContent);
   assert.equal(children[1].textContent, "Retry");
-  panel._config = { hubs: ["recovered"] };
+  panel._config = { panel_id: "registry-panel", hubs: ["recovered"] };
   await children[1].listeners.click();
   assert.equal(
     panel.shadowRoot.querySelector("main").children[0].config.hub,
@@ -174,7 +174,7 @@ test("cog saves shared integration config over websocket", async () => {
     user: { is_admin: true },
     callWS: async (msg) => calls.push(msg),
   };
-  panel.panel = { config: { hubs: ["hub"] } };
+  panel.panel = { config: { panel_id: "registry-panel", hubs: ["hub"] } };
   await panel.shadowRoot.getElementById("settings").listeners.click();
   assert.equal(panel.shadowRoot.getElementById("editor-dialog").open, true);
   panel._editors[0].listeners["config-changed"]({
@@ -182,13 +182,14 @@ test("cog saves shared integration config over websocket", async () => {
     detail: { config: { name: "My network", show_labels: true } },
   });
   await panel.shadowRoot.getElementById("save").listeners.click();
-  assert.equal(calls[0].type, "wiser/zigbee_panel/configure");
+  assert.equal(calls[0].type, "wiser/panel/configure");
+  assert.equal(calls[0].panel_id, "registry-panel");
   assert.equal(calls[0].configs.hub.show_labels, true);
   assert.equal(panel.shadowRoot.getElementById("editor-dialog").open, false);
   assert.equal(panel._cards[0].config.show_labels, true);
   const reloaded = setup();
   reloaded.panel = {
-    config: { hubs: ["hub"], card_configs: calls[0].configs },
+    config: { panel_id: "registry-panel", hubs: ["hub"], card_configs: calls[0].configs },
   };
   assert.equal(reloaded._cards[0].config.name, "My network");
 });
@@ -201,7 +202,7 @@ test("failed save keeps editor open and offers retry", async () => {
       throw Error("Offline");
     },
   };
-  panel.panel = { config: { hubs: ["hub"] } };
+  panel.panel = { config: { panel_id: "registry-panel", hubs: ["hub"] } };
   await panel._openEditor();
   await panel._saveEditor();
   assert.equal(panel.shadowRoot.getElementById("editor-dialog").open, true);
@@ -223,7 +224,7 @@ test("save shows backend validation details without discarding the draft", async
       };
     },
   };
-  panel.panel = { config: { hubs: ["hub"] } };
+  panel.panel = { config: { panel_id: "registry-panel", hubs: ["hub"] } };
   await panel._openEditor();
   panel._drafts.hub.theme_mode = "light";
   await panel._saveEditor();
@@ -253,7 +254,7 @@ test("panel waits for native Lovelace translations before rendering the editor",
       });
     },
   };
-  panel.panel = { config: { hubs: ["hub"] } };
+  panel.panel = { config: { panel_id: "registry-panel", hubs: ["hub"] } };
   const opening = panel._openEditor();
   assert.deepEqual(fragments, ["lovelace"]);
   assert.equal(panel._editors.length, 0);
@@ -277,7 +278,7 @@ test("translation failure shows an error instead of a blank editor and supports 
       return () => "Vertical";
     },
   };
-  panel.panel = { config: { hubs: ["hub"] } };
+  panel.panel = { config: { panel_id: "registry-panel", hubs: ["hub"] } };
   await panel._openEditor();
   assert.equal(panel._editors.length, 0);
   assert.ok(panel.shadowRoot.getElementById("editor-error").textContent);
@@ -300,7 +301,7 @@ test("translations are reused for state updates and reloaded when language chang
     },
   });
   panel.hass = makeHass("de");
-  panel.panel = { config: { hubs: ["hub"] } };
+  panel.panel = { config: { panel_id: "registry-panel", hubs: ["hub"] } };
   await panel._openEditor();
   panel.hass = { ...panel._hass, states: {} };
   await panel._loadTranslations();
@@ -346,7 +347,7 @@ test("a delayed request cannot overwrite translations after switching language a
 test("Cancel leaves the card unchanged", async () => {
   const panel = setup();
   panel.hass = { user: { is_admin: true } };
-  panel.panel = { config: { hubs: ["hub"] } };
+  panel.panel = { config: { panel_id: "registry-panel", hubs: ["hub"] } };
   await panel._openEditor();
   panel._editors[0].listeners["config-changed"]({
     stopPropagation() {},
@@ -361,12 +362,13 @@ test("Cancel leaves the card unchanged", async () => {
 test("hub tabs preserve selection across settings updates", () => {
   const panel = setup();
   panel.hass = {};
-  panel.panel = { config: { hubs: ["first", "second"] } };
+  panel.panel = { config: { panel_id: "registry-panel", hubs: ["first", "second"] } };
   panel._tabs[1].listeners.click();
   assert.equal(panel._cards[0].hidden, true);
   assert.equal(panel._cards[1].hidden, false);
   panel.panel = {
     config: {
+      panel_id: "registry-panel",
       hubs: ["first", "second"],
       card_configs: { second: { show_labels: true } },
     },
@@ -380,6 +382,7 @@ test("panel preserves Home Assistant theme while forwarding map theme settings",
   panel.hass = { user: { is_admin: true }, callWS: async () => {} };
   panel.panel = {
     config: {
+      panel_id: "registry-panel",
       hubs: ["first", "second"],
       card_configs: {
         first: { theme_mode: "dark" },
@@ -410,6 +413,7 @@ test("layout save only updates its own hub and requires an administrator", async
   };
   panel.panel = {
     config: {
+      panel_id: "registry-panel",
       hubs: ["first", "second"],
       card_configs: { second: { map_only: true } },
     },
