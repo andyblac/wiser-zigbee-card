@@ -13,7 +13,9 @@ export default function buildVersion({
   root = process.cwd(),
 } = {}) {
   const packagePath = resolve(root, "package.json");
+  const packageLockPath = resolve(root, "package-lock.json");
   let packageData;
+  let packageLockData;
   let packageVersion;
   let version;
   let resourceUrl;
@@ -22,6 +24,12 @@ export default function buildVersion({
     name: "build-version",
     buildStart() {
       packageData = JSON.parse(readFileSync(packagePath, "utf8"));
+      try {
+        packageLockData = JSON.parse(readFileSync(packageLockPath, "utf8"));
+      } catch (error) {
+        if (error.code !== "ENOENT") throw error;
+        packageLockData = undefined;
+      }
       packageVersion = packageData.version;
       version = packageVersion;
       if (dev) {
@@ -35,7 +43,7 @@ export default function buildVersion({
           version = `${development[1]}-dev.${BigInt(development[2]) + 1n}`;
         else if (beta) version = `${beta[1]}.${BigInt(beta[2]) + 1n}-dev.1`;
         else if (release)
-          version = `${release[1]}.${release[2]}.${BigInt(release[3]) + 1n}-dev.1`;
+          version = `${release[1]}.${release[2]}.${BigInt(release[3]) + 1n}-beta.1-dev.1`;
         else
           throw new Error(
             `Cannot create a dev build from version ${packageVersion}`,
@@ -92,6 +100,15 @@ export default function buildVersion({
       if (version !== packageVersion) {
         packageData.version = version;
         writeFileSync(packagePath, `${JSON.stringify(packageData, null, 2)}\n`);
+        if (packageLockData) {
+          packageLockData.version = version;
+          if (packageLockData.packages?.[""])
+            packageLockData.packages[""].version = version;
+          writeFileSync(
+            packageLockPath,
+            `${JSON.stringify(packageLockData, null, 2)}\n`,
+          );
+        }
       }
       console.info(`\nBuilt ${version}\nDashboard resource: ${resourceUrl}\n`);
     },

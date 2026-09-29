@@ -8,8 +8,14 @@ import buildVersion from "../scripts/build-version.mjs";
 test("successful builds advance package versions through stable and beta development cycles", () => {
   const root = mkdtempSync(join(tmpdir(), "wiser-zigbee-version-"));
   const packagePath = join(root, "package.json");
-  const setRelease = (version) =>
+  const packageLockPath = join(root, "package-lock.json");
+  const setRelease = (version) => {
     writeFileSync(packagePath, JSON.stringify({ version }));
+    writeFileSync(
+      packageLockPath,
+      JSON.stringify({ version, packages: { "": { version } } }),
+    );
+  };
   const run = (dev, success = true, final = false) => {
     const plugin = buildVersion({ dev, final, root });
     plugin.buildStart();
@@ -31,15 +37,23 @@ test("successful builds advance package versions through stable and beta develop
   };
   try {
     setRelease("3.0.2");
-    assert.equal(run(true, false), "3.0.3-dev.1");
+    assert.equal(run(true, false), "3.0.3-beta.1-dev.1");
     assert.equal(
       JSON.parse(readFileSync(packagePath, "utf8")).version,
       "3.0.2",
     );
-    assert.equal(run(true), "3.0.3-dev.1");
-    assert.equal(run(true), "3.0.3-dev.2");
-    assert.equal(run(false), "3.0.3");
-    assert.equal(run(true), "3.0.4-dev.1");
+    assert.equal(run(true), "3.0.3-beta.1-dev.1");
+    assert.equal(
+      JSON.parse(readFileSync(packageLockPath, "utf8")).version,
+      "3.0.3-beta.1-dev.1",
+    );
+    assert.equal(
+      JSON.parse(readFileSync(packageLockPath, "utf8")).packages[""].version,
+      "3.0.3-beta.1-dev.1",
+    );
+    assert.equal(run(true), "3.0.3-beta.1-dev.2");
+    assert.equal(run(false), "3.0.3-beta.1");
+    assert.equal(run(true), "3.0.3-beta.2-dev.1");
     setRelease("3.1.1-beta.1");
     assert.equal(run(true), "3.1.1-beta.2-dev.1");
     assert.equal(run(true), "3.1.1-beta.2-dev.2");
@@ -80,7 +94,7 @@ test("cached Rollup rebuilds stamp the next version into the JavaScript", async 
         const code = output.find((item) => item.type === "chunk").code;
         assert.ok(
           code.startsWith(
-            `/*! WISER-CARD-VERSION wiser-zigbee-card 3.0.3-dev.${number} */`,
+            `/*! WISER-CARD-VERSION wiser-zigbee-card 3.0.3-beta.1-dev.${number} */`,
           ),
         );
       } finally {
