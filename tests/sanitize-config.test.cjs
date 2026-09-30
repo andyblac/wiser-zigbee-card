@@ -45,3 +45,4 @@ assert.equal(
   "show_layout_export" in sanitizeConfig({ show_layout_export: true }),
   false,
 );
+assert.equal("magnifier" in sanitizeConfig({ magnifier: true }), false);

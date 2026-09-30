@@ -78,7 +78,12 @@ function switchFields(template) {
     .filter((field) => field?.selector?.boolean);
 }
 const switches = switchFields(template);
-assert.equal(switches.length, 6);
+assert.equal(switches.length, 5);
+assert.equal(
+  switches.some((field) => field.name === "magnifier"),
+  false,
+  "Magnifier is controlled only from the map toolbar",
+);
 assert.ok(
   switches.every((field) => field.selector && "boolean" in field.selector),
   "All switches use native boolean selectors",
@@ -317,8 +322,3 @@ assert.equal("layout_group_by" in cleaned, false);
 assert.deepEqual(cleaned.layout_data, layout);
 assert.equal(change({ orientation: "pie" }).layout_data, undefined);
 editor.setConfig({ type: "custom:wiser-zigbee-card" });
-assert.equal(change({ magnifier: true }).magnifier, true);
-editor.save_layout({
-  detail: { orientation: "vertical", magnifier: false, preferences_only: true },
-});
-assert.equal(events.at(-1).detail.config.magnifier, false);

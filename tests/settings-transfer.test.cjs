@@ -11,7 +11,6 @@ const layout = {
   show_device_list: false,
   show_home_assistant: true,
   show_labels: true,
-  magnifier: false,
   map_height: 500,
   link_status: "both",
   orientation: "pie",
@@ -77,5 +76,6 @@ test("existing Copy YAML remains pasteable", () => {
   const result = pasteSettings(text);
   assert.deepEqual(result.layout_data, { 1: { x: 10, y: -20 } });
   assert.equal(result.show_labels, true);
+  assert.equal("magnifier" in result, false);
   assert.equal("name" in result, false);
 });

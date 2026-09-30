@@ -108,7 +108,6 @@ export class WiserZigbeeCardEditor
       show_device_list: this._config.show_device_list ?? true,
       show_home_assistant: this._config.show_home_assistant ?? false,
       show_labels: this._config.show_labels ?? false,
-      magnifier: this._config.magnifier ?? false,
     };
     const fields = [
       {
@@ -134,7 +133,6 @@ export class WiserZigbeeCardEditor
     const switches = [
       { name: "show_home_assistant", selector: { boolean: {} } },
       { name: "show_labels", selector: { boolean: {} } },
-      { name: "magnifier", selector: { boolean: {} } },
       { name: "auto_update", selector: { boolean: {} } },
       { name: "show_detailed_view", selector: { boolean: {} } },
       {
@@ -308,9 +306,6 @@ export class WiserZigbeeCardEditor
       return;
     this._config = sanitizeConfig({
       ...this._config,
-      ...(typeof ev.detail.magnifier === "boolean"
-        ? { magnifier: ev.detail.magnifier }
-        : {}),
       ...(typeof ev.detail.map_only === "boolean"
         ? { map_only: ev.detail.map_only }
         : {}),

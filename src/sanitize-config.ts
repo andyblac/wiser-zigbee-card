@@ -10,6 +10,7 @@ export function sanitizeConfig<T extends Record<string, any>>(config: T): T {
     delete next.layout_data;
     delete next.layout_view;
   }
+  delete next.magnifier;
   delete next.show_layout_export;
   delete next.layout_orientation;
   delete next.layout_group_by;

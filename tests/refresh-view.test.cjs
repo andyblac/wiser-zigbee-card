@@ -922,7 +922,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   assert.equal(menu.anchorElement, anchorButton);
   let toggles = 0;
   const buttonTemplate = savingCard.layoutIcon(
-    "editor.magnifier",
+    "card.magnifier",
     "",
     () => toggles++,
     false,
@@ -939,6 +939,17 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   );
   buttonTemplate.values[clickIndex]();
   assert.equal(toggles, 1, "Subsequent normal click still toggles");
+  const beforeMagnifierToggle = savedChanges;
+  assert.equal(savingCard.magnifierEnabled, false);
+  savingCard.toggleMagnifier();
+  assert.equal(savingCard.magnifierEnabled, true);
+  assert.equal(
+    savedChanges,
+    beforeMagnifierToggle,
+    "Magnifier toggle does not save configuration",
+  );
+  savingCard.toggleMagnifier();
+  assert.equal(savingCard.magnifierEnabled, false);
   for (const localX of [999, -500]) {
     const shared = new WiserZigbeeCard();
     shared.hass = { language: "en-GB" };
@@ -1049,7 +1060,6 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     map_only: true,
     show_device_list: false,
     show_labels: true,
-    magnifier: true,
     map_height: 600,
     orientation: "pie",
     group_by: "area",

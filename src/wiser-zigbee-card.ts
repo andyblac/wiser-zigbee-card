@@ -86,7 +86,6 @@ declare global {
       show_labels?: boolean;
       map_only?: boolean;
       preferences_only?: boolean;
-      magnifier?: boolean;
       hub?: string;
       name?: string;
       orientation?: "horizontal" | "vertical" | "pie";
@@ -117,6 +116,7 @@ export class WiserZigbeeCard
   @state() private pasteDialogOpen = false;
   @state() private pasteError = "";
   private magnifier = new MapMagnifier();
+  @state() private magnifierEnabled = false;
   private magnifierHoldTimer?: ReturnType<typeof setTimeout>;
   private magnifierHeld = false;
   @state() private activeIcon?: string;
@@ -323,6 +323,7 @@ export class WiserZigbeeCard
   public disconnectedCallback(): void {
     clearTimeout(this.magnifierHoldTimer);
     this.magnifier.hide();
+    this.magnifierEnabled = false;
     clearTimeout(this.activeIconTimer);
     clearTimeout(this.refreshTimer);
     this.refreshTimer = undefined;
@@ -1351,7 +1352,6 @@ export class WiserZigbeeCard
         map_only: this.config?.map_only ?? false,
         show_device_list: this.config?.show_device_list ?? true,
         show_labels: this.showLabels,
-        magnifier: this.config?.magnifier ?? false,
         link_status: this.config?.link_status ?? "links",
         map_height: this.mapHeight,
         orientation: this.orientation,
@@ -1519,7 +1519,6 @@ export class WiserZigbeeCard
       try {
         this.suppliedConfig = (await saveCardConfig(this, this.suppliedConfig, {
           show_labels: this.showLabels,
-          magnifier: this.config.magnifier ?? false,
           map_only: this.config.map_only ?? false,
           layout_data: layout,
           layout_view: view,
@@ -1546,7 +1545,6 @@ export class WiserZigbeeCard
       layout_view: view,
       show_labels: this.showLabels,
       map_only: this.config.map_only ?? false,
-      magnifier: this.config.magnifier ?? false,
       preferences_only: preferencesOnly,
       hub: this.config.hub,
       name: this.config.name,
@@ -1643,6 +1641,10 @@ export class WiserZigbeeCard
     menu.anchorElement = anchor.querySelector("ha-icon-button");
     menu.open = true;
   }
+  private toggleMagnifier(): void {
+    this.magnifierEnabled = !this.magnifierEnabled;
+    this.magnifier.hide();
+  }
   private magnifierControl(): TemplateResult {
     return html`<span
         @pointerdown=${(event: PointerEvent) => {
@@ -1670,17 +1672,10 @@ export class WiserZigbeeCard
           }
         }}
         >${this.layoutIcon(
-          "editor.magnifier",
+          "card.magnifier",
           "M9.5 3a6.5 6.5 0 1 0 3.98 11.64L19.85 21 21 19.85l-6.36-6.37A6.5 6.5 0 0 0 9.5 3m0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9m-1 1v2.5H6V10h2.5v2.5H10V10h2.5V8.5H10V6Z",
-          () => {
-            this.config = {
-              ...this.config!,
-              magnifier: !this.config?.magnifier,
-            };
-            this.magnifier.hide();
-            void this.saveLayoutClick(true);
-          },
-          this.config?.magnifier ?? false,
+          () => this.toggleMagnifier(),
+          this.magnifierEnabled,
         )}</span
       >
       <ha-dropdown
@@ -1693,7 +1688,7 @@ export class WiserZigbeeCard
         @wa-after-hide=${() => {
           const menu = this.shadowRoot?.querySelector<any>("#magnifier-menu");
           if (menu?.anchorElement)
-            menu.anchorElement.selected = this.config?.magnifier ?? false;
+            menu.anchorElement.selected = this.magnifierEnabled;
         }}
       >
         <div class="magnifier-options">
@@ -1718,7 +1713,7 @@ export class WiserZigbeeCard
             <ha-slider
               orientation="vertical"
               tooltip-placement="right"
-              aria-label=${this.t("editor.lens_size")}
+              aria-label=${this.t("card.lens_size")}
               .min=${100}
               .max=${360}
               .step=${10}
@@ -1748,7 +1743,7 @@ export class WiserZigbeeCard
       (key === "common.refresh" ? this.loading : this.activeIcon === key);
     const activate = () => {
       if (disabled) return;
-      if (key === "editor.magnifier" && this.magnifierHeld) {
+      if (key === "card.magnifier" && this.magnifierHeld) {
         this.magnifierHeld = false;
         return;
       }
@@ -1872,7 +1867,7 @@ export class WiserZigbeeCard
               ? ""
               : `height: ${this.mapHeight}px`}
             @pointermove=${(event: PointerEvent) => {
-              if (this.config?.magnifier)
+              if (this.magnifierEnabled)
                 this.magnifier.show(event.currentTarget as HTMLElement, event);
             }}
             @pointerleave=${() => this.magnifier.hide()}
