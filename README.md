@@ -2,7 +2,7 @@
 
 An interactive Zigbee network map for the [wiserHomeAssistantPlatform](https://github.com/asantaga/wiserHomeAssistantPlatform) integration. See how devices connect to your hub and repeaters, inspect signal quality, and arrange the map to suit your dashboard.
 
-![Wiser network grouped by Home Assistant area, with device images and signal-coloured links](https://raw.githubusercontent.com/wiki/andyblac/wiser-zigbee-card/images/network-overview.png)
+![Wiser Zigbee network showing the Home Assistant connection, area groups, device images and signal-coloured links](https://raw.githubusercontent.com/wiki/andyblac/wiser-zigbee-card/images/network-overview.png)
 
 - Real device connections with product images, signal colours and optional link labels.
 - Horizontal, Vertical and Pie layouts, with optional Home Assistant area grouping.
