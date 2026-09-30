@@ -180,6 +180,10 @@ export class WiserZigbeeCard
     position: { x: number; y: number };
     scale: number;
   };
+  private savedLayoutView?: {
+    position: { x: number; y: number };
+    scale: number;
+  };
   network?: Network;
   private mapData?: zigbeeData;
   private collapsedAreas = new Set<string>();
@@ -266,6 +270,7 @@ export class WiserZigbeeCard
     this.infoReturnView = undefined;
     this.zoomReturnView = undefined;
     this.initialLayoutView = undefined;
+    this.savedLayoutView = undefined;
     this.layoutStatus = "";
     this.pendingLoad = true;
     this.requestId++;
@@ -333,6 +338,7 @@ export class WiserZigbeeCard
     this.infoReturnView = undefined;
     this.zoomReturnView = undefined;
     this.initialLayoutView = undefined;
+    this.savedLayoutView = undefined;
   }
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
@@ -457,7 +463,10 @@ export class WiserZigbeeCard
       }));
       this.zigbeeData = this.config.group_by === "area" ? source : data;
       this.mapData = data;
-      if (!this.network) this.initialLayoutView = savedView;
+      if (!this.network) {
+        this.initialLayoutView = savedView;
+        this.savedLayoutView = savedView;
+      }
       await this.updateComplete;
       this.drawNetwork();
     } catch (error) {
@@ -624,7 +633,7 @@ export class WiserZigbeeCard
         this.moveAreaDevices();
         this.areaDrag = undefined;
       });
-      this.network.on("resize", () => this.fitNetwork());
+      this.network.on("resize", () => this.restoreViewAfterResize());
       this.fitNetwork();
       this.requestUpdate();
     }
@@ -1090,6 +1099,16 @@ export class WiserZigbeeCard
     if (saved || view)
       this.network.moveTo({ ...(saved ?? view!), animation: false });
   }
+  private restoreViewAfterResize(): void {
+    if (!this.network) return;
+    const map = this.shadowRoot?.getElementById("zigbee-network");
+    if (!map || !map.clientWidth || !map.clientHeight) return;
+    if (this.savedLayoutView) {
+      this.network.moveTo({ ...this.savedLayoutView, animation: false });
+      return;
+    }
+    this.fitNetwork();
+  }
   private hoverLink(edgeId?: string): void {
     if (this.hoveredEdge === edgeId) return;
     this.hoveredEdge = edgeId;
@@ -1493,6 +1512,7 @@ export class WiserZigbeeCard
     } catch {
       this.layoutStatus = "layout.storage_error";
     }
+    if (!preferencesOnly) this.savedLayoutView = view;
     if (!preferencesOnly && !is_preview(this)) {
       if (this.savingConfig || !this.suppliedConfig) return;
       this.savingConfig = true;

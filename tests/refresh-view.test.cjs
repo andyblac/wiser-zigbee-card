@@ -445,6 +445,14 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     savedViewport,
     "Initial layout restores the saved zoom and pan instead of fitting",
   );
+  view = { position: { x: 0, y: 0 }, scale: 1 };
+  card.savedLayoutView = savedViewport;
+  card.restoreViewAfterResize();
+  assert.deepEqual(
+    view,
+    savedViewport,
+    "Returning to a resized panel restores the saved zoom and pan",
+  );
   const originalDrawNetwork = card.drawNetwork;
   const originalHass = card.hass;
   let appearanceDraws = 0;
