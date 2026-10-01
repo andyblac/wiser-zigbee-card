@@ -69,6 +69,11 @@
   "panel.description": "Customise this panel. Dashboard cards keep their own settings.",
   "panel.editor_error": "Unable to open the editor. Close this dialogue and try again.",
   "panel.save_error": "Unable to save settings to Home Assistant. Please try again.",
+  "panel.title": "Wiser Zigbee",
+  "panel.hubs": "Wiser hubs",
+  "panel.loading": "Loading Wiser Zigbee network…",
+  "panel.load_error": "Unable to load Wiser Zigbee network. Please try again.",
+  "panel.version_error": "Wiser Zigbee needs its matching Zigbee card build. Update the card resource and refresh the browser.",
   "layout.paste_error": "Unable to paste these settings. Copy settings and layout from a Wiser Zigbee card or panel first.",
   "layout.paste_save_error": "Unable to save the pasted settings and layout. Nothing has been changed.",
   "layout.paste_hint": "Paste the settings and layout copied from a Wiser Zigbee card or panel below."

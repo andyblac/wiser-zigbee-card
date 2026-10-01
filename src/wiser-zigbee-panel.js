@@ -50,7 +50,7 @@ class WiserZigbeePanel extends HTMLElement {
         wiser-zigbee-card { display: block; flex:1 1 auto; width: 100%; min-width: 0; min-height:0; }
       </style>
       <header><ha-button id="menu" appearance="plain" aria-label="Toggle sidebar"><ha-icon icon="mdi:menu"></ha-icon></ha-button>
-        <h1>Wiser Zigbee</h1>
+        <h1 id="panel-title">Wiser Zigbee</h1>
         <nav id="hub-tabs" role="tablist" aria-label="Wiser hubs" hidden></nav>
         <ha-button id="settings" appearance="plain" aria-label="Edit Zigbee card settings" title="Edit Zigbee card settings" disabled>
           <ha-icon icon="mdi:cog"></ha-icon>
@@ -63,7 +63,7 @@ class WiserZigbeePanel extends HTMLElement {
           <ha-button id="save">Save</ha-button>
         </div>
       </ha-dialog>
-      <main><p role="status">Loading Wiser Zigbee network…</p></main>`;
+      <main><p id="loading" role="status">Loading Wiser Zigbee network…</p></main>`;
     this.shadowRoot.getElementById("menu").addEventListener("click", () => {
       this.dispatchEvent(
         new CustomEvent("hass-toggle-menu", {
@@ -139,6 +139,8 @@ class WiserZigbeePanel extends HTMLElement {
 
   _localizeControls() {
     const root = this.shadowRoot;
+    root.getElementById("panel-title").textContent = this._t("panel.title");
+    root.getElementById("hub-tabs").setAttribute("aria-label", this._t("panel.hubs"));
     for (const [id, key] of [
       ["menu", "panel.menu"],
       ["settings", "panel.settings"],
@@ -150,6 +152,8 @@ class WiserZigbeePanel extends HTMLElement {
     root.getElementById("save").textContent = this._t("common.save");
     root.getElementById("editor-description").textContent =
       this._t("panel.description");
+    const loading = root.getElementById("loading");
+    if (loading) loading.textContent = this._t("panel.loading");
     const dialog = root.getElementById("editor-dialog");
     dialog.setAttribute("header-title", this._t("panel.settings"));
     dialog.heading = this._t("panel.settings");
@@ -355,7 +359,7 @@ class WiserZigbeePanel extends HTMLElement {
       const Card = customElements.get("wiser-zigbee-card");
       if (Card?.panelApiVersion !== 1) {
         throw new Error(
-          "Wiser Zigbee needs its matching Zigbee card build. Update the card resource and refresh the browser.",
+          this._t("panel.version_error"),
         );
       }
       if (generation !== this._generation) return;
@@ -380,9 +384,7 @@ class WiserZigbeePanel extends HTMLElement {
       this.shadowRoot.getElementById("settings").disabled = true;
       const message = document.createElement("p");
       message.setAttribute("role", "alert");
-      message.textContent =
-        error.message ||
-        "Unable to load Wiser Zigbee network. Please try again.";
+      message.textContent = error.message || this._t("panel.load_error");
       const retry = document.createElement("ha-button");
       retry.textContent = this._t("panel.retry");
       retry.addEventListener("click", () => this._loadCards());
