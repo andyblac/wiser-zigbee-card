@@ -140,7 +140,9 @@ class WiserZigbeePanel extends HTMLElement {
   _localizeControls() {
     const root = this.shadowRoot;
     root.getElementById("panel-title").textContent = this._t("panel.title");
-    root.getElementById("hub-tabs").setAttribute("aria-label", this._t("panel.hubs"));
+    root
+      .getElementById("hub-tabs")
+      .setAttribute("aria-label", this._t("panel.hubs"));
     for (const [id, key] of [
       ["menu", "panel.menu"],
       ["settings", "panel.settings"],
@@ -358,9 +360,7 @@ class WiserZigbeePanel extends HTMLElement {
     try {
       const Card = customElements.get("wiser-zigbee-card");
       if (Card?.panelApiVersion !== 1) {
-        throw new Error(
-          this._t("panel.version_error"),
-        );
+        throw new Error(this._t("panel.version_error"));
       }
       if (generation !== this._generation) return;
       const activeHub = config.hubs.includes(this._activeHub)
