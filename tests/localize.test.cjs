@@ -12,22 +12,32 @@ assert.deepEqual([...requiredTranslationFragments].sort(), [
   "config",
   "lovelace",
 ]);
-const dictionaries = ["en-US", "en-GB", "de", "fr"].map((lang) =>
-  JSON.parse(fs.readFileSync(`src/localize/languages/${lang}.json`, "utf8")),
+const dictionaries = Object.fromEntries(
+  ["en-US", "en-GB", "de", "fr"].map((lang) => [
+    lang,
+    JSON.parse(
+      fs.readFileSync(`src/localize/languages/${lang}.json`, "utf8"),
+    ),
+  ]),
 );
-for (const dictionary of dictionaries) {
-  assert.deepEqual(
-    Object.keys(dictionary).sort(),
-    Object.keys(dictionaries[0]).sort(),
-  );
+for (const dictionary of Object.values(dictionaries)) {
   for (const [key, value] of Object.entries(dictionary)) {
     assert.ok(value.trim(), key);
     assert.deepEqual(
       value.match(/\{\w+\}/g) || [],
-      dictionaries[0][key].match(/\{\w+\}/g) || [],
+      dictionaries["en-US"][key].match(/\{\w+\}/g) || [],
       key,
     );
   }
+}
+for (const dictionary of [dictionaries.de, dictionaries.fr]) {
+  assert.deepEqual(
+    Object.keys(dictionary).sort(),
+    Object.keys(dictionaries["en-US"]).sort(),
+  );
+}
+for (const [key, value] of Object.entries(dictionaries["en-GB"])) {
+  assert.notEqual(value, dictionaries["en-US"][key], key);
 }
 for (const [language, expected] of [
   ["en-US", "en-US"],
@@ -72,6 +82,10 @@ assert.equal(
 );
 const hass = { language: "en-GB" };
 assert.equal(localize("card.show_detailed_view", hass), "Show detailed view");
+assert.equal(
+  localize("panel.description", hass),
+  "Customise this panel. Dashboard cards keep their own settings.",
+);
 hass.language = "fr";
 assert.equal(
   localize("card.show_detailed_view", hass),
@@ -119,7 +133,7 @@ console.log(
   "Native title, orientation and device-status keys take precedence in all four locales.",
 );
 
-for (const dictionary of dictionaries) {
+for (const dictionary of Object.values(dictionaries)) {
   for (const key of [
     "common.paste",
     "common.refresh",
@@ -169,7 +183,7 @@ for (const [key, nativeKey] of Object.entries(auditedKeys)) {
     );
   }
 }
-for (const dictionary of dictionaries) {
+for (const dictionary of Object.values(dictionaries)) {
   for (const key of [
     "editor.icons",
     "editor.pie",
