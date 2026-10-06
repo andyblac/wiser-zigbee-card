@@ -165,6 +165,16 @@ class WiserZigbeePanel extends HTMLElement {
     const config = panel.config;
     if (JSON.stringify(config) === JSON.stringify(this._config)) return;
     this._config = config;
+    if (!this._activeHub) {
+      try {
+        const savedHub = window.sessionStorage?.getItem(
+          `wiser-zigbee-panel:${config.panel_id}:active-hub`,
+        );
+        if (config.hubs.includes(savedHub)) this._activeHub = savedHub;
+      } catch {
+        // Storage may be unavailable in private or restricted browser contexts.
+      }
+    }
     this._loadCards();
   }
 
@@ -203,6 +213,14 @@ class WiserZigbeePanel extends HTMLElement {
 
   _selectHub(hub) {
     this._activeHub = hub;
+    try {
+      window.sessionStorage?.setItem(
+        `wiser-zigbee-panel:${this._config.panel_id}:active-hub`,
+        hub,
+      );
+    } catch {
+      // Keeping the selection on the current panel instance is sufficient.
+    }
     this._cards.forEach((card, index) => {
       const selected = this._config.hubs[index] === hub;
       card.hidden = !selected;

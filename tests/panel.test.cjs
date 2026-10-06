@@ -4,7 +4,7 @@ const { readFileSync } = require("node:fs");
 const { resolve } = require("node:path");
 const vm = require("node:vm");
 
-function setup() {
+function setup(sessionStorage) {
   class Element {
     constructor() {
       this.listeners = {};
@@ -59,7 +59,7 @@ function setup() {
       ({ "panel.retry": "Retry", "panel.save_error": "Unable to save" })[key] ||
       key,
     HTMLElement: Element,
-    window: { loadCardHelpers: async () => ({}) },
+    window: { loadCardHelpers: async () => ({}), sessionStorage },
     CustomEvent: class {
       constructor(type, options) {
         Object.assign(this, { type }, options);
@@ -389,6 +389,31 @@ test("hub tabs preserve selection across settings updates", () => {
   };
   assert.equal(panel._cards[1].hidden, false);
   assert.equal(panel._cards[1].config.show_labels, true);
+});
+
+test("hub tabs restore selection when the panel is recreated", () => {
+  const values = new Map();
+  const sessionStorage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  };
+  const config = {
+    panel_id: "registry-panel",
+    hubs: ["first", "second", "third"],
+  };
+  const panel = setup(sessionStorage);
+  panel.hass = {};
+  panel.panel = { config };
+  panel._tabs[2].listeners.click();
+
+  const reloaded = setup(sessionStorage);
+  reloaded.hass = {};
+  reloaded.panel = { config };
+
+  assert.equal(reloaded._activeHub, "third");
+  assert.equal(reloaded._cards[0].hidden, true);
+  assert.equal(reloaded._cards[1].hidden, true);
+  assert.equal(reloaded._cards[2].hidden, false);
 });
 
 test("panel preserves Home Assistant theme while forwarding map theme settings", async () => {
