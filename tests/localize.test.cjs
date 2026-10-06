@@ -15,9 +15,7 @@ assert.deepEqual([...requiredTranslationFragments].sort(), [
 const dictionaries = Object.fromEntries(
   ["en-US", "en-GB", "de", "fr"].map((lang) => [
     lang,
-    JSON.parse(
-      fs.readFileSync(`src/localize/languages/${lang}.json`, "utf8"),
-    ),
+    JSON.parse(fs.readFileSync(`src/localize/languages/${lang}.json`, "utf8")),
   ]),
 );
 for (const dictionary of Object.values(dictionaries)) {
