@@ -80,10 +80,6 @@ assert.equal(
 );
 const hass = { language: "en-GB" };
 assert.equal(localize("card.show_detailed_view", hass), "Show detailed view");
-assert.equal(
-  localize("panel.description", hass),
-  "Customise this panel. Dashboard cards keep their own settings.",
-);
 hass.language = "fr";
 assert.equal(
   localize("card.show_detailed_view", hass),

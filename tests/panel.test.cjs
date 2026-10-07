@@ -391,6 +391,32 @@ test("hub tabs preserve selection across settings updates", () => {
   assert.equal(panel._cards[1].config.show_labels, true);
 });
 
+test("panel settings only edit the selected hub", async () => {
+  const panel = setup();
+  const calls = [];
+  panel.hass = {
+    user: { is_admin: true },
+    callWS: async (message) => calls.push(message),
+  };
+  panel.panel = {
+    config: { panel_id: "registry-panel", hubs: ["first", "second"] },
+  };
+  panel._selectHub("second");
+
+  await panel._openEditor();
+
+  const dialog = panel.shadowRoot.getElementById("editor-dialog");
+  assert.equal(dialog.heading, "second - panel.settings");
+  assert.equal(dialog.attributes["header-title"], "second - panel.settings");
+  assert.equal(panel._editors.length, 1);
+  assert.equal(panel._editors[0].config.hub, "second");
+  assert.deepEqual(Object.keys(panel._drafts), ["second"]);
+
+  await panel._saveEditor();
+
+  assert.deepEqual(Object.keys(calls[0].configs), ["second"]);
+});
+
 test("hub tabs restore selection when the panel is recreated", () => {
   const values = new Map();
   const sessionStorage = {

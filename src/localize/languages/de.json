@@ -66,7 +66,6 @@
   "layout.copy_error": "Das Layout konnte nicht kopiert werden. Prüfe die Berechtigungen für die Zwischenablage und versuche es erneut.",
   "panel.menu": "Seitenleiste umschalten",
   "panel.settings": "Panel-Einstellungen",
-  "panel.description": "Dieses Panel anpassen. Dashboard-Karten behalten ihre eigenen Einstellungen.",
   "panel.editor_error": "Der Editor konnte nicht geöffnet werden. Schließe den Dialog und versuche es erneut.",
   "panel.save_error": "Einstellungen konnten nicht in Home Assistant gespeichert werden. Bitte versuche es erneut.",
   "panel.title": "Wiser Zigbee",

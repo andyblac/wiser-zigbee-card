@@ -20,7 +20,6 @@ class WiserZigbeePanel extends HTMLElement {
         #settings[disabled] ha-icon { color: var(--disabled-text-color); }
         ha-dialog { --ha-dialog-width-md: 600px;
           --ha-dialog-surface-background: var(--primary-background-color, var(--ha-color-surface-default, #fff)); }
-        .dialog-description { margin: 0 0 20px; color: var(--secondary-text-color); font-size: 14px; line-height: 20px; }
         .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
         #editors section + section { border-top: 1px solid var(--divider-color); margin-top: 24px; padding-top: 16px; }
         #editors h3 { font-size: 16px; font-weight: 500; margin: 0 0 16px; }
@@ -56,7 +55,6 @@ class WiserZigbeePanel extends HTMLElement {
           <ha-icon icon="mdi:cog"></ha-icon>
         </ha-button></header>
       <ha-dialog id="editor-dialog" header-title="Panel settings" width="medium">
-        <p id="editor-description" class="dialog-description">Customize this panel. Dashboard cards keep their own settings.</p>
         <div id="editors"></div><p id="editor-error" role="alert"></p>
         <div class="dialog-actions" id="editor-actions" slot="footer">
           <ha-button id="cancel" appearance="plain">Cancel</ha-button>
@@ -94,6 +92,14 @@ class WiserZigbeePanel extends HTMLElement {
 
   _t(key) {
     return localize(key, this._hass);
+  }
+
+  _editorHeading() {
+    const hubs = this._config?.hubs ?? [];
+    const hub = hubs.includes(this._activeHub) ? this._activeHub : hubs[0];
+    return hub
+      ? `${hub} - ${this._t("panel.settings")}`
+      : this._t("panel.settings");
   }
 
   set hass(hass) {
@@ -152,13 +158,12 @@ class WiserZigbeePanel extends HTMLElement {
     }
     root.getElementById("cancel").textContent = this._t("panel.cancel");
     root.getElementById("save").textContent = this._t("common.save");
-    root.getElementById("editor-description").textContent =
-      this._t("panel.description");
     const loading = root.getElementById("loading");
     if (loading) loading.textContent = this._t("panel.loading");
     const dialog = root.getElementById("editor-dialog");
-    dialog.setAttribute("header-title", this._t("panel.settings"));
-    dialog.heading = this._t("panel.settings");
+    const heading = this._editorHeading();
+    dialog.setAttribute("header-title", heading);
+    dialog.heading = heading;
   }
 
   set panel(panel) {
@@ -285,7 +290,9 @@ class WiserZigbeePanel extends HTMLElement {
     error.textContent = "";
     container.replaceChildren();
     save.disabled = true;
-    dialog.heading = this._t("panel.settings");
+    const heading = this._editorHeading();
+    dialog.setAttribute("header-title", heading);
+    dialog.heading = heading;
     if (
       !("headerTitle" in (customElements.get("ha-dialog")?.prototype || {}))
     ) {
@@ -305,33 +312,30 @@ class WiserZigbeePanel extends HTMLElement {
         await routes?.routes?.lovelace?.load?.();
       }
       const Card = customElements.get("wiser-zigbee-card");
-      for (const hub of this._config.hubs) {
-        const editor = await Card.getConfigElement();
-        if (!dialog.open) return;
-        const config = this._cardConfig(hub);
-        this._drafts[hub] = config;
-        editor.hass = this._hass;
-        editor.hideHubSelector = true;
-        editor.hideMapHeight = true;
+      const activeHub = this._config.hubs.includes(this._activeHub)
+        ? this._activeHub
+        : this._config.hubs[0];
+      const editor = await Card.getConfigElement();
+      if (!dialog.open) return;
+      const config = this._cardConfig(activeHub);
+      this._drafts[activeHub] = config;
+      editor.hass = this._hass;
+      editor.hideHubSelector = true;
+      editor.hideMapHeight = true;
 
-        editor.setConfig({ ...config });
-        editor.addEventListener("config-changed", (event) => {
-          event.stopPropagation();
-          this._drafts[hub] = {
-            ...event.detail.config,
-            type: "custom:wiser-zigbee-card",
-            hub,
-          };
-        });
-        const section = document.createElement("section");
-        const title = document.createElement("h3");
-        title.textContent = hub;
-        section.replaceChildren(
-          ...(this._config.hubs.length > 1 ? [title, editor] : [editor]),
-        );
-        container.append(section);
-        this._editors.push(editor);
-      }
+      editor.setConfig({ ...config });
+      editor.addEventListener("config-changed", (event) => {
+        event.stopPropagation();
+        this._drafts[activeHub] = {
+          ...event.detail.config,
+          type: "custom:wiser-zigbee-card",
+          hub: activeHub,
+        };
+      });
+      const section = document.createElement("section");
+      section.replaceChildren(editor);
+      container.append(section);
+      this._editors.push(editor);
       save.disabled = false;
     } catch (err) {
       error.textContent = this._t("panel.editor_error");
