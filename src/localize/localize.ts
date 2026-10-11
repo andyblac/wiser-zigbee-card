@@ -2,18 +2,20 @@ import enUS from "./languages/en-US.json";
 import enGB from "./languages/en-GB.json";
 import de from "./languages/de.json";
 import fr from "./languages/fr.json";
+import hu from "./languages/hu.json";
 
 export interface TranslationContext {
   language?: string;
   locale?: { language?: string };
   localize?: (key: string, ...args: any[]) => string | undefined;
 }
-export type SupportedLanguage = "en-US" | "en-GB" | "de" | "fr";
+export type SupportedLanguage = "en-US" | "en-GB" | "de" | "fr" | "hu";
 const languages: Record<SupportedLanguage, Record<string, string>> = {
   "en-US": enUS,
   "en-GB": enGB,
   de,
   fr,
+  hu,
 };
 // Core and Lovelace labels are owned by HA; no local copies.
 const nativeKeys: Record<string, string> = {
@@ -83,6 +85,7 @@ export function languageFor(hass?: TranslationContext): SupportedLanguage {
   if (language === "en-gb") return "en-GB";
   if (language === "de" || language.startsWith("de-")) return "de";
   if (language === "fr" || language.startsWith("fr-")) return "fr";
+  if (language === "hu" || language.startsWith("hu-")) return "hu";
   return "en-US";
 }
 export function localize(

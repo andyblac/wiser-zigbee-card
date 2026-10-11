@@ -13,7 +13,7 @@ assert.deepEqual([...requiredTranslationFragments].sort(), [
   "lovelace",
 ]);
 const dictionaries = Object.fromEntries(
-  ["en-US", "en-GB", "de", "fr"].map((lang) => [
+  ["en-US", "en-GB", "de", "fr", "hu"].map((lang) => [
     lang,
     JSON.parse(fs.readFileSync(`src/localize/languages/${lang}.json`, "utf8")),
   ]),
@@ -28,7 +28,7 @@ for (const dictionary of Object.values(dictionaries)) {
     );
   }
 }
-for (const dictionary of [dictionaries.de, dictionaries.fr]) {
+for (const dictionary of [dictionaries.de, dictionaries.fr, dictionaries.hu]) {
   assert.deepEqual(
     Object.keys(dictionary).sort(),
     Object.keys(dictionaries["en-US"]).sort(),
@@ -44,6 +44,7 @@ for (const [language, expected] of [
   ["en", "en-US"],
   ["de-DE", "de"],
   ["fr-CA", "fr"],
+  ["hu-HU", "hu"],
   ["es", "en-US"],
 ])
   assert.equal(languageFor({ language }), expected);
@@ -61,6 +62,7 @@ assert.equal(
 );
 assert.equal(localizeCount("devices", 1, { language: "de" }), "1 Gerät");
 assert.equal(localizeCount("devices", 2, { language: "de" }), "2 Geräte");
+assert.equal(localizeCount("devices", 2, { language: "hu" }), "2 eszköz");
 assert.equal(
   localizeCount("connections", 1, { language: "fr" }),
   "1 connexion",
@@ -75,6 +77,10 @@ assert.equal(
 );
 assert.equal(localizeSignal("NoSignal", { language: "fr" }), "Aucun signal");
 assert.equal(
+  localizeSignal("Very Good (92%)", { language: "hu" }),
+  "Nagyon jó (92%)",
+);
+assert.equal(
   localizeSignal("Custom device text", { language: "de" }),
   "Custom device text",
 );
@@ -86,7 +92,7 @@ assert.equal(
   "Afficher la vue détaillée",
 );
 console.log(
-  "All four dictionaries, plural forms, language changes and signal labels passed.",
+  "All five dictionaries, plural forms, language changes and signal labels passed.",
 );
 
 for (const [key, nativeKey] of Object.entries({
@@ -108,7 +114,7 @@ for (const [key, nativeKey] of Object.entries({
   "signal.offline": "ui.panel.config.zha.configuration_page.status_offline",
   "signal.unknown": "state.default.unknown",
 })) {
-  for (const language of ["en-US", "en-GB", "de", "fr"]) {
+  for (const language of ["en-US", "en-GB", "de", "fr", "hu"]) {
     assert.equal(
       localize(key, {
         language,
@@ -124,7 +130,7 @@ for (const [key, nativeKey] of Object.entries({
   }
 }
 console.log(
-  "Native title, orientation and device-status keys take precedence in all four locales.",
+  "Native title, orientation and device-status keys take precedence in all five locales.",
 );
 
 for (const dictionary of Object.values(dictionaries)) {
@@ -166,7 +172,7 @@ const auditedKeys = {
   "network.ip": "ui.panel.config.network.supervisor.ip",
 };
 for (const [key, nativeKey] of Object.entries(auditedKeys)) {
-  for (const language of ["en-US", "en-GB", "de", "fr"]) {
+  for (const language of ["en-US", "en-GB", "de", "fr", "hu"]) {
     assert.equal(
       localize(key, {
         language,
