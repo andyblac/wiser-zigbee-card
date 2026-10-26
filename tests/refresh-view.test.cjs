@@ -800,6 +800,18 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     201,
     "A long device label does not pull the area marker off-centre",
   );
+  // Restored headers must retain their explicit offset in vertical layouts.
+  card.restoredAreaHeaders.add(kitchenArea.id);
+  allPositions[kitchenArea.id] = { x: -170, y: -230 };
+  card.areaBounds(measure);
+  assert.deepEqual(allPositions[kitchenArea.id], { x: -170, y: -230 });
+  card.restoredAreaHeaders.clear();
+  card.areaBounds(measure);
+  assert.equal(
+    allPositions[kitchenArea.id].x,
+    201,
+    "Automatic centering resumes when protection is cleared",
+  );
   global.getComputedStyle = () => ({
     getPropertyValue: (key) =>
       key === "--success-color" ? "#00ff00" : "#888888",
@@ -950,6 +962,42 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   );
   savingCard.toggleMagnifier();
   assert.equal(savingCard.magnifierEnabled, false);
+  const portableCard = new WiserZigbeeCard();
+  portableCard.hass = { language: "en-GB" };
+  portableCard.setConfig({
+    type: "custom:wiser-zigbee-card",
+    hub: "destination",
+    group_by: "area",
+    orientation: "vertical",
+    layout_data: {
+      2: { x: 80, y: 180 },
+      "area:name:Kitchen": { x: -60, y: -25 },
+    },
+  });
+  portableCard.drawNetwork = () => {};
+  const portableLoad = portableCard.loadData();
+  resolveFetch({
+    nodes: [
+      {
+        id: 2,
+        group: "RoomStat",
+        label: "Sensor",
+        area_id: "destination-kitchen",
+        area_name: "Kitchen",
+        x: 0,
+        y: 0,
+      },
+    ],
+    edges: [],
+  });
+  await portableLoad;
+  const restoredHeader = portableCard.mapData.nodes.find(
+    (n) => n.group === "Area",
+  );
+  assert.equal(restoredHeader.x, -60);
+  assert.equal(restoredHeader.y, -25);
+  assert.ok(portableCard.restoredAreaHeaders.has(restoredHeader.id));
+  assert.equal(portableCard.mapData.nodes.find((n) => n.id === 2).x, 80);
   for (const localX of [999, -500]) {
     const shared = new WiserZigbeeCard();
     shared.hass = { language: "en-GB" };

@@ -40,7 +40,13 @@ import type {
 } from "./types";
 import { DEVICE_IMAGES, FALLBACK_DEVICE_IMAGE } from "./device-images";
 import { OPTIONS } from "./const";
-import { areaGraph, visibleAreaGraph, AREA_NODE_IMAGE } from "./area-graph";
+import {
+  areaGraph,
+  visibleAreaGraph,
+  AREA_NODE_IMAGE,
+  portablePositions,
+  restoredPosition,
+} from "./area-graph";
 import { withDeviceAreas } from "./areas";
 import { arrangeNetwork } from "./layout";
 import { fetchZigbeeData } from "./data/websockets";
@@ -187,6 +193,7 @@ export class WiserZigbeeCard
   network?: Network;
   private mapData?: zigbeeData;
   private collapsedAreas = new Set<string>();
+  private restoredAreaHeaders = new Set<number>();
   private areaPositions: Record<string, { x: number; y: number }> = {};
   private areaBoundsCache?: {
     key: string;
@@ -263,6 +270,7 @@ export class WiserZigbeeCard
     this.mapData = undefined;
     this.collapsedAreas.clear();
     this.areaPositions = {};
+    this.restoredAreaHeaders.clear();
     this.fitAfterHeightChange = false;
     this.network?.destroy();
     this.network = undefined;
@@ -455,13 +463,15 @@ export class WiserZigbeeCard
         ...this.areaPositions,
         ...this.network?.getPositions(),
       };
-      data.nodes = data.nodes.map((node) => ({
-        ...node,
-        ...(positions?.[node.id] ??
-          this.validPosition(
-            saved && typeof saved === "object" ? saved[node.id] : undefined,
-          )),
-      }));
+      data.nodes = data.nodes.map((node) => {
+        const restored =
+          saved && typeof saved === "object"
+            ? restoredPosition(data, node, saved)
+            : undefined;
+        if (node.group === "Area" && restored)
+          this.restoredAreaHeaders.add(node.id);
+        return { ...node, ...(positions[node.id] ?? restored) };
+      });
       this.zigbeeData = this.config.group_by === "area" ? source : data;
       this.mapData = data;
       if (!this.network) {
@@ -717,7 +727,7 @@ export class WiserZigbeeCard
       this.areaDrag ? "drag" : "idle",
       ...nodes.map((node) => {
         const position = positions[node.id];
-        return `${node.id}:${node.group}:${node.area_id ?? ""}:${position?.x ?? ""}:${position?.y ?? ""}:${label(node)}`;
+        return `${node.id}:${node.group}:${this.restoredAreaHeaders.has(node.id)}:${node.area_id ?? ""}:${position?.x ?? ""}:${position?.y ?? ""}:${label(node)}`;
       }),
     ].join("|");
     if (this.areaBoundsCache?.key === cacheKey)
@@ -763,7 +773,8 @@ export class WiserZigbeeCard
         position &&
         deviceCenters.length &&
         !this.areaDrag &&
-        this.orientation === "vertical"
+        this.orientation === "vertical" &&
+        !this.restoredAreaHeaders.has(header.id)
       ) {
         // Centre the room header over its devices, not their labels. A long
         // device name still expands the outline but must not pull the icon
@@ -1215,6 +1226,7 @@ export class WiserZigbeeCard
       this.config?.group_by,
     );
     this.areaPositions = {};
+    this.restoredAreaHeaders.clear();
     if (this.config?.group_by !== "area") this.zigbeeData = this.mapData;
     this.closeDeviceInfo(false);
     this.areaDrag = undefined;
@@ -1341,8 +1353,9 @@ export class WiserZigbeeCard
   }
   private async copyLayout(): Promise<void> {
     const confirm = this.prepareConfirmation("common.copy", "common.copied");
-    const layout = this.currentPositions();
-    if (!layout) return;
+    const positions = this.currentPositions();
+    if (!positions) return;
+    const layout = portablePositions(this.mapData, positions);
     const view = this.currentView();
     try {
       const text = copySettings({
@@ -1489,8 +1502,9 @@ export class WiserZigbeeCard
   }
   private async saveLayoutClick(preferencesOnly = false): Promise<void> {
     if (this.pastingSettings) return;
-    const layout = this.currentPositions();
-    if (!layout || !this.config) return;
+    const positions = this.currentPositions();
+    if (!positions || !this.config) return;
+    const layout = portablePositions(this.mapData, positions);
     const view = this.currentView();
     const confirm = preferencesOnly
       ? () => {}

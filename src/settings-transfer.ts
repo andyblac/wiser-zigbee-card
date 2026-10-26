@@ -49,7 +49,11 @@ function validateSettings(value: unknown): Settings {
   result.layout_data = {};
   for (const [id, position] of Object.entries(value.layout_data)) {
     if (
-      !/^-?\d+$/.test(id) ||
+      !(
+        /^-?\d+$/.test(id) ||
+        id === "area:unassigned" ||
+        /^area:name:.+/.test(id)
+      ) ||
       !object(position) ||
       !Number.isFinite(position.x) ||
       !Number.isFinite(position.y)

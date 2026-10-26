@@ -65,3 +65,47 @@ export const AREA_NODE_IMAGE =
   encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"></svg>',
   );
+
+// Numeric IDs remain for older layouts/readers. Name aliases survive a move to
+// another HA installation, where the same area's registry ID may be different.
+export function areaPositionKey(node: zigbeeData["nodes"][number]): string {
+  return node.area_id
+    ? `area:name:${encodeURIComponent(node.label)}`
+    : "area:unassigned";
+}
+
+export function portablePositions(
+  data: zigbeeData | undefined,
+  positions: Record<string, { x: number; y: number }>,
+): Record<string, { x: number; y: number }> {
+  const result = { ...positions };
+  const headers = data?.nodes.filter((node) => node.group === "Area") ?? [];
+  for (const node of headers) {
+    const key = areaPositionKey(node);
+    // Do not guess if multiple areas share a name.
+    if (
+      headers.filter((other) => areaPositionKey(other) === key).length === 1 &&
+      positions[node.id]
+    )
+      result[key] = { ...positions[node.id] };
+  }
+  return result;
+}
+
+export function restoredPosition(
+  data: zigbeeData,
+  node: zigbeeData["nodes"][number],
+  saved: Record<string, { x: number; y: number }>,
+): { x: number; y: number } | undefined {
+  const valid = (p: any): p is { x: number; y: number } =>
+    p && Number.isFinite(p.x) && Number.isFinite(p.y);
+  if (node.group === "Area") {
+    const key = areaPositionKey(node);
+    const unique =
+      data.nodes.filter(
+        (other) => other.group === "Area" && areaPositionKey(other) === key,
+      ).length === 1;
+    if (unique && valid(saved[key])) return saved[key];
+  }
+  return valid(saved[node.id]) ? saved[node.id] : undefined;
+}
