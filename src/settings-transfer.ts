@@ -95,3 +95,12 @@ export function pasteSettings(text: string): Settings {
   // Hub identity and dashboard placement belong to the destination card.
   return validateSettings(data);
 }
+
+export function exportSettings(config: Settings): string {
+  return JSON.stringify(validateSettings(config), null, 2) + "\n";
+}
+
+export function importSettings(text: string): Settings {
+  if (text.length > MAX_PASTE_LENGTH) throw new Error("File too large");
+  return validateSettings(JSON.parse(text));
+}

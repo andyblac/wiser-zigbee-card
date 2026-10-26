@@ -79,3 +79,33 @@ test("existing Copy YAML remains pasteable", () => {
   assert.equal("magnifier" in result, false);
   assert.equal("name" in result, false);
 });
+
+test("JSON file export preserves complete transferable settings and precise positions", () => {
+  const { exportSettings, importSettings } = require("./load-ts.cjs")(
+    "src/settings-transfer.ts",
+  );
+  const original = {
+    ...layout,
+    layout_data: {
+      ...layout.layout_data,
+      "area:name:Kitchen": { x: -123.456789, y: 987.654321 },
+    },
+  };
+  const text = exportSettings(original);
+  assert.deepEqual(JSON.parse(text), original);
+  const restored = importSettings(text);
+  assert.deepEqual(restored, original);
+  assert.equal(
+    exportSettings(restored),
+    text,
+    "Immediate re-export is identical",
+  );
+  assert.throws(
+    () => importSettings(text.slice(0, -5)),
+    "Truncated JSON rejected",
+  );
+  assert.throws(
+    () => importSettings("layout_data: {}"),
+    "Files must contain JSON",
+  );
+});

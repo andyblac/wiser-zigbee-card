@@ -1080,14 +1080,10 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     localize: (key) =>
       key === "ui.common.copied" ? "Copied" : "Successfully saved",
   };
-  await savingCard.copyLayout();
-  assert.ok(clipboardText.includes("\nlayout_data:\n"));
-  assert.deepEqual(
-    load("src/settings-transfer.ts").pasteSettings(clipboardText)
-      .layout_data[1],
-    { x: 10, y: 20 },
-  );
-  assert.equal(confirmations.at(-1), "Copied");
+  assert.deepEqual(savingCard.transferSettings().layout_data[1], {
+    x: 10,
+    y: 20,
+  });
   await savingCard.saveLayoutClick();
   assert.equal(confirmations.at(-1), "Successfully saved");
   const count = confirmations.length;
@@ -1097,11 +1093,6 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     count,
     "No confirmation for automatic preference persistence",
   );
-  failCopy = true;
-  await savingCard.copyLayout();
-  assert.equal(savingCard.layoutStatus, "layout.copy_error");
-  assert.equal(confirmations.length, count, "No confirmation on failure");
-  const { copySettings } = load("src/settings-transfer.ts");
   const pasted = {
     name: "Imported map",
     auto_update: false,
@@ -1120,48 +1111,66 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
     hub: "destination",
     layout_id: "keep-me",
   });
-  Object.defineProperty(global, "navigator", {
-    configurable: true,
-    value: {
-      clipboard: {
-        readText: async () => {
-          throw Error("Denied");
-        },
-      },
-    },
-  });
-  await pasteCard.pasteLayout();
-  assert.equal(
-    pasteCard.pasteDialogOpen,
-    true,
-    "Denied clipboard access offers manual paste",
-  );
   const original = pasteCard.config;
-  await pasteCard.pasteLayout("not YAML");
+  await pasteCard.importLayout({ size: 8, text: async () => "not JSON" });
   assert.equal(
     pasteCard.config,
     original,
     "Invalid clipboard text cannot change settings",
   );
-  assert.equal(pasteCard.layoutStatus, "layout.paste_error");
+  assert.equal(pasteCard.layoutStatus, "layout.import_error");
   failSave = true;
-  await pasteCard.pasteLayout(copySettings(pasted));
+  await pasteCard.importLayout({
+    size: 100,
+    text: async () => JSON.stringify(pasted),
+  });
   assert.equal(
     pasteCard.config,
     original,
     "Failed persistence cannot change settings",
   );
-  assert.equal(pasteCard.layoutStatus, "layout.paste_save_error");
+  assert.equal(pasteCard.layoutStatus, "layout.import_save_error");
   failSave = false;
-  const valid = copySettings(pasted);
-  navigator.clipboard.readText = async () => valid;
-  await pasteCard.pasteLayout();
+  const valid = { size: 100, text: async () => JSON.stringify(pasted) };
+  await pasteCard.importLayout(valid);
   assert.equal(pasteCard.config.hub, "destination");
   assert.equal(pasteCard.config.layout_id, "keep-me");
   for (const [key, value] of Object.entries(pasted))
     assert.deepEqual(pasteCard.config[key], value);
   assert.equal(pasteCard.layoutStatus, "common.saved");
-  assert.equal(pasteCard.pastingSettings, false);
+  assert.equal(pasteCard.importingSettings, false);
+  let destroyed = false;
+  pasteCard.network = {
+    destroy: () => {
+      destroyed = true;
+    },
+  };
+  pasteCard.areaPositions = { 1: { x: 999, y: 999 } };
+  await pasteCard.importLayout(valid);
+  assert.equal(
+    destroyed,
+    true,
+    "Reimporting identical settings discards live dragged positions",
+  );
+  assert.equal(pasteCard.network, undefined);
+  assert.deepEqual(pasteCard.areaPositions, {});
+  assert.deepEqual(pasteCard.config.layout_data, pasted.layout_data);
+
+  const beforeFile = pasteCard.config;
+  await pasteCard.importLayout({ size: 5, text: async () => "broken" });
+  assert.equal(pasteCard.config, beforeFile);
+  assert.equal(pasteCard.layoutStatus, "layout.import_error");
+  const fileSettings = {
+    ...pasted,
+    layout_view: { position: { x: 13, y: -17 }, scale: 0.75 },
+  };
+  await pasteCard.importLayout({
+    size: 100,
+    text: async () => JSON.stringify(fileSettings),
+  });
+  assert.deepEqual(pasteCard.config.layout_data, fileSettings.layout_data);
+  assert.deepEqual(pasteCard.config.layout_view, fileSettings.layout_view);
+  assert.equal(pasteCard.config.hub, "destination");
   console.log(
     "Refresh preserves latest zoom, pan, dragged positions and double-click return view.",
   );

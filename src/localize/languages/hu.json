@@ -75,5 +75,10 @@
   "panel.version_error": "A Wiser Zigbee-hez a megfelelő Zigbee-kártyaverzió szükséges. Frissítse a kártya erőforrását, majd frissítse a böngészőt.",
   "layout.paste_error": "Nem sikerült beilleszteni ezeket a beállításokat. Előbb másolja ki a beállításokat és az elrendezést egy Wiser Zigbee-kártyából vagy -panelből.",
   "layout.paste_save_error": "Nem sikerült menteni a beillesztett beállításokat és elrendezést. Semmi sem változott.",
-  "layout.paste_hint": "Illessze be alább a Wiser Zigbee-kártyából vagy -panelből másolt beállításokat és elrendezést."
+  "layout.paste_hint": "Illessze be alább a Wiser Zigbee-kártyából vagy -panelből másolt beállításokat és elrendezést.",
+  "layout.export": "JSON-fájl exportálása",
+  "layout.import": "JSON-fájl importálása",
+  "layout.export_error": "Az elrendezésfájl nem exportálható.",
+  "layout.import_error": "A fájl nem importálható. Válasszon érvényes Wiser Zigbee elrendezési JSON-fájlt.",
+  "layout.import_save_error": "Az importált beállítások és elrendezés nem menthetők. Semmi sem változott."
 }

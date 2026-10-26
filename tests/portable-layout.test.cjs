@@ -77,3 +77,24 @@ test("unassigned identity does not depend on translated label", () => {
   const saved = portablePositions(a, { [header.id]: { x: 8, y: -4 } });
   assert.deepEqual(restoredPosition(b, target, saved), { x: 8, y: -4 });
 });
+
+test("legacy missing area headers follow restored members without moving saved nodes", () => {
+  const { anchorMissingAreaHeaders } = load("src/area-graph.ts");
+  const data = graph("changed-area-id");
+  const header = data.nodes.find((node) => node.group === "Area");
+  header.x = 9000;
+  header.y = 8000;
+  data.nodes.find((node) => node.id === 2).x = -200;
+  data.nodes.find((node) => node.id === 2).y = 300;
+  const deviceBefore = { ...data.nodes[1] };
+  anchorMissingAreaHeaders(data, new Set([1, 2]));
+  assert.equal(header.x, -200);
+  assert.equal(header.y, 190);
+  assert.deepEqual(data.nodes[1], deviceBefore);
+  // An explicitly saved header is authoritative, even far from its members.
+  header.x = 1234;
+  header.y = -5678;
+  anchorMissingAreaHeaders(data, new Set([1, 2, header.id]));
+  assert.equal(header.x, 1234);
+  assert.equal(header.y, -5678);
+});

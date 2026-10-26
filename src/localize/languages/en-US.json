@@ -75,5 +75,10 @@
   "panel.version_error": "Wiser Zigbee needs its matching Zigbee card build. Update the card resource and refresh the browser.",
   "layout.paste_error": "Unable to paste these settings. Copy settings and layout from a Wiser Zigbee card or panel first.",
   "layout.paste_save_error": "Unable to save the pasted settings and layout. Nothing has been changed.",
-  "layout.paste_hint": "Paste the settings and layout copied from a Wiser Zigbee card or panel below."
+  "layout.paste_hint": "Paste the settings and layout copied from a Wiser Zigbee card or panel below.",
+  "layout.export": "Export JSON file",
+  "layout.import": "Import JSON file",
+  "layout.export_error": "Unable to export the layout file.",
+  "layout.import_error": "Unable to import this file. Choose a valid Wiser Zigbee layout JSON file.",
+  "layout.import_save_error": "Unable to save the imported settings and layout. Nothing has been changed."
 }

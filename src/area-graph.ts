@@ -109,3 +109,27 @@ export function restoredPosition(
   }
   return valid(saved[node.id]) ? saved[node.id] : undefined;
 }
+
+// Legacy exports may not identify an area header on this installation. Anchor
+// only those missing headers to the restored devices, never the fresh layout.
+export function anchorMissingAreaHeaders(
+  data: zigbeeData,
+  positioned: Set<number>,
+): void {
+  for (const header of data.nodes) {
+    if (header.group !== "Area" || positioned.has(header.id)) continue;
+    const members = data.nodes.filter(
+      (node) =>
+        node.group !== "Area" &&
+        node.group !== "Controller" &&
+        node.group !== "HomeAssistant" &&
+        (node.area_id ?? "") === (header.area_id ?? ""),
+    );
+    if (!members.some((node) => positioned.has(node.id))) continue;
+    header.x =
+      (Math.min(...members.map((node) => node.x)) +
+        Math.max(...members.map((node) => node.x))) /
+      2;
+    header.y = Math.min(...members.map((node) => node.y)) - 110;
+  }
+}

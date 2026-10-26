@@ -75,5 +75,10 @@
   "panel.version_error": "Für Wiser Zigbee ist die passende Version der Zigbee-Karte erforderlich. Aktualisiere die Kartenressource und lade den Browser neu.",
   "layout.paste_error": "Diese Einstellungen können nicht eingefügt werden. Kopiere zuerst Einstellungen und Layout von einer Wiser-Zigbee-Karte oder einem Panel.",
   "layout.paste_save_error": "Die eingefügten Einstellungen und das Layout konnten nicht gespeichert werden. Es wurde nichts geändert.",
-  "layout.paste_hint": "Füge unten die von einer Wiser-Zigbee-Karte oder einem Panel kopierten Einstellungen und das Layout ein."
+  "layout.paste_hint": "Füge unten die von einer Wiser-Zigbee-Karte oder einem Panel kopierten Einstellungen und das Layout ein.",
+  "layout.export": "JSON-Datei exportieren",
+  "layout.import": "JSON-Datei importieren",
+  "layout.export_error": "Die Layout-Datei konnte nicht exportiert werden.",
+  "layout.import_error": "Diese Datei konnte nicht importiert werden. Wähle eine gültige Wiser-Zigbee-Layout-JSON-Datei.",
+  "layout.import_save_error": "Die importierten Einstellungen und das Layout konnten nicht gespeichert werden. Es wurde nichts geändert."
 }
