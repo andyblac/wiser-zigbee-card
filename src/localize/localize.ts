@@ -3,20 +3,34 @@ import enGB from "./languages/en-GB.json";
 import de from "./languages/de.json";
 import fr from "./languages/fr.json";
 import hu from "./languages/hu.json";
+import da from "./languages/da.json";
+import es from "./languages/es.json";
+import fi from "./languages/fi.json";
+import nb from "./languages/nb.json";
+import nl from "./languages/nl.json";
+import pt from "./languages/pt.json";
+import sv from "./languages/sv.json";
 
 export interface TranslationContext {
   language?: string;
   locale?: { language?: string };
   localize?: (key: string, ...args: any[]) => string | undefined;
 }
-export type SupportedLanguage = "en-US" | "en-GB" | "de" | "fr" | "hu";
-const languages: Record<SupportedLanguage, Record<string, string>> = {
+export type SupportedLanguage = keyof typeof languages;
+const languages = {
   "en-US": enUS,
   "en-GB": enGB,
   de,
   fr,
   hu,
-};
+  da,
+  es,
+  fi,
+  nb,
+  nl,
+  pt,
+  sv,
+} satisfies Record<string, Record<string, string>>;
 // Core and Lovelace labels are owned by HA; no local copies.
 const nativeKeys: Record<string, string> = {
   "panel.cancel": "ui.common.cancel",
@@ -83,9 +97,10 @@ export function languageFor(hass?: TranslationContext): SupportedLanguage {
     .replace(/_/g, "-")
     .toLowerCase();
   if (language === "en-gb") return "en-GB";
-  if (language === "de" || language.startsWith("de-")) return "de";
-  if (language === "fr" || language.startsWith("fr-")) return "fr";
-  if (language === "hu" || language.startsWith("hu-")) return "hu";
+  const base = language.split("-")[0];
+  if (base === "no") return "nb";
+  if (Object.prototype.hasOwnProperty.call(languages, base))
+    return base as SupportedLanguage;
   return "en-US";
 }
 export function localize(
@@ -102,7 +117,9 @@ export function localize(
     if (nativeKeys[key]) return translated ?? "";
   }
   translated ||=
-    languages[language][key] || enUS[key as keyof typeof enUS] || key;
+    (languages[language] as Record<string, string>)[key] ||
+    enUS[key as keyof typeof enUS] ||
+    key;
   return translated.replace(/\{(\w+)\}/g, (token, name) =>
     String(values[name] ?? token),
   );

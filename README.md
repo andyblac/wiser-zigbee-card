@@ -8,7 +8,7 @@ An interactive Zigbee network map for the [wiserHomeAssistantPlatform](https://g
 - Horizontal, Vertical and Pie layouts, with optional Home Assistant area grouping.
 - Device details, zoom controls and a magnifying glass for exploring larger networks.
 - Saved layouts shared through dashboard configuration, plus toolbar Copy/Paste for card and panel settings.
-- Native Home Assistant controls and theme support, with English, German, French and Hungarian translations.
+- Native Home Assistant controls and theme support, with 12 supported locales: English (US/GB), Danish, Dutch, Finnish, French, German, Hungarian, Norwegian Bokmål, Portuguese, Spanish and Swedish.
 
 ## Getting started
 

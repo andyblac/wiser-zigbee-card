@@ -12,8 +12,30 @@ assert.deepEqual([...requiredTranslationFragments].sort(), [
   "config",
   "lovelace",
 ]);
+const supported = [
+  "en-US",
+  "en-GB",
+  "da",
+  "de",
+  "es",
+  "fi",
+  "fr",
+  "hu",
+  "nb",
+  "nl",
+  "pt",
+  "sv",
+];
+assert.deepEqual(
+  fs
+    .readdirSync("src/localize/languages")
+    .filter((name) => name.endsWith(".json"))
+    .map((name) => name.slice(0, -5))
+    .sort(),
+  [...supported].sort(),
+);
 const dictionaries = Object.fromEntries(
-  ["en-US", "en-GB", "de", "fr", "hu"].map((lang) => [
+  supported.map((lang) => [
     lang,
     JSON.parse(fs.readFileSync(`src/localize/languages/${lang}.json`, "utf8")),
   ]),
@@ -28,7 +50,8 @@ for (const dictionary of Object.values(dictionaries)) {
     );
   }
 }
-for (const dictionary of [dictionaries.de, dictionaries.fr, dictionaries.hu]) {
+for (const [language, dictionary] of Object.entries(dictionaries)) {
+  if (language === "en-GB") continue;
   assert.deepEqual(
     Object.keys(dictionary).sort(),
     Object.keys(dictionaries["en-US"]).sort(),
@@ -45,7 +68,16 @@ for (const [language, expected] of [
   ["de-DE", "de"],
   ["fr-CA", "fr"],
   ["hu-HU", "hu"],
-  ["es", "en-US"],
+  ["es", "es"],
+  ["es-ES", "es"],
+  ["da-DK", "da"],
+  ["fi-FI", "fi"],
+  ["nb-NO", "nb"],
+  ["no", "nb"],
+  ["nl-NL", "nl"],
+  ["pt-BR", "pt"],
+  ["sv-SE", "sv"],
+  ["ja", "en-US"],
 ])
   assert.equal(languageFor({ language }), expected);
 assert.equal(languageFor({ language: "en", locale: { language: "de" } }), "de");
@@ -92,7 +124,7 @@ assert.equal(
   "Afficher la vue détaillée",
 );
 console.log(
-  "All five dictionaries, plural forms, language changes and signal labels passed.",
+  "All 12 dictionaries, plural forms, language changes and signal labels passed.",
 );
 
 for (const [key, nativeKey] of Object.entries({
@@ -114,7 +146,7 @@ for (const [key, nativeKey] of Object.entries({
   "signal.offline": "ui.panel.config.zha.configuration_page.status_offline",
   "signal.unknown": "state.default.unknown",
 })) {
-  for (const language of ["en-US", "en-GB", "de", "fr", "hu"]) {
+  for (const language of supported) {
     assert.equal(
       localize(key, {
         language,
@@ -130,7 +162,7 @@ for (const [key, nativeKey] of Object.entries({
   }
 }
 console.log(
-  "Native title, orientation and device-status keys take precedence in all five locales.",
+  "Native title, orientation and device-status keys take precedence in all 12 locales.",
 );
 
 for (const dictionary of Object.values(dictionaries)) {
@@ -172,7 +204,7 @@ const auditedKeys = {
   "network.ip": "ui.panel.config.network.supervisor.ip",
 };
 for (const [key, nativeKey] of Object.entries(auditedKeys)) {
-  for (const language of ["en-US", "en-GB", "de", "fr", "hu"]) {
+  for (const language of supported) {
     assert.equal(
       localize(key, {
         language,
@@ -213,4 +245,29 @@ for (const [reported, shown] of Object.entries({
   Online: "Online",
 })) {
   assert.equal(localizeSignal(reported, { language: "en-GB" }), shown);
+}
+
+for (const language of supported) {
+  assert.equal(languageFor({ language }), language);
+  for (const [key, value] of Object.entries(dictionaries[language])) {
+    if (key.startsWith("card.devices_") || key.startsWith("card.connections_"))
+      continue;
+    assert.equal(localize(key, { language }), value, `${language}: ${key}`);
+  }
+  for (const count of [0, 1, 2, 5]) {
+    const form =
+      new Intl.PluralRules(language).select(count) === "one" ? "one" : "other";
+    for (const kind of ["devices", "connections"]) {
+      const key = `card.${kind}_${form}`;
+      const template =
+        dictionaries[language][key] || dictionaries["en-US"][key];
+      assert.equal(
+        localizeCount(kind, count, { language }),
+        template.replace(
+          "{count}",
+          new Intl.NumberFormat(language).format(count),
+        ),
+      );
+    }
+  }
 }
