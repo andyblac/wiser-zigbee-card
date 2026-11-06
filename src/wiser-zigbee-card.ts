@@ -1992,6 +1992,17 @@ export class WiserZigbeeCard
       display: flex;
       flex-direction: column;
     }
+    :host([panel-mode]) ha-card {
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    :host([panel-mode]) ha-card.auto-height > header {
+      order: -2;
+    }
+    :host([panel-mode]) ha-card.auto-height > .brand-row {
+      order: -1;
+    }
     .auto-height > .brand-row,
     .auto-height > header,
     .auto-height > .save-status {
@@ -2055,6 +2066,28 @@ export class WiserZigbeeCard
       justify-content: space-between;
       gap: 16px;
       padding: 8px 24px 18px;
+    }
+    :host([panel-mode]) header {
+      align-items: flex-start;
+      padding: 24px clamp(12px, 3vw, 32px) 18px;
+    }
+    :host([panel-mode]) header h2 {
+      margin: 0 0 6px;
+      font-family: inherit;
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+    :host([panel-mode]) header p {
+      margin: 0;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: normal;
+    }
+    :host([panel-mode]) .brand-row {
+      padding: 0 clamp(12px, 3vw, 32px) 12px;
     }
     .eyebrow {
       font-size: 10px;
@@ -2260,11 +2293,17 @@ export class WiserZigbeeCard
       header {
         padding: 20px 16px 16px;
       }
+      :host([panel-mode]) header {
+        padding: 20px 16px 16px;
+      }
       footer {
         padding: 16px;
       }
       h2 {
         font-size: 18px;
+      }
+      :host([panel-mode]) header h2 {
+        font-size: 24px;
       }
     }
   `;

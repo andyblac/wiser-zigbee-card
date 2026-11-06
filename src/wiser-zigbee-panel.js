@@ -25,7 +25,7 @@ class WiserZigbeePanel extends HTMLElement {
         #editors h3 { font-size: 16px; font-weight: 500; margin: 0 0 16px; }
         #editor-error:empty { display: none; }
         #editor-error { color: var(--error-color, #db4437); }
-        main { display:flex; flex: 1; min-width: 0; min-height: 0; padding: 16px; overflow: hidden; box-sizing:border-box; }
+        main { display:flex; flex: 1; min-width: 0; min-height: 0; padding: 0; overflow: hidden; box-sizing:border-box; }
         #hub-tabs { display: flex; flex: 1; min-width: 0; margin-inline-start: 24px; align-self: stretch; overflow-x: auto; }
         :host([nested]) { height:100%; max-height:100%; }
         :host([nested]) header { flex-basis:56px; height:56px; }
@@ -390,6 +390,7 @@ class WiserZigbeePanel extends HTMLElement {
         : config.hubs[0];
       const cards = config.hubs.map((hub) => {
         const card = document.createElement("wiser-zigbee-card");
+        card.setAttribute("panel-mode", "");
         card.setConfig(this._cardConfig(hub));
         card.hidden = hub !== activeHub;
         if (!card.hidden) card.hass = this._hass;
