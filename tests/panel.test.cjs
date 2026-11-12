@@ -52,6 +52,7 @@ function setup(sessionStorage) {
   }
   const registry = new Map([["wiser-zigbee-card", Element]]);
   const context = vm.createContext({
+    CARD_VERSION: "test-version",
     requiredTranslationFragments: require("./load-ts.cjs")(
       "src/localize/localize.ts",
     ).requiredTranslationFragments,

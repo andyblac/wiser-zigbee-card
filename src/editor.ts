@@ -18,6 +18,7 @@ export class WiserZigbeeCardEditor
 {
   @property({ attribute: false }) public hass?: HomeAssistant;
   @property({ attribute: false }) public hideHubSelector = false;
+  @property({ attribute: false }) public hideVersion = false;
   @property({ attribute: false }) public hideMapHeight = false;
   @state() private _config?: WiserZigbeeCardConfig;
   @state() private _hubs: string[] = [];
@@ -244,7 +245,7 @@ export class WiserZigbeeCardEditor
             ></ha-form>`,
         )}
       </div>
-      <div class="version">Wiser Zigbee Card · ${CARD_VERSION}</div>`;
+      ${this.hideVersion ? "" : html`<div class="version">Wiser Zigbee Card · ${CARD_VERSION}</div>`}`;
   }
 
   private setOrientation(orientation: NetworkOrientation): void {

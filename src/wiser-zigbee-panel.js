@@ -1,4 +1,5 @@
 import { localize, requiredTranslationFragments } from "./localize/localize";
+import { CARD_VERSION } from "./const";
 /** Sidebar host for the existing Wiser Zigbee card. */
 class WiserZigbeePanel extends HTMLElement {
   constructor() {
@@ -20,7 +21,9 @@ class WiserZigbeePanel extends HTMLElement {
         #settings[disabled] ha-icon { color: var(--disabled-text-color); }
         ha-dialog { --ha-dialog-width-md: 600px;
           --ha-dialog-surface-background: var(--primary-background-color, var(--ha-color-surface-default, #fff)); }
-        .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+        .dialog-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; width: 100%; }
+        .editor-version { margin-right: auto; color: var(--secondary-text-color); font-size: 12px; }
+        @media (max-width: 720px) { .editor-version { max-width: 42%; } }
         #editors section + section { border-top: 1px solid var(--divider-color); margin-top: 24px; padding-top: 16px; }
         #editors h3 { font-size: 16px; font-weight: 500; margin: 0 0 16px; }
         #editor-error:empty { display: none; }
@@ -57,6 +60,7 @@ class WiserZigbeePanel extends HTMLElement {
       <ha-dialog id="editor-dialog" header-title="Panel settings" width="medium">
         <div id="editors"></div><p id="editor-error" role="alert"></p>
         <div class="dialog-actions" id="editor-actions" slot="footer">
+          <span class="editor-version">Wiser Zigbee Card · ${CARD_VERSION}</span>
           <ha-button id="cancel" appearance="plain">Cancel</ha-button>
           <ha-button id="save">Save</ha-button>
         </div>
@@ -321,6 +325,7 @@ class WiserZigbeePanel extends HTMLElement {
       this._drafts[activeHub] = config;
       editor.hass = this._hass;
       editor.hideHubSelector = true;
+      editor.hideVersion = true;
       editor.hideMapHeight = true;
 
       editor.setConfig({ ...config });
