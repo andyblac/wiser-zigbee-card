@@ -79,9 +79,23 @@ const hass = {
       wifi_strength_percent: 92,
     },
   };
+  for (const id of ["a", "b"]) {
+    entities.push({
+      entity_id: `sensor.${id}_battery`,
+      device_id: id,
+      platform: "wiser",
+    });
+    hass.states[`sensor.${id}_battery`] = {
+      state: id === "a" ? "0" : "88",
+      attributes: { device_class: "battery", unit_of_measurement: "%" },
+    };
+  }
   const a = await withDeviceAreas(hass, data, "A");
   assert.equal(a.nodes[0].entity_id, "sensor.hub_a");
   assert.equal(a.nodes[0].connection_label, "VeryGood (92%)");
+  assert.equal(a.nodes[1].battery_entity_id, "sensor.a_battery");
+  assert.equal(a.nodes[0].battery_entity_id, undefined);
+  assert.equal(a.nodes[2].battery_entity_id, undefined);
   assert.equal(a.nodes[1].area_id, "kitchen");
   assert.equal(a.nodes[1].area_icon, "mdi:silverware-fork-knife");
   assert.equal(a.nodes[1].device_name, "Wiser Thermostat");
@@ -94,6 +108,7 @@ const hass = {
     "office",
     "Duplicate node IDs are scoped to their hub",
   );
+  assert.equal(b.nodes[1].battery_entity_id, "sensor.b_battery");
   assert.equal(b.nodes[1].device_name, "Office Thermostat");
   assert.equal(calls, 3, "Registry data is shared across hub refreshes");
   console.log("HA area assignment and hub isolation passed.");

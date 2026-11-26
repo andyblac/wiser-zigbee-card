@@ -76,5 +76,6 @@
   "layout.import": "JSON-Datei importieren",
   "layout.export_error": "Die Layout-Datei konnte nicht exportiert werden.",
   "layout.import_error": "Diese Datei konnte nicht importiert werden. Wähle eine gültige Wiser-Zigbee-Layout-JSON-Datei.",
-  "layout.import_save_error": "Die importierten Einstellungen und das Layout konnten nicht gespeichert werden. Es wurde nichts geändert."
+  "layout.import_save_error": "Die importierten Einstellungen und das Layout konnten nicht gespeichert werden. Es wurde nichts geändert.",
+  "editor.show_battery_levels": "Batteriestände anzeigen"
 }

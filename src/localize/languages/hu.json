@@ -76,5 +76,6 @@
   "layout.import": "JSON-fájl importálása",
   "layout.export_error": "Az elrendezésfájl nem exportálható.",
   "layout.import_error": "A fájl nem importálható. Válasszon érvényes Wiser Zigbee elrendezési JSON-fájlt.",
-  "layout.import_save_error": "Az importált beállítások és elrendezés nem menthetők. Semmi sem változott."
+  "layout.import_save_error": "Az importált beállítások és elrendezés nem menthetők. Semmi sem változott.",
+  "editor.show_battery_levels": "Akkumulátorszintek megjelenítése"
 }

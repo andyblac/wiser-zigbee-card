@@ -76,5 +76,6 @@
   "layout.import": "Importar archivo JSON",
   "layout.export_error": "No se puede exportar el archivo de distribución.",
   "layout.import_error": "No se puede importar este archivo. Elige un archivo JSON de distribución Wiser Zigbee válido.",
-  "layout.import_save_error": "No se pueden guardar los ajustes y la distribución importados. No se ha cambiado nada."
+  "layout.import_save_error": "No se pueden guardar los ajustes y la distribución importados. No se ha cambiado nada.",
+  "editor.show_battery_levels": "Mostrar niveles de batería"
 }

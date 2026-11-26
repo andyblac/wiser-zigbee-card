@@ -78,7 +78,8 @@ function switchFields(template) {
     .filter((field) => field?.selector?.boolean);
 }
 const switches = switchFields(template);
-assert.equal(switches.length, 5);
+assert.equal(switches.length, 6);
+assert.ok(switches.some((field) => field.name === "show_battery_levels"));
 assert.equal(
   switches.some((field) => field.name === "magnifier"),
   false,
@@ -100,6 +101,8 @@ assert.equal(
   editor.computeLabel({ name: "show_detailed_view" }),
   "Show detailed view",
 );
+assert.equal(change({ show_battery_levels: true }).show_battery_levels, true);
+assert.equal(change({ show_battery_levels: false }).show_battery_levels, false);
 const mapOnly = change({ show_detailed_view: false });
 assert.equal(mapOnly.map_only, true);
 assert.equal("show_detailed_view" in mapOnly, false);

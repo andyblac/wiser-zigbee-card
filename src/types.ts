@@ -27,6 +27,7 @@ export interface WiserZigbeeCardConfig extends LovelaceCardConfig {
   show_device_list?: boolean;
   show_home_assistant?: boolean;
   show_labels?: boolean;
+  show_battery_levels?: boolean;
   link_status?: "links" | "icons" | "both" | "none";
   orientation?: NetworkOrientation;
   layout_orientation?: NetworkOrientation;
@@ -44,6 +45,7 @@ export interface node {
   area_icon?: string;
   device_name?: string;
   entity_id?: string;
+  battery_entity_id?: string;
   connection_label?: string;
   id: number;
   label: string;

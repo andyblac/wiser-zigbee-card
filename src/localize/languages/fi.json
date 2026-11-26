@@ -76,5 +76,6 @@
   "layout.import": "Tuo JSON-tiedosto",
   "layout.export_error": "Asettelutiedoston vienti epäonnistui.",
   "layout.import_error": "Tiedoston tuonti epäonnistui. Valitse kelvollinen Wiser Zigbee -asettelun JSON-tiedosto.",
-  "layout.import_save_error": "Tuotujen asetusten ja asettelun tallentaminen epäonnistui. Mitään ei muutettu."
+  "layout.import_save_error": "Tuotujen asetusten ja asettelun tallentaminen epäonnistui. Mitään ei muutettu.",
+  "editor.show_battery_levels": "Näytä akkujen varaustasot"
 }

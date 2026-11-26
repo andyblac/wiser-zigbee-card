@@ -11,6 +11,7 @@ const layout = {
   show_device_list: false,
   show_home_assistant: true,
   show_labels: true,
+  show_battery_levels: true,
   map_height: 500,
   link_status: "both",
   orientation: "pie",

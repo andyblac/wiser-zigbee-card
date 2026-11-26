@@ -76,5 +76,6 @@
   "layout.import": "Importér JSON-fil",
   "layout.export_error": "Layoutfilen kunne ikke eksporteres.",
   "layout.import_error": "Filen kunne ikke importeres. Vælg en gyldig Wiser Zigbee-layoutfil i JSON-format.",
-  "layout.import_save_error": "De importerede indstillinger og layoutet kunne ikke gemmes. Intet er blevet ændret."
+  "layout.import_save_error": "De importerede indstillinger og layoutet kunne ikke gemmes. Intet er blevet ændret.",
+  "editor.show_battery_levels": "Vis batteriniveauer"
 }

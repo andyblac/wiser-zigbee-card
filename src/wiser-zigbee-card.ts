@@ -1,3 +1,4 @@
+import { deviceBatteryLevel, batteryIcon, batteryColor } from "./battery";
 import { buttonConfirmation } from "./action-confirmation";
 import { exportSettings, importSettings } from "./settings-transfer";
 import { MapMagnifier } from "./map-magnifier";
@@ -115,6 +116,7 @@ export class WiserZigbeeCard
   @state() private loading = false;
   @state() private error = "";
   @state() private showLabels = false;
+  @state() private hoveredDevice?: number;
   private hoveredEdge?: string;
   private suppliedConfig?: WiserZigbeeCardConfig;
   private savingConfig = false;
@@ -267,6 +269,7 @@ export class WiserZigbeeCard
     this.cancelDeviceInfo();
     this.areaDrag = undefined;
     this.mapData = undefined;
+    this.hoveredDevice = undefined;
     this.collapsedAreas.clear();
     this.areaPositions = {};
     this.restoredAreaHeaders.clear();
@@ -350,6 +353,7 @@ export class WiserZigbeeCard
   }
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
+    this.positionBatteryLevels();
     if (changed.has("zigbeeData") || changed.has("config"))
       this.positionAreaIcons();
     const appearance = this.appearanceSignature();
@@ -596,6 +600,7 @@ export class WiserZigbeeCard
         position: this.network.getViewPosition(),
         scale: this.network.getScale(),
       };
+      this.hoveredDevice = undefined;
       this.hoveredEdge = undefined;
       this.network.setData(data);
       this.network.moveTo({ ...view, animation: false });
@@ -623,6 +628,12 @@ export class WiserZigbeeCard
           },
         },
       );
+      this.network.on("hoverNode", (event) => {
+        this.hoveredDevice = event.node;
+      });
+      this.network.on("blurNode", () => {
+        this.hoveredDevice = undefined;
+      });
       this.network.on("hoverEdge", (event) => this.hoverLink(event.edge));
       this.network.on("blurEdge", () => this.hoverLink());
       this.network.on("click", (event) => this.deviceClick(event.nodes[0]));
@@ -637,6 +648,7 @@ export class WiserZigbeeCard
       });
       this.network.on("afterDrawing", (ctx) => {
         this.positionAreaIcons();
+        this.positionBatteryLevels();
         this.drawLinkLabels(ctx);
         this.magnifier.refresh();
       });
@@ -830,6 +842,56 @@ export class WiserZigbeeCard
       ctx.stroke();
     }
     ctx.restore();
+  }
+  private batteryLevels(): TemplateResult {
+    return html`<div class="battery-levels">
+      ${(this.visibleData?.nodes ?? []).map((node) => {
+        if (!this.config?.show_battery_levels && this.hoveredDevice !== node.id)
+          return "";
+        const level = deviceBatteryLevel(node, this.hass);
+        if (level === undefined) return "";
+        const percent = new Intl.NumberFormat(languageFor(this.hass), {
+          style: "percent",
+          maximumFractionDigits: 0,
+        }).format(level / 100);
+        return html`<span class="battery-level" data-node=${node.id}>
+          <ha-icon
+            .icon=${batteryIcon(level)}
+            style=${`color: ${batteryColor(level)}`}
+            aria-hidden="true"
+          ></ha-icon>
+          <span>${percent}</span>
+        </span>`;
+      })}
+    </div>`;
+  }
+  private positionBatteryLevels(): void {
+    if (
+      !this.network ||
+      (!this.config?.show_battery_levels && this.hoveredDevice === undefined)
+    )
+      return;
+    const positions = this.network.getPositions();
+    const scale = this.network.getScale();
+    const map = this.shadowRoot?.getElementById("zigbee-network");
+    this.shadowRoot
+      ?.querySelectorAll<HTMLElement>(".battery-level")
+      .forEach((badge) => {
+        const position = positions[Number(badge.dataset.node)];
+        badge.hidden = !position;
+        if (!position || !map) return;
+        const point = this.network!.canvasToDOM(position);
+        const left = Math.max(
+          0,
+          Math.min(map.clientWidth - badge.offsetWidth, point.x + 34 * scale),
+        );
+        const top = Math.max(
+          0,
+          Math.min(map.clientHeight - badge.offsetHeight, point.y - 32 * scale),
+        );
+        badge.style.left = `${left}px`;
+        badge.style.top = `${top}px`;
+      });
   }
   private positionAreaIcons(): void {
     if (!this.network || this.config?.group_by !== "area") return;
@@ -1365,6 +1427,7 @@ export class WiserZigbeeCard
       show_device_list: this.config?.show_device_list ?? true,
       show_home_assistant: this.config?.show_home_assistant ?? false,
       show_labels: this.showLabels,
+      show_battery_levels: this.config?.show_battery_levels ?? false,
       link_status: this.config?.link_status ?? "links",
       map_height: this.mapHeight,
       orientation: this.orientation,
@@ -1860,7 +1923,10 @@ export class WiserZigbeeCard
             if (this.magnifierEnabled)
               this.magnifier.show(event.currentTarget as HTMLElement, event);
           }}
-          @pointerleave=${() => this.magnifier.hide()}
+          @pointerleave=${() => {
+            this.magnifier.hide();
+            this.hoveredDevice = undefined;
+          }}
           @pointerdown=${() => this.magnifier.hide()}
           @wheel=${this.panZoomedView}
           @touchstart=${this.touchZoomStart}
@@ -1889,6 +1955,7 @@ export class WiserZigbeeCard
               </div>
             `
           : ""}
+        ${this.batteryLevels()}
         ${this.error
           ? html`<div class="message" role="alert">
               <ha-alert alert-type="error">${this.t(this.error)}</ha-alert>
@@ -2119,6 +2186,34 @@ export class WiserZigbeeCard
     #zigbee-network {
       width: 100%;
       height: 340px;
+    }
+    .battery-levels {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .battery-level {
+      position: absolute;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 6px;
+      white-space: nowrap;
+      font-size: 14px;
+      color: #fff;
+      background: var(
+        --ha-tooltip-background-color,
+        var(--ha-color-surface-default, var(--card-background-color))
+      );
+      border-radius: var(
+        --ha-tooltip-border-radius,
+        var(--ha-border-radius-md, 4px)
+      );
+    }
+    .battery-level ha-icon {
+      --mdc-icon-size: 18px;
+      --ha-icon-size: 18px;
     }
     .area-icons {
       position: absolute;

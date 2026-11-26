@@ -76,5 +76,6 @@
   "layout.import": "JSON-bestand importeren",
   "layout.export_error": "Kan het indelingsbestand niet exporteren.",
   "layout.import_error": "Kan dit bestand niet importeren. Kies een geldig JSON-indelingsbestand van Wiser Zigbee.",
-  "layout.import_save_error": "Kan de geïmporteerde instellingen en indeling niet opslaan. Er is niets gewijzigd."
+  "layout.import_save_error": "Kan de geïmporteerde instellingen en indeling niet opslaan. Er is niets gewijzigd.",
+  "editor.show_battery_levels": "Batterijniveaus tonen"
 }

@@ -109,6 +109,7 @@ export class WiserZigbeeCardEditor
       show_device_list: this._config.show_device_list ?? true,
       show_home_assistant: this._config.show_home_assistant ?? false,
       show_labels: this._config.show_labels ?? false,
+      show_battery_levels: this._config.show_battery_levels ?? false,
     };
     const fields = [
       {
@@ -134,6 +135,7 @@ export class WiserZigbeeCardEditor
     const switches = [
       { name: "show_home_assistant", selector: { boolean: {} } },
       { name: "show_labels", selector: { boolean: {} } },
+      { name: "show_battery_levels", selector: { boolean: {} } },
       { name: "auto_update", selector: { boolean: {} } },
       { name: "show_detailed_view", selector: { boolean: {} } },
       {
@@ -245,7 +247,11 @@ export class WiserZigbeeCardEditor
             ></ha-form>`,
         )}
       </div>
-      ${this.hideVersion ? "" : html`<div class="version">Wiser Zigbee Card · ${CARD_VERSION}</div>`}`;
+      ${this.hideVersion
+        ? ""
+        : html`<div class="version">
+            Wiser Zigbee Card · ${CARD_VERSION}
+          </div>`}`;
   }
 
   private setOrientation(orientation: NetworkOrientation): void {

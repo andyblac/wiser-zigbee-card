@@ -19,6 +19,7 @@ function validateSettings(value: unknown): Settings {
     "show_device_list",
     "show_home_assistant",
     "show_labels",
+    "show_battery_levels",
   ]) {
     if (!(key in value)) continue;
     if (typeof value[key] !== "boolean") throw new Error(`Invalid ${key}`);

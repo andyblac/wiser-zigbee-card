@@ -83,6 +83,7 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   "./editor": {},
   "./wiser-zigbee-panel.js": {},
   "./area-graph": load("src/area-graph.ts"),
+  "./battery": load("src/battery.ts"),
   "./areas": { withDeviceAreas: async (_, data) => data },
   "./fit": load("src/fit.ts"),
   "./link-labels": load("src/link-labels.ts"),
@@ -1156,6 +1157,56 @@ const { WiserZigbeeCard } = load("src/wiser-zigbee-card.ts", {
   assert.deepEqual(pasteCard.areaPositions, {});
   assert.deepEqual(pasteCard.config.layout_data, pasted.layout_data);
 
+  const batteryCard = new WiserZigbeeCard();
+  batteryCard.config = {};
+  batteryCard.hass = {
+    language: "en-US",
+    states: {
+      "sensor.battery": {
+        state: "42",
+        attributes: { device_class: "battery", unit_of_measurement: "%" },
+      },
+    },
+  };
+  batteryCard.mapData = {
+    nodes: [
+      { id: 2, group: "RoomStat", battery_entity_id: "sensor.battery" },
+      { id: 3, group: "SmartPlug" },
+    ],
+    edges: [],
+  };
+  const badgeCount = () =>
+    batteryCard.batteryLevels().values[0].filter(Boolean).length;
+  assert.equal(badgeCount(), 0, "Hidden until hover by default");
+  batteryCard.hoveredDevice = 2;
+  assert.equal(badgeCount(), 1);
+  assert.ok(JSON.stringify(batteryCard.batteryLevels()).includes("42%"));
+  batteryCard.hoveredDevice = undefined;
+  assert.equal(badgeCount(), 0);
+  batteryCard.config.show_battery_levels = true;
+  assert.equal(badgeCount(), 1, "Always show valid battery devices only");
+  batteryCard.hass.states["sensor.battery"].state = "0";
+  assert.ok(JSON.stringify(batteryCard.batteryLevels()).includes("0%"));
+  batteryCard.hass.states["sensor.battery"].state = "unavailable";
+  assert.equal(badgeCount(), 0);
+  const badge = {
+    dataset: { node: "2" },
+    style: {},
+    offsetWidth: 60,
+    offsetHeight: 26,
+  };
+  batteryCard.network = {
+    getPositions: () => ({ 2: { x: 99, y: 1 } }),
+    getScale: () => 1,
+    canvasToDOM: (point) => point,
+  };
+  batteryCard.shadowRoot = {
+    getElementById: () => ({ clientWidth: 100, clientHeight: 100 }),
+    querySelectorAll: () => [badge],
+  };
+  batteryCard.positionBatteryLevels();
+  assert.equal(badge.style.left, "40px");
+  assert.equal(badge.style.top, "0px");
   const beforeFile = pasteCard.config;
   await pasteCard.importLayout({ size: 5, text: async () => "broken" });
   assert.equal(pasteCard.config, beforeFile);

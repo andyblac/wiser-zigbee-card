@@ -120,6 +120,19 @@ export async function withDeviceAreas(
         ? devicesById.get(entity.device_id)
         : undefined;
       const area = areasById.get(device?.area_id || entity?.area_id || "");
+      const batteries = device
+        ? entities.filter((candidate) => {
+            const state = hass.states[candidate.entity_id];
+            return (
+              candidate.device_id === device.id &&
+              candidate.platform === "wiser" &&
+              candidate.entity_id.startsWith("sensor.") &&
+              state?.attributes.device_class === "battery" &&
+              state.attributes.unit_of_measurement === "%"
+            );
+          })
+        : [];
+
       return {
         ...node,
         area_id: area?.area_id,
@@ -127,6 +140,8 @@ export async function withDeviceAreas(
         area_icon: area?.icon,
         device_name: device?.name_by_user || device?.name,
         entity_id: entity?.entity_id,
+        battery_entity_id:
+          batteries.length === 1 ? batteries[0].entity_id : undefined,
         ...(node.group === "Controller" && entity
           ? {
               connection_label: (() => {

@@ -76,5 +76,6 @@
   "layout.import": "Importar ficheiro JSON",
   "layout.export_error": "Não foi possível exportar o ficheiro de disposição.",
   "layout.import_error": "Não foi possível importar este ficheiro. Escolha um ficheiro JSON de disposição Wiser Zigbee válido.",
-  "layout.import_save_error": "Não foi possível guardar as definições e a disposição importadas. Nada foi alterado."
+  "layout.import_save_error": "Não foi possível guardar as definições e a disposição importadas. Nada foi alterado.",
+  "editor.show_battery_levels": "Mostrar níveis de bateria"
 }
